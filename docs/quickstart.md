@@ -42,8 +42,10 @@ Verify:
 
 ```bash
 curl http://localhost:8000/api/health
-# {"status":"ok","app":"Finch"}
+# {"status":"ok","app":"Finch","capabilities":{...}}
 ```
+
+On startup, the backend prints a **configuration summary** to the terminal: loaded `.env` files, ASR/diarization/LLM mode, dependency checks (ffmpeg, torch, pyannote-audio), and suggested fixes when something is missing. Watch the uvicorn terminal after `uv run uvicorn app.main:app --reload`.
 
 Interactive API docs: http://localhost:8000/docs
 
@@ -138,7 +140,25 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Use **Upload** or **Record** to transcribe audio; view and edit results under **Transcripts**. In-progress jobs appear in the list with a **Transcribing…** status until complete.
+Open http://localhost:3000. Use **Upload** or **Record** to transcribe; run **AI Actions** from a transcript; view documents under **Documents**.
+
+Optional speaker diarization labels each turn as `Speaker 1: …`, `Speaker 2: …` in the transcript:
+
+1. **Log in** to [Hugging Face](https://huggingface.co/login)
+2. Open [pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1) and click **Agree and access repository** (required — a 403 error means this step was skipped)
+3. Create a **read** token at [hf.co/settings/tokens](https://huggingface.co/settings/tokens) for the **same account**
+4. Install: `cd backend && uv add pyannote-audio`
+5. Set in repo root `.env` or `backend/.env`:
+
+```env
+DIARIZATION_ENABLED=true
+DIARIZATION_MOCK=false
+HF_TOKEN=hf_...
+```
+
+For development without the model, use `DIARIZATION_MOCK=true` (returns two mock speakers in tests).
+
+If diarization quality is poor on normalized mono audio, try `DIARIZATION_USE_ORIGINAL_AUDIO=true`.
 
 ## 7. Run tests
 
@@ -153,6 +173,7 @@ Tests use `ASR_MOCK=true` and mock ffmpeg; no model download required.
 
 | Issue | Fix |
 |-------|-----|
+| `403` / `gated repo` / `not in the authorized list` | Log into Hugging Face, open [pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1), click **Agree and access repository**, then use an `HF_TOKEN` from that same account |
 | `ffmpeg is not installed` | Install ffmpeg (`brew install ffmpeg` on macOS) |
 | Hugging Face permission error | Set `HF_HOME=./data/hf_cache` inside `backend/` |
 | `Invalid buffer size` on long audio | Long files are chunked automatically (45s segments) |

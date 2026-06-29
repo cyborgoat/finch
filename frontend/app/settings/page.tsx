@@ -42,9 +42,89 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-base">ASR model</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Transcription runs locally with Qwen3-ASR-1.7B. Configure the model in
-          backend <code className="text-xs">.env</code> (ASR_MODEL_ID, ASR_MOCK).
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          {data?.capabilities ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={data.capabilities.asrMock ? "secondary" : "default"}>
+                {data.capabilities.asrMock ? "Mock mode" : "Real transcription"}
+              </Badge>
+            </div>
+          ) : null}
+          <p>
+            Transcription runs locally with Qwen3-ASR-1.7B. Configure in backend{" "}
+            <code className="text-xs">.env</code> (ASR_MODEL_ID, ASR_MOCK=false for real ASR).
+            Check the backend terminal on startup for dependency and configuration details.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Speaker diarization</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          {data?.capabilities ? (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge
+                  variant={
+                    data.capabilities.diarizationReady ? "default" : "secondary"
+                  }
+                >
+                  {data.capabilities.diarizationReady
+                    ? "Ready for speaker labels"
+                    : "Not configured"}
+                </Badge>
+                {data.capabilities.diarizationEnabled && (
+                  <Badge variant="outline">Enabled</Badge>
+                )}
+              </div>
+              {data.capabilities.diarizationReason && (
+                <p className="text-amber-700 dark:text-amber-400">
+                  {data.capabilities.diarizationReason}
+                </p>
+              )}
+            </>
+          ) : null}
+          <p>
+            Transcripts show <code className="text-xs">Speaker 1: …</code>,{" "}
+            <code className="text-xs">Speaker 2: …</code> when diarization runs.
+            Set <code className="text-xs">HF_TOKEN</code> in{" "}
+            <code className="text-xs">.env</code> or run{" "}
+            <code className="text-xs">huggingface-cli login</code>, then re-transcribe.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">OpenRouter / LLM</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          {data?.capabilities ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={data.capabilities.llmMock ? "secondary" : "default"}>
+                {data.capabilities.llmMock ? "Mock mode" : "OpenRouter"}
+              </Badge>
+              {!data.capabilities.llmMock && (
+                <Badge
+                  variant={
+                    data.capabilities.openrouterConfigured ? "default" : "destructive"
+                  }
+                >
+                  {data.capabilities.openrouterConfigured
+                    ? "API key configured"
+                    : "API key missing"}
+                </Badge>
+              )}
+            </div>
+          ) : null}
+          <p>
+            AI actions use OpenRouter. Set <code className="text-xs">OPENROUTER_API_KEY</code>{" "}
+            in backend <code className="text-xs">.env</code>. Use{" "}
+            <code className="text-xs">LLM_MOCK=true</code> for development without API calls.
+          </p>
+          <p>Only transcript text is sent to the LLM—not audio.</p>
         </CardContent>
       </Card>
 
@@ -53,19 +133,9 @@ export default function SettingsPage() {
           <CardTitle className="text-base">Privacy</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          ASR transcription runs locally. Audio files are not sent to external
-          services. When AI actions are enabled, only selected transcript text will
-          be sent to your configured LLM provider through OpenRouter—not audio.
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">OpenRouter</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          API key is configured in backend <code className="text-xs">.env</code>{" "}
-          only. LLM features are not available yet (Milestone 8).
+          Audio stays on your machine for transcription and optional diarization.
+          LLM features are optional and only process text you explicitly send via AI
+          actions.
         </CardContent>
       </Card>
     </div>

@@ -1,13 +1,41 @@
 from collections.abc import Generator
 
+from sqlalchemy import inspect
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.config import get_settings
 from app.models.audio_asset import AudioAsset  # noqa: F401
+from app.models.document import Document  # noqa: F401
 from app.models.job import Job  # noqa: F401
 from app.models.transcript import Transcript  # noqa: F401
 
 _engine = None
+
+_SQLITE_COLUMN_PATCHES: dict[str, dict[str, str]] = {
+    "transcript": {
+        "speaker_segments": "TEXT",
+        "error_message": "TEXT",
+        "processing_note": "TEXT",
+    },
+}
+
+
+def _apply_sqlite_column_patches(engine) -> None:
+    if engine.dialect.name != "sqlite":
+        return
+
+    inspector = inspect(engine)
+    with engine.begin() as connection:
+        for table_name, columns in _SQLITE_COLUMN_PATCHES.items():
+            if not inspector.has_table(table_name):
+                continue
+            existing = {column["name"] for column in inspector.get_columns(table_name)}
+            for column_name, column_type in columns.items():
+                if column_name in existing:
+                    continue
+                connection.exec_driver_sql(
+                    f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"
+                )
 
 
 def get_engine():
@@ -32,7 +60,9 @@ def reset_engine(database_url: str | None = None) -> None:
 
 
 def create_db_and_tables() -> None:
-    SQLModel.metadata.create_all(get_engine())
+    engine = get_engine()
+    SQLModel.metadata.create_all(engine)
+    _apply_sqlite_column_patches(engine)
 
 
 def get_session() -> Generator[Session]:

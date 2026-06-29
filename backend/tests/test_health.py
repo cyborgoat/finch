@@ -1,4 +1,8 @@
 def test_health_returns_ok(client):
     response = client.get("/api/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "app": "Finch"}
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["app"] == "Finch"
+    assert body["capabilities"]["asrMock"] is True
+    assert body["capabilities"]["diarizationReady"] is True

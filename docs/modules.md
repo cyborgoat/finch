@@ -1,144 +1,100 @@
 # Backend Modules
 
-Reference for the `backend/app/` package. Backend milestones 1–3 are complete; the Next.js frontend (milestones 4–7) lives in `frontend/`.
+Reference for the `backend/app/` package.
 
 ## Package map
 
 ```txt
 backend/app/
   main.py              # FastAPI app, CORS, lifespan, routers
-  config.py            # pydantic-settings (env vars)
+  config.py            # pydantic-settings (backend/.env + repo root .env)
 
   api/                 # HTTP routes
-  core/                # Shared utilities
+  core/                # Shared utilities + startup diagnostics
   models/              # SQLModel tables
   schemas/             # Pydantic request/response DTOs (camelCase JSON)
   services/            # Business logic
+  prompts/             # LLM prompt templates (Markdown)
   storage/             # Database + filesystem helpers
   workers/             # Background job handlers
 ```
 
 ## `config.py`
 
-Loads settings from `backend/.env` via `pydantic-settings`.
-
-Important fields:
+Loads settings from `backend/.env` and repo root `.env`.
 
 | Setting | Default | Notes |
 |---------|---------|-------|
 | `asr_mock` | `true` in `.env.example` | Skip model load when true |
 | `asr_model_id` | `Qwen/Qwen3-ASR-1.7B` | HF repo or local path |
-| `asr_device` | `auto` | cuda → mps → cpu |
-| `max_upload_mb` | `500` | Upload size limit |
-| `max_audio_duration_seconds` | `7200` | 2 hours |
+| `diarization_enabled` | `false` | Speaker labels via pyannote |
+| `diarization_mock` | `true` | Fake two-speaker segments for CI |
+| `hf_token` | — | Hugging Face token for gated pyannote models |
+| `llm_mock` | `true` | Mock AI action output |
+| `openrouter_api_key` | — | Required when `LLM_MOCK=false` |
 
 ## `api/`
 
 | Module | Routes |
 |--------|--------|
-| `routes_health.py` | `GET /api/health` |
+| `routes_health.py` | `GET /api/health` (includes capability flags) |
 | `routes_audio.py` | `POST /api/audio/upload`, `GET/DELETE /api/audio/{id}` |
 | `routes_transcripts.py` | CRUD + `POST /api/transcripts` (starts job) |
 | `routes_jobs.py` | `GET /api/jobs/{id}` |
-
-Routes are thin: validate input, call services, return schemas.
+| `routes_ai_actions.py` | Templates + `POST /api/ai-actions` |
+| `routes_documents.py` | Document CRUD |
 
 ## `core/`
 
 | Module | Role |
 |--------|------|
 | `errors.py` | `AppError` + JSON error handler |
-| `ids.py` | Prefixed IDs: `audio_`, `transcript_`, `job_` |
+| `ids.py` | Prefixed IDs: `audio_`, `transcript_`, `job_`, `document_` |
 | `logging.py` | stdout logging setup |
+| `startup_diagnostics.py` | Startup config summary, dependency checks, error remediation hints |
 
 ## `models/`
-
-SQLModel table definitions:
 
 | Model | Key fields |
 |-------|------------|
 | `AudioAsset` | `source`, `filename`, `mime_type`, `original_path`, `normalized_path` |
-| `Transcript` | `audio_asset_id`, `raw_text`, `edited_text`, `status` |
+| `Transcript` | `raw_text`, `edited_text`, `speaker_segments`, `error_message`, `processing_note`, `status` |
 | `Job` | `type`, `status`, `progress`, `stage`, `result_id`, `error` |
-
-`Document` model is not created yet (Milestone 8).
-
-## `schemas/`
-
-Pydantic models with camelCase aliases for JSON (`mimeType`, `audioAssetId`, etc.).
-
-Shared base: `CamelModel` in `schemas/__init__.py` using `alias_generator=to_camel`.
+| `Document` | `transcript_id`, `markdown`, `type`, `model` |
 
 ## `services/`
 
-### `audio_service.py`
-
-- Validates MIME type (strips codec parameters, e.g. `audio/webm;codecs=opus` → `audio/webm`) and file size
-- Saves originals under `data/audio/original/{id}.{ext}`
-- Normalizes via ffmpeg to 16 kHz mono WAV
-- Extracts duration with librosa
-- Deletes files + DB record
-
-### `asr_service.py`
-
-- **Mock mode:** returns fixed placeholder text
-- **Real mode:** lazy-loads `Qwen3ASRModel` from `qwen-asr`
-- **Chunking:** audio >60s split into 45s segments; prints each chunk transcript to stdout/logger
-- Optional `on_chunk` callback for job progress updates
-
-### `job_service.py`
-
-Creates and updates `Job` records (`queued` → `processing` → `completed`/`failed`).
-
-### `transcript_service.py`
-
-CRUD for transcripts. `create_transcript` accepts an optional `status` (used for `transcribing` placeholders). List endpoint omits full text fields (summary only).
-
-## `storage/`
-
-### `database.py`
-
-- SQLModel engine via `get_engine()` (supports test DB reset)
-- `create_db_and_tables()` on app startup
-- `get_session()` FastAPI dependency
-
-### `file_store.py`
-
-- Ensures data directories exist
-- `safe_join()` prevents path traversal
+| Service | Role |
+|---------|------|
+| `audio_service.py` | Upload validation, ffmpeg normalization, duration |
+| `asr_service.py` | Qwen3-ASR (mock or real), chunking for long audio |
+| `diarization_service.py` | pyannote speaker diarization, segment slicing, labeled transcript builder |
+| `transcript_service.py` | Transcript CRUD |
+| `document_service.py` | Document CRUD |
+| `llm_service.py` | OpenRouter chat completions (mock or real) |
+| `ai_action_service.py` | Prompt templates + document generation |
+| `job_service.py` | Job lifecycle |
 
 ## `workers/`
 
-### `transcription_worker.py`
+| Worker | Flow |
+|--------|------|
+| `transcription_worker.py` | Optional diarization → per-segment or full-file ASR → save transcript |
+| `ai_action_worker.py` | Load transcript → LLM → save document |
 
-Runs in FastAPI `BackgroundTasks` after `POST /api/transcripts`:
+Failed transcription jobs keep the transcript with `status=failed` and `errorMessage`.
 
-1. `loading_model` — `AsrService.load_model()`
-2. `running_asr` — transcribe normalized path (chunk progress in stage name)
-3. `saving_transcript` — update placeholder `Transcript` with `rawText`, set `status=draft`
+## `storage/database.py`
 
-On failure, deletes the placeholder transcript. Uses a fresh DB session via `get_engine()` (not the request session).
+- Creates tables on startup
+- SQLite column patches for schema upgrades (`speaker_segments`, `error_message`, `processing_note`)
+
+## `tests/`
+
+24 tests covering health, upload, transcripts (including diarization mock/fallback), AI actions, diarization helpers, DB migration, and startup diagnostics.
 
 ## `scripts/`
 
 | Script | Purpose |
 |--------|---------|
 | `transcribe_file.py` | CLI: upload → job → poll → print + save `.txt` |
-
-## `tests/`
-
-| File | Covers |
-|------|--------|
-| `test_health.py` | Health endpoint |
-| `test_audio_upload.py` | Upload validation + storage (mocked ffmpeg) |
-| `test_transcript_api.py` | End-to-end upload → job → transcript; transcribing placeholder (mocked ASR) |
-
-Fixtures: `tests/fixtures/sample.wav`, `conftest.py` with temp DB and dirs.
-
-## Extension points (next milestones)
-
-| Milestone | Modules to add |
-|-----------|----------------|
-| 8 AI actions | `models/document.py`, `services/llm_service.py`, `services/ai_action_service.py`, `workers/ai_action_worker.py`, `prompts/*.md` |
-| 9 Documents | Document routes + frontend editor pages |
-| 10 Polish | Motion UI, full settings, empty-state illustrations |

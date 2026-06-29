@@ -13,5 +13,8 @@ class Transcript(SQLModel, table=True):
     edited_text: str | None = None
     language: str | None = None
     status: str = "draft"
+    speaker_segments: str | None = None
+    error_message: str | None = None
+    processing_note: str | None = None
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)

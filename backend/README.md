@@ -38,6 +38,10 @@ Tests mock `ffmpeg` subprocess calls and use `ASR_MOCK=true` by default.
 | Variable | Description |
 |----------|-------------|
 | `ASR_MOCK` | When `true`, returns a mock transcript without loading Qwen3-ASR |
+| `LLM_MOCK` | When `true`, returns mock Markdown without OpenRouter |
+| `DIARIZATION_ENABLED` | Enable speaker diarization in transcription jobs |
+| `DIARIZATION_MOCK` | Mock diarization segments (no pyannote download) |
+| `HF_TOKEN` | Hugging Face token for pyannote gated models |
 | `DATABASE_URL` | SQLite connection string |
 | `MAX_UPLOAD_MB` | Maximum upload size in megabytes |
 
@@ -63,9 +67,10 @@ The model is loaded lazily on the first transcription request.
 - `POST /api/audio/upload`
 - `GET /api/audio/{id}`
 - `DELETE /api/audio/{id}`
-- `POST /api/transcripts` — returns `jobId` + `transcriptId`; creates a `transcribing` placeholder
-- `GET /api/transcripts`
-- `GET /api/transcripts/{id}`
-- `PATCH /api/transcripts/{id}`
-- `DELETE /api/transcripts/{id}`
+- `POST /api/transcripts` — returns `jobId` + `transcriptId`
+- `GET/PATCH/DELETE /api/transcripts/{id}`
+- `GET /api/ai-actions/templates`
+- `POST /api/ai-actions`
+- `GET/PATCH/DELETE /api/documents/{id}`
+- `GET /api/documents`
 - `GET /api/jobs/{id}`

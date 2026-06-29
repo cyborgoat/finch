@@ -1,10 +1,10 @@
 # Finch Documentation
 
-Finch is a local ASR transcription app with optional LLM-powered Markdown generation (planned).
+Finch is a local ASR transcription app with optional LLM-powered Markdown generation and speaker diarization.
 
 ## Status
 
-**Backend milestones 1–3 and frontend milestones 4–7 are complete.** Milestones 8–10 (AI actions, document editor, polish) are pending. See [TASK_TRACK.md](TASK_TRACK.md).
+**Milestones 1–11 complete.** See [TASK_TRACK.md](TASK_TRACK.md).
 
 ## Guides
 

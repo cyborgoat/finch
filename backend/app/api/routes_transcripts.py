@@ -6,6 +6,7 @@ from app.schemas.audio import OkResponse
 from app.schemas.transcript import (
     CreateTranscriptRequest,
     CreateTranscriptResponse,
+    SpeakerSegmentSchema,
     TranscriptListResponse,
     TranscriptResponse,
     TranscriptSummary,
@@ -13,6 +14,8 @@ from app.schemas.transcript import (
     UpdateTranscriptResponse,
 )
 from app.services.audio_service import AudioService
+from app.services.diarization_service import speaker_segments_from_json
+from app.services.document_service import DocumentService
 from app.services.job_service import JobService
 from app.services.transcript_service import TranscriptService
 from app.storage.database import get_session
@@ -26,7 +29,31 @@ def _to_summary(transcript: Transcript) -> TranscriptSummary:
 
 
 def _to_response(transcript: Transcript) -> TranscriptResponse:
-    return TranscriptResponse.model_validate(transcript)
+    segments = speaker_segments_from_json(transcript.speaker_segments)
+    return TranscriptResponse(
+        id=transcript.id,
+        audio_asset_id=transcript.audio_asset_id,
+        title=transcript.title,
+        raw_text=transcript.raw_text,
+        edited_text=transcript.edited_text,
+        language=transcript.language,
+        status=transcript.status,
+        speaker_segments=[
+            SpeakerSegmentSchema(
+                speaker=segment.speaker,
+                start_sec=segment.start_sec,
+                end_sec=segment.end_sec,
+                text=segment.text,
+            )
+            for segment in segments
+        ]
+        if segments
+        else None,
+        error_message=transcript.error_message,
+        processing_note=transcript.processing_note,
+        created_at=transcript.created_at,
+        updated_at=transcript.updated_at,
+    )
 
 
 @router.post("", response_model=CreateTranscriptResponse)
@@ -108,6 +135,8 @@ def delete_transcript(
     session: Session = Depends(get_session),
 ) -> OkResponse:
     service = TranscriptService(session)
+    document_service = DocumentService(session)
     transcript = service.get_transcript(transcript_id)
+    document_service.delete_by_transcript(transcript.id)
     service.delete_transcript(transcript)
     return OkResponse()

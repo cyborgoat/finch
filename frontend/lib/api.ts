@@ -1,6 +1,9 @@
 import type {
+  AiActionTemplate,
   ApiError,
   AudioAsset,
+  Document,
+  DocumentSummary,
   Job,
   Transcript,
   TranscriptSummary,
@@ -41,7 +44,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>
 }
 
-export async function getHealth(): Promise<{ status: string; app: string }> {
+export async function getHealth(): Promise<{
+  status: string
+  app: string
+  capabilities?: {
+    diarizationEnabled: boolean
+    diarizationMock: boolean
+    diarizationReady: boolean
+    diarizationReason: string | null
+    asrMock: boolean
+    llmMock: boolean
+    openrouterConfigured: boolean
+  }
+}> {
   return request("/api/health")
 }
 
@@ -91,4 +106,48 @@ export async function updateTranscript(
 
 export async function deleteTranscript(id: string): Promise<{ ok: boolean }> {
   return request(`/api/transcripts/${id}`, { method: "DELETE" })
+}
+
+export async function listAiActionTemplates(): Promise<{ items: AiActionTemplate[] }> {
+  return request("/api/ai-actions/templates")
+}
+
+export async function createAiActionJob(input: {
+  transcriptId: string
+  action: string
+  source?: "rawText" | "editedText"
+  model?: string
+  customPrompt?: string
+}): Promise<{ jobId: string; status: string }> {
+  return request("/api/ai-actions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  })
+}
+
+export async function listDocuments(
+  transcriptId?: string,
+): Promise<{ items: DocumentSummary[] }> {
+  const query = transcriptId ? `?transcriptId=${encodeURIComponent(transcriptId)}` : ""
+  return request(`/api/documents${query}`)
+}
+
+export async function getDocument(id: string): Promise<Document> {
+  return request(`/api/documents/${id}`)
+}
+
+export async function updateDocument(
+  id: string,
+  input: Partial<Pick<Document, "title" | "markdown">>,
+): Promise<Document> {
+  return request(`/api/documents/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  })
+}
+
+export async function deleteDocument(id: string): Promise<{ ok: boolean }> {
+  return request(`/api/documents/${id}`, { method: "DELETE" })
 }

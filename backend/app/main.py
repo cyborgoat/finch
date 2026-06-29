@@ -3,10 +3,18 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import routes_audio, routes_health, routes_jobs, routes_transcripts
+from app.api import (
+    routes_ai_actions,
+    routes_audio,
+    routes_documents,
+    routes_health,
+    routes_jobs,
+    routes_transcripts,
+)
 from app.config import get_settings
 from app.core.errors import AppError, app_error_handler
 from app.core.logging import setup_logging
+from app.core.startup_diagnostics import log_startup_summary
 from app.storage.database import create_db_and_tables
 from app.storage.file_store import ensure_data_dirs
 
@@ -17,6 +25,7 @@ async def lifespan(_app: FastAPI):
     settings = get_settings()
     ensure_data_dirs(settings)
     create_db_and_tables()
+    log_startup_summary(settings)
     yield
 
 
@@ -37,6 +46,8 @@ def create_app() -> FastAPI:
     app.include_router(routes_audio.router, prefix="/api")
     app.include_router(routes_transcripts.router, prefix="/api")
     app.include_router(routes_jobs.router, prefix="/api")
+    app.include_router(routes_ai_actions.router, prefix="/api")
+    app.include_router(routes_documents.router, prefix="/api")
 
     return app
 

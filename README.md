@@ -1,24 +1,24 @@
 # Finch
 
-Finch is a local-first voice transcription app. Audio is transcribed on your machine; optional LLM features (planned) will run on transcript text only.
+Finch is a local-first voice transcription app. Audio is transcribed on your machine; optional LLM features run on transcript text only via OpenRouter.
 
-**Current status:** Backend milestones 1–3 and frontend milestones 4–7 are complete (see [docs/TASK_TRACK.md](docs/TASK_TRACK.md)). AI document generation (milestones 8–9) and polish (milestone 10) are not started yet.
+**Current status:** Milestones 1–11 complete (see [docs/TASK_TRACK.md](docs/TASK_TRACK.md)).
 
 ## Features (implemented)
 
 - Upload audio files (`.wav`, `.mp3`, `.m4a`, `.webm`, `.ogg`, `.flac`)
-- Browser recording with preview and transcription
-- Normalize audio to 16 kHz mono WAV via ffmpeg
-- Local ASR with [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) (or mock mode for development)
-- Background transcription jobs with polling and **in-progress “Transcribing…” status** in the transcript list
-- Next.js frontend: upload, record (live waveform), transcript library, editing, copy/export TXT/MD
-- Browser recording support (`audio/webm`, including `codecs=opus` MIME variants)
+- Browser recording with live waveform visualization
+- Local ASR with [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) (or mock mode)
+- Optional speaker diarization via [pyannote-audio](https://github.com/pyannote/pyannote-audio) (`DIARIZATION_ENABLED`)
+- Background transcription jobs with in-progress status in the UI
+- Transcript library: edit, copy, export TXT/MD
+- AI actions (summaries, action items, meeting notes) via OpenRouter (`LLM_MOCK` for dev)
+- Document library: Markdown editor + preview + export
 
-## Planned (not yet built)
+## Planned (post-MVP)
 
-- OpenRouter LLM actions (summaries, action items, Markdown documents)
-- Document editor pages
-- Motion UI polish, full settings
+- Production deployment, auth, cloud sync
+- PDF/DOCX export, mobile app
 
 Full product spec: [finch_sdd_spec.md](finch_sdd_spec.md)
 
@@ -37,7 +37,7 @@ Full product spec: [finch_sdd_spec.md](finch_sdd_spec.md)
 
 - [uv](https://docs.astral.sh/uv/)
 - [ffmpeg](https://ffmpeg.org/) on your PATH
-- [Node.js](https://nodejs.org/) 20+ (for frontend)
+- [Node.js](https://nodejs.org/) 20+
 
 ### Backend
 
@@ -47,8 +47,6 @@ cp .env.example .env
 uv sync
 uv run uvicorn app.main:app --reload
 ```
-
-API docs: http://localhost:8000/docs
 
 ### Frontend
 
@@ -61,50 +59,36 @@ npm run dev
 
 App: http://localhost:3000
 
-Run backend and frontend in separate terminals. The top bar shows backend health when the API is reachable.
-
-### Transcribe a file (CLI helper)
-
-```bash
-cd backend
-uv run python scripts/transcribe_file.py ../data/your-audio.mp3
-```
-
-Chunk transcripts print in the **server terminal** during long files.
-
 ### Tests
 
 ```bash
 cd backend && uv run pytest
 ```
 
-## Environment
-
-Copy [.env.example](.env.example) to `backend/.env`. Key variables:
+## Environment highlights
 
 | Variable | Purpose |
 |----------|---------|
-| `ASR_MOCK` | `true` = mock transcript; `false` = real Qwen3-ASR |
-| `ASR_MODEL_ID` | Hugging Face model id or local path |
-| `HF_HOME` | Model cache directory (recommended for local dev) |
-| `OPENROUTER_API_KEY` | For future LLM features (not used yet) |
+| `ASR_MOCK` | Mock local transcription |
+| `DIARIZATION_ENABLED` | Enable speaker diarization pipeline |
+| `DIARIZATION_MOCK` | Mock diarization (CI/dev) |
+| `HF_TOKEN` | Hugging Face token for pyannote models |
+| `LLM_MOCK` | Mock OpenRouter responses |
+| `OPENROUTER_API_KEY` | Real LLM actions |
 
-Frontend: copy `frontend/.env.local.example` to `frontend/.env.local` and set `NEXT_PUBLIC_API_BASE_URL` (default `http://localhost:8000`).
+See [backend/.env.example](backend/.env.example) for all options.
 
 ## Privacy
 
-Audio stays on your machine. ASR runs locally. When LLM features are added, only transcript text will be sent to OpenRouter—not audio.
+Audio stays on your machine for ASR and diarization. LLM actions send transcript text to OpenRouter only when you explicitly run them—not audio.
 
 ## Repository layout
 
 ```txt
 finch/
-  README.md
-  finch_sdd_spec.md      # Full product SDD
-  docs/                  # Architecture, modules, task track
-  backend/               # FastAPI app
-  frontend/              # Next.js app (milestones 4–7)
-  data/                  # Runtime audio + exports (gitignored under backend/data/)
+  backend/     # FastAPI app
+  frontend/    # Next.js app
+  docs/        # Architecture, modules, task track
 ```
 
 ## License

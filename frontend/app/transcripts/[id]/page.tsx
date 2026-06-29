@@ -3,25 +3,39 @@
 import { use, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { LinkedDocumentList } from "@/components/documents/DocumentList"
 import { AiActionPanel } from "@/components/transcripts/AiActionPanel"
 import { TranscriptEditor } from "@/components/transcripts/TranscriptEditor"
 import { TranscriptToolbar } from "@/components/transcripts/TranscriptToolbar"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useDocuments } from "@/hooks/useDocuments"
 import {
   useDeleteTranscript,
   useTranscript,
   useUpdateTranscript,
 } from "@/hooks/useTranscripts"
 import { exportTranscriptMd, exportTranscriptTxt } from "@/lib/export"
+import {
+  resolveSpeakerSegments,
+  transcriptDisplayText,
+} from "@/lib/transcriptFormat"
 import type { Transcript } from "@/lib/types"
 
 function TranscriptDetailEditor({ transcript }: { transcript: Transcript }) {
   const router = useRouter()
   const updateMutation = useUpdateTranscript(transcript.id)
   const deleteMutation = useDeleteTranscript()
+  const { data: documentsData } = useDocuments(transcript.id)
 
+  const speakerSegments = resolveSpeakerSegments(transcript)
   const [title, setTitle] = useState(transcript.title)
-  const [text, setText] = useState(transcript.editedText ?? transcript.rawText)
+  const [text, setText] = useState(() =>
+    transcriptDisplayText(
+      transcript.rawText,
+      transcript.editedText,
+      speakerSegments,
+    ),
+  )
 
   const handleSave = async () => {
     try {
@@ -63,11 +77,22 @@ function TranscriptDetailEditor({ transcript }: { transcript: Transcript }) {
         <TranscriptEditor
           title={title}
           text={text}
+          speakerSegments={speakerSegments}
+          processingNote={transcript.processingNote}
           onTitleChange={setTitle}
           onTextChange={setText}
           disabled={updateMutation.isPending}
         />
-        <AiActionPanel />
+        <div className="space-y-4">
+          <AiActionPanel
+            transcriptId={transcript.id}
+            disabled={updateMutation.isPending}
+          />
+          <section className="space-y-2">
+            <h2 className="text-sm font-medium">Generated documents</h2>
+            <LinkedDocumentList items={documentsData?.items ?? []} />
+          </section>
+        </div>
       </div>
     </div>
   )
@@ -109,6 +134,26 @@ export default function TranscriptDetailPage({
           <p className="mt-1 text-sm text-muted-foreground">
             You can leave this page and check the transcripts list. The status
             will update automatically.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (transcript.status === "failed") {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold">{transcript.title}</h1>
+          <p className="text-sm text-destructive">
+            Transcription failed
+          </p>
+        </div>
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6">
+          <p className="text-sm font-medium">Error</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {transcript.errorMessage ??
+              "Something went wrong during transcription. Check backend logs and try again."}
           </p>
         </div>
       </div>

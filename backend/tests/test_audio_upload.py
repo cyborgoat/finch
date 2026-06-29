@@ -78,3 +78,57 @@ def test_upload_accepts_webm_with_codec_param(mock_run, client, sample_wav_bytes
     assert response.status_code == 200
     assert response.json()["mimeType"] == "audio/webm"
     assert response.json()["source"] == "recording"
+
+
+@patch("app.services.audio_service.subprocess.run")
+def test_upload_accepts_mp3_with_octet_stream(mock_run, client, sample_wav_bytes):
+    from pathlib import Path
+
+    def fake_ffmpeg(cmd, check, capture_output):
+        output_path = Path(cmd[-1])
+        output_path.write_bytes(sample_wav_bytes)
+        return type("Result", (), {"returncode": 0})()
+
+    mock_run.side_effect = fake_ffmpeg
+
+    response = client.post(
+        "/api/audio/upload",
+        data={"source": "upload"},
+        files={
+            "file": (
+                "recording.mp3",
+                BytesIO(b"fake-mp3-bytes"),
+                "application/octet-stream",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["mimeType"] == "audio/mpeg"
+
+
+@patch("app.services.audio_service.subprocess.run")
+def test_upload_accepts_audio_mp3(mock_run, client, sample_wav_bytes):
+    from pathlib import Path
+
+    def fake_ffmpeg(cmd, check, capture_output):
+        output_path = Path(cmd[-1])
+        output_path.write_bytes(sample_wav_bytes)
+        return type("Result", (), {"returncode": 0})()
+
+    mock_run.side_effect = fake_ffmpeg
+
+    response = client.post(
+        "/api/audio/upload",
+        data={"source": "upload"},
+        files={
+            "file": (
+                "recording.mp3",
+                BytesIO(b"fake-mp3-bytes"),
+                "audio/mp3",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["mimeType"] == "audio/mp3"

@@ -8,6 +8,13 @@ export type AudioAsset = {
   createdAt: string
 }
 
+export type SpeakerSegment = {
+  speaker: string
+  startSec: number
+  endSec: number
+  text: string
+}
+
 export type Transcript = {
   id: string
   audioAssetId: string
@@ -15,7 +22,10 @@ export type Transcript = {
   rawText: string
   editedText?: string | null
   language?: string | null
-  status: "draft" | "final" | "transcribing"
+  status: "draft" | "final" | "transcribing" | "failed"
+  speakerSegments?: SpeakerSegment[] | null
+  errorMessage?: string | null
+  processingNote?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -25,7 +35,18 @@ export type TranscriptSummary = {
   audioAssetId: string
   title: string
   language?: string | null
-  status: "draft" | "final" | "transcribing"
+  status: "draft" | "final" | "transcribing" | "failed"
+  errorMessage?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type DocumentSummary = {
+  id: string
+  transcriptId: string
+  title: string
+  type: Document["type"]
+  model: string
   createdAt: string
   updatedAt: string
 }
@@ -46,6 +67,12 @@ export type Document = {
   promptVersion: string
   createdAt: string
   updatedAt: string
+}
+
+export type AiActionTemplate = {
+  id: string
+  name: string
+  description: string
 }
 
 export type Job = {

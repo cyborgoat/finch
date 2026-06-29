@@ -3,9 +3,7 @@
 Living checklist aligned with [finch_sdd_spec.md](../finch_sdd_spec.md) Section 22 (Development Milestones).
 
 **Last updated:** 2026-06-29  
-**Overall:** Backend milestones 1–3 and frontend milestones 4–7 complete. Milestones 8–10 not started.
-
-Recent additions (2026-06-29): live recording waveform, `transcribing` placeholder status in transcript list, browser `audio/webm;codecs=opus` upload fix.
+**Overall:** Milestones 1–11 complete (MVP + speaker diarization). Post-MVP: real pyannote model tuning, production hardening.
 
 ---
 
@@ -127,49 +125,77 @@ Recent additions (2026-06-29): live recording waveform, `transcribing` placehold
 
 ---
 
-## Milestone 8: OpenRouter AI Actions — ⬜
+## Milestone 8: OpenRouter AI Actions — ✅
 
-| Task | Status |
-|------|--------|
-| LLM service | ⬜ |
-| AI action endpoints | ⬜ |
-| Prompt templates | ⬜ |
-| Document model + creation | ⬜ |
-| Job integration | ⬜ |
-| `LLM_MOCK` mode | ⬜ |
+| Task | Status | Notes |
+|------|--------|-------|
+| LLM service | ✅ | `llm_service.py`, OpenRouter + `LLM_MOCK` |
+| AI action endpoints | ✅ | `GET/POST /api/ai-actions` |
+| Prompt templates | ✅ | `backend/app/prompts/*.md` |
+| Document model + creation | ✅ | `Document` model, `document_service.py` |
+| Job integration | ✅ | `ai_action_worker.py`, job type `ai_action` |
+| `LLM_MOCK` mode | ✅ | CI-safe mock Markdown |
 
----
-
-## Milestone 9: Document Editor — ⬜
-
-| Task | Status |
-|------|--------|
-| Document list + detail | ⬜ |
-| Markdown editor + preview | ⬜ |
-| Copy / export MD | ⬜ |
+**Acceptance:** Run Markdown Summary or Action Items from transcript detail → document created.
 
 ---
 
-## Milestone 10: Polish and Stabilization — ⬜
+## Milestone 9: Document Editor — ✅
 
-| Task | Status |
-|------|--------|
-| Error messages / loading / empty states | 🚧 | Toasts, job failure UI, transcribing placeholders |
-| Motion primitives | ⬜ | |
-| Settings page | 🚧 | Health + privacy stub (Milestone 10 polish pending) |
-| Privacy notice in UI | 🚧 | Settings page stub |
-| Root README polish | ✅ | README + docs/ updated 2026-06-29 |
+| Task | Status | Notes |
+|------|--------|-------|
+| Document list + detail | ✅ | `/documents`, `/documents/[id]` |
+| Markdown editor + preview | ✅ | `DocumentEditor`, `MarkdownPreview` |
+| Copy / export MD | ✅ | Toolbar + `exportDocumentMd` |
+
+**Acceptance:** View, edit, preview, export generated Markdown.
+
+---
+
+## Milestone 10: Polish and Stabilization — ✅
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Error messages / loading / empty states | ✅ | Toasts, job failure UI, empty document states |
+| Motion primitives | ✅ | List fade-in via `motion` |
+| Settings page | ✅ | ASR, diarization, OpenRouter, privacy |
+| Privacy notice in UI | ✅ | Home + settings |
+| Root README polish | ✅ | Updated 2026-06-29 |
+
+---
+
+## Milestone 11: Speaker Diarization — ✅
+
+Local speaker diarization via [pyannote-audio](https://github.com/pyannote/pyannote-audio) — who spoke when, merged with ASR output.
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Add `pyannote-audio` dependency | ✅ | Lazy import; `uv add pyannote-audio` for real mode |
+| Hugging Face model access | ✅ | `HF_TOKEN` in `.env` |
+| `DiarizationService` | ✅ | `diarization_service.py` + mock mode |
+| Run diarization on normalized WAV | ✅ | Optional `DIARIZATION_USE_ORIGINAL_AUDIO` |
+| Per-segment ASR | ✅ | ffmpeg slice + Qwen3 per speaker segment |
+| Extend data model | ✅ | `speaker_segments` JSON on `Transcript` |
+| Job stage integration | ✅ | `running_diarization`, `running_asr_segment_*` |
+| `DIARIZATION_MOCK` mode | ✅ | CI tests without model download |
+| Frontend speaker labels | ✅ | Segment badges in editor, job stage labels |
+
+**Acceptance:** With `DIARIZATION_ENABLED=true`, multi-speaker audio produces labeled transcript. Default off preserves single-pass ASR.
+
+**Reference:** [pyannote/pyannote-audio](https://github.com/pyannote/pyannote-audio)
 
 ---
 
 ## Recommended next steps
 
-1. **Milestone 8** — OpenRouter LLM service, AI action endpoints, document model.
-2. **Milestone 9** — Document list/detail pages and Markdown editor.
-3. Keep `ASR_MOCK=true` in CI; use real ASR only for manual/local testing.
+1. Enable and validate real pyannote + Qwen3 diarization on multi-speaker recordings locally.
+2. Tune segment merge thresholds and diarization audio source (mono vs original).
+3. Production hardening: auth, deployment, observability (out of current MVP scope).
 
 ---
 
 ## Out of scope (per SDD)
 
-Real-time streaming ASR, speaker diarization, auth, cloud sync, PDF/DOCX export, mobile app, Obsidian plugin — see SDD Section 3.2.
+Real-time streaming ASR, auth, cloud sync, PDF/DOCX export, mobile app, Obsidian plugin — see SDD Section 3.2.
+
+Speaker diarization was originally out of scope in the SDD; it is now tracked as **Milestone 11** ([pyannote-audio](https://github.com/pyannote/pyannote-audio)).

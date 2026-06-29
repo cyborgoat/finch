@@ -1,10 +1,23 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_ENV_CANDIDATES = (_BACKEND_DIR / ".env", _BACKEND_DIR.parent / ".env")
+
+
+def _resolve_env_files() -> tuple[str, ...]:
+    existing = tuple(str(path) for path in _ENV_CANDIDATES if path.is_file())
+    return existing or (str(_BACKEND_DIR / ".env"),)
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=_resolve_env_files(),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     app_name: str = "Finch"
     app_env: str = "development"
@@ -26,6 +39,13 @@ class Settings(BaseSettings):
     asr_mock: bool = True
 
     llm_mock: bool = True
+
+    diarization_enabled: bool = False
+    diarization_mock: bool = True
+    diarization_pipeline_id: str = "pyannote/speaker-diarization-community-1"
+    diarization_use_original_audio: bool = False
+    diarization_use_exclusive: bool = True
+    hf_token: str | None = None
 
     max_upload_mb: int = 500
     max_audio_duration_seconds: int = 7200

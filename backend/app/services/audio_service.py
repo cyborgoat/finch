@@ -16,6 +16,7 @@ SUPPORTED_MIME_TYPES = {
     "audio/wav",
     "audio/x-wav",
     "audio/mpeg",
+    "audio/mp3",
     "audio/mp4",
     "audio/m4a",
     "audio/webm",
@@ -27,6 +28,7 @@ EXTENSION_BY_MIME = {
     "audio/wav": ".wav",
     "audio/x-wav": ".wav",
     "audio/mpeg": ".mp3",
+    "audio/mp3": ".mp3",
     "audio/mp4": ".m4a",
     "audio/m4a": ".m4a",
     "audio/webm": ".webm",
@@ -34,10 +36,35 @@ EXTENSION_BY_MIME = {
     "audio/flac": ".flac",
 }
 
+EXTENSION_TO_MIME = {
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".m4a": "audio/m4a",
+    ".mp4": "audio/mp4",
+    ".webm": "audio/webm",
+    ".ogg": "audio/ogg",
+    ".flac": "audio/flac",
+}
+
 
 def normalize_mime_type(mime_type: str) -> str:
     """Strip codec/parameters (e.g. audio/webm;codecs=opus → audio/webm)."""
     return mime_type.split(";", 1)[0].strip().lower()
+
+
+def resolve_mime_type(content_type: str | None, filename: str | None) -> str:
+    mime_type = normalize_mime_type(content_type or "")
+    if mime_type in SUPPORTED_MIME_TYPES:
+        return mime_type
+
+    guessed = mimetypes.guess_type(filename or "")[0]
+    if guessed:
+        normalized_guess = normalize_mime_type(guessed)
+        if normalized_guess in SUPPORTED_MIME_TYPES:
+            return normalized_guess
+
+    extension = Path(filename or "").suffix.lower()
+    return EXTENSION_TO_MIME.get(extension, mime_type)
 
 
 class AudioService:
@@ -61,9 +88,7 @@ class AudioService:
                 413,
             )
 
-        mime_type = normalize_mime_type(
-            file.content_type or mimetypes.guess_type(file.filename or "")[0] or ""
-        )
+        mime_type = resolve_mime_type(file.content_type, file.filename)
         if mime_type not in SUPPORTED_MIME_TYPES:
             raise AppError(
                 "AUDIO_UNSUPPORTED_TYPE",
