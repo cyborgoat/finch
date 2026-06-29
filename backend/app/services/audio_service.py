@@ -35,6 +35,11 @@ EXTENSION_BY_MIME = {
 }
 
 
+def normalize_mime_type(mime_type: str) -> str:
+    """Strip codec/parameters (e.g. audio/webm;codecs=opus → audio/webm)."""
+    return mime_type.split(";", 1)[0].strip().lower()
+
+
 class AudioService:
     def __init__(self, session: Session, settings: Settings | None = None) -> None:
         self.session = session
@@ -56,7 +61,9 @@ class AudioService:
                 413,
             )
 
-        mime_type = file.content_type or mimetypes.guess_type(file.filename or "")[0] or ""
+        mime_type = normalize_mime_type(
+            file.content_type or mimetypes.guess_type(file.filename or "")[0] or ""
+        )
         if mime_type not in SUPPORTED_MIME_TYPES:
             raise AppError(
                 "AUDIO_UNSUPPORTED_TYPE",

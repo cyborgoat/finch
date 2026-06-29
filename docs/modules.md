@@ -1,6 +1,6 @@
 # Backend Modules
 
-Reference for the `backend/app/` package. Only backend milestones 1–3 exist today.
+Reference for the `backend/app/` package. Backend milestones 1–3 are complete; the Next.js frontend (milestones 4–7) lives in `frontend/`.
 
 ## Package map
 
@@ -73,7 +73,7 @@ Shared base: `CamelModel` in `schemas/__init__.py` using `alias_generator=to_cam
 
 ### `audio_service.py`
 
-- Validates MIME type and file size
+- Validates MIME type (strips codec parameters, e.g. `audio/webm;codecs=opus` → `audio/webm`) and file size
 - Saves originals under `data/audio/original/{id}.{ext}`
 - Normalizes via ffmpeg to 16 kHz mono WAV
 - Extracts duration with librosa
@@ -92,7 +92,7 @@ Creates and updates `Job` records (`queued` → `processing` → `completed`/`fa
 
 ### `transcript_service.py`
 
-CRUD for transcripts. List endpoint omits full text fields (summary only).
+CRUD for transcripts. `create_transcript` accepts an optional `status` (used for `transcribing` placeholders). List endpoint omits full text fields (summary only).
 
 ## `storage/`
 
@@ -115,9 +115,9 @@ Runs in FastAPI `BackgroundTasks` after `POST /api/transcripts`:
 
 1. `loading_model` — `AsrService.load_model()`
 2. `running_asr` — transcribe normalized path (chunk progress in stage name)
-3. `saving_transcript` — create `Transcript`, set `job.result_id`
+3. `saving_transcript` — update placeholder `Transcript` with `rawText`, set `status=draft`
 
-Uses a fresh DB session via `get_engine()` (not the request session).
+On failure, deletes the placeholder transcript. Uses a fresh DB session via `get_engine()` (not the request session).
 
 ## `scripts/`
 
@@ -131,7 +131,7 @@ Uses a fresh DB session via `get_engine()` (not the request session).
 |------|--------|
 | `test_health.py` | Health endpoint |
 | `test_audio_upload.py` | Upload validation + storage (mocked ffmpeg) |
-| `test_transcript_api.py` | End-to-end upload → job → transcript (mocked ASR) |
+| `test_transcript_api.py` | End-to-end upload → job → transcript; transcribing placeholder (mocked ASR) |
 
 Fixtures: `tests/fixtures/sample.wav`, `conftest.py` with temp DB and dirs.
 
@@ -139,7 +139,6 @@ Fixtures: `tests/fixtures/sample.wav`, `conftest.py` with temp DB and dirs.
 
 | Milestone | Modules to add |
 |-----------|----------------|
-| 4–7 Frontend | `frontend/` — pages, hooks, API client |
 | 8 AI actions | `models/document.py`, `services/llm_service.py`, `services/ai_action_service.py`, `workers/ai_action_worker.py`, `prompts/*.md` |
-| 9 Documents | Document routes + frontend editor |
-| 10 Polish | Error UX, settings page, README polish |
+| 9 Documents | Document routes + frontend editor pages |
+| 10 Polish | Motion UI, full settings, empty-state illustrations |

@@ -36,17 +36,31 @@ def create_transcript_job(
     session: Session = Depends(get_session),
 ) -> CreateTranscriptResponse:
     audio_service = AudioService(session)
-    audio_service.get_audio(payload.audio_asset_id)
+    audio_asset = audio_service.get_audio(payload.audio_asset_id)
+
+    title = audio_asset.filename.rsplit(".", 1)[0] or "Untitled Transcript"
+    transcript_service = TranscriptService(session)
+    transcript = transcript_service.create_transcript(
+        audio_asset_id=audio_asset.id,
+        title=title,
+        raw_text="",
+        status="transcribing",
+    )
 
     job_service = JobService(session)
     job = job_service.create_job("transcription")
+    job_service.update_job(job, result_id=transcript.id)
     background_tasks.add_task(
         run_transcription_job,
         job.id,
         payload.audio_asset_id,
         payload.language,
     )
-    return CreateTranscriptResponse(job_id=job.id, status=job.status)
+    return CreateTranscriptResponse(
+        job_id=job.id,
+        transcript_id=transcript.id,
+        status=job.status,
+    )
 
 
 @router.get("", response_model=TranscriptListResponse)

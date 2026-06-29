@@ -10,6 +10,7 @@ class CreateTranscriptRequest(CamelModel):
 
 class CreateTranscriptResponse(CamelModel):
     job_id: str
+    transcript_id: str
     status: str
 
 

@@ -66,7 +66,7 @@ curl -X POST http://localhost:8000/api/transcripts \
   -d '{"audioAssetId": "audio_abc123", "language": "auto"}'
 ```
 
-Returns `jobId`.
+Returns `jobId` and `transcriptId`. A placeholder transcript with `status: "transcribing"` is created immediately and appears in `GET /api/transcripts` while the job runs.
 
 ### Poll job status
 
@@ -127,7 +127,20 @@ uv run huggingface-cli download Qwen/Qwen3-ASR-1.7B --local-dir ./data/models/Qw
 
 Then set `ASR_MODEL_ID=./data/models/Qwen3-ASR-1.7B`.
 
-## 6. Run tests
+## 6. Run the frontend
+
+With the backend running on port 8000:
+
+```bash
+cd frontend
+cp .env.local.example .env.local
+npm install
+npm run dev
+```
+
+Open http://localhost:3000. Use **Upload** or **Record** to transcribe audio; view and edit results under **Transcripts**. In-progress jobs appear in the list with a **Transcribing…** status until complete.
+
+## 7. Run tests
 
 ```bash
 cd backend
@@ -143,4 +156,5 @@ Tests use `ASR_MOCK=true` and mock ffmpeg; no model download required.
 | `ffmpeg is not installed` | Install ffmpeg (`brew install ffmpeg` on macOS) |
 | Hugging Face permission error | Set `HF_HOME=./data/hf_cache` inside `backend/` |
 | `Invalid buffer size` on long audio | Long files are chunked automatically (45s segments) |
+| `Unsupported audio type: audio/webm;codecs=opus` | Fixed server-side; restart backend if you see this on recordings |
 | Slow transcription | Expected for long files on CPU/MPS; ~100 chunks for 75 min audio |

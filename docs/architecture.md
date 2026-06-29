@@ -43,7 +43,7 @@ Document (not implemented)
 | Entity | Purpose |
 |--------|---------|
 | `AudioAsset` | Uploaded or recorded file metadata + paths to original/normalized WAV |
-| `Transcript` | `rawText` from ASR, optional `editedText`, status draft/final |
+| `Transcript` | `rawText` from ASR, optional `editedText`, status `draft` / `final` / `transcribing` |
 | `Job` | Async work unit (`transcription`, `ai_action` later) with progress/stage |
 | `Document` | LLM-generated Markdown (planned) |
 
@@ -70,13 +70,16 @@ Normalization runs **synchronously on upload** so transcription only runs ASR.
 
 ```txt
 POST /api/transcripts { audioAssetId }
-  → create Job (queued)
+  → create Transcript placeholder (status=transcribing, empty rawText)
+  → create Job (queued), resultId = transcript.id
   → BackgroundTasks → transcription_worker
        → load Qwen3-ASR (lazy)
        → transcribe normalized WAV
-       → create Transcript
-       → Job completed, resultId = transcript.id
+       → update Transcript (rawText, status=draft)
+       → Job completed
 ```
+
+On failure, the placeholder transcript is removed.
 
 Client polls `GET /api/jobs/{id}` every ~1s (frontend; CLI script does the same).
 
@@ -101,7 +104,7 @@ Files longer than 60 seconds are split into **45-second chunks** in `AsrService`
 | POST | `/api/audio/upload` | Upload + normalize |
 | GET | `/api/audio/{id}` | Audio metadata |
 | DELETE | `/api/audio/{id}` | Delete audio files + record |
-| POST | `/api/transcripts` | Start transcription job |
+| POST | `/api/transcripts` | Start transcription job; returns `jobId` + `transcriptId` |
 | GET | `/api/transcripts` | List transcripts (summary) |
 | GET | `/api/transcripts/{id}` | Full transcript |
 | PATCH | `/api/transcripts/{id}` | Update title, editedText, status |
@@ -128,12 +131,23 @@ Not implemented: `/api/ai-actions`, `/api/documents`.
 | Backend | FastAPI, uv, SQLModel, SQLite |
 | ASR | `qwen-asr`, PyTorch, Qwen3-ASR-1.7B |
 | Audio | ffmpeg, librosa |
-| Frontend | Next.js, Tailwind, shadcn/ui (planned) |
+| Frontend | Next.js 16, Tailwind v4, shadcn/ui, TanStack Query |
 | LLM | OpenRouter (planned) |
+
+## Frontend (implemented)
+
+```mermaid
+flowchart LR
+    pages[App Router pages] --> hooks[Hooks + TanStack Query]
+    hooks --> apiClient[lib/api.ts]
+    apiClient --> fastapi[FastAPI :8000]
+```
+
+Key UX: upload/record flows poll jobs; transcript list auto-refreshes while any item has `status: transcribing`; record page shows a live waveform via Web Audio API.
 
 ## Deployment notes (MVP)
 
 - Single process: FastAPI + in-process `BackgroundTasks` (no Redis/Celery)
 - Job polling from clients (no WebSockets)
-- CORS enabled for `http://localhost:3000` (future frontend)
+- CORS enabled for `http://localhost:3000` (Next.js frontend)
 - Mock modes: `ASR_MOCK`, `LLM_MOCK` (LLM not wired yet)

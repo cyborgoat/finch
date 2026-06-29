@@ -63,7 +63,7 @@ The model is loaded lazily on the first transcription request.
 - `POST /api/audio/upload`
 - `GET /api/audio/{id}`
 - `DELETE /api/audio/{id}`
-- `POST /api/transcripts`
+- `POST /api/transcripts` — returns `jobId` + `transcriptId`; creates a `transcribing` placeholder
 - `GET /api/transcripts`
 - `GET /api/transcripts/{id}`
 - `PATCH /api/transcripts/{id}`

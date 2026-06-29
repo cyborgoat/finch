@@ -56,12 +56,18 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
             )
 
             job_service.update_job(job, progress=0.8, stage="saving_transcript")
-            title = audio_asset.filename.rsplit(".", 1)[0] or "Untitled Transcript"
-            transcript = transcript_service.create_transcript(
-                audio_asset_id=audio_asset.id,
-                title=title,
+            if not job.result_id:
+                raise AppError(
+                    "TRANSCRIPT_NOT_FOUND",
+                    "Transcript placeholder is missing for this job.",
+                    500,
+                )
+            transcript = transcript_service.get_transcript(job.result_id)
+            transcript_service.update_transcript(
+                transcript,
                 raw_text=result.text,
                 language=result.language,
+                status="draft",
             )
 
             job_service.update_job(
@@ -72,6 +78,12 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
                 result_id=transcript.id,
             )
         except AppError as exc:
+            if job.result_id:
+                try:
+                    transcript = transcript_service.get_transcript(job.result_id)
+                    transcript_service.delete_transcript(transcript)
+                except AppError:
+                    pass
             job_service.update_job(
                 job,
                 status="failed",
@@ -79,6 +91,12 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
                 error=exc.message,
             )
         except Exception as exc:
+            if job.result_id:
+                try:
+                    transcript = transcript_service.get_transcript(job.result_id)
+                    transcript_service.delete_transcript(transcript)
+                except AppError:
+                    pass
             job_service.update_job(
                 job,
                 status="failed",

@@ -20,6 +20,7 @@ class TranscriptService:
         title: str,
         raw_text: str,
         language: str | None = None,
+        status: str = "draft",
     ) -> Transcript:
         now = datetime.now(UTC)
         transcript = Transcript(
@@ -28,7 +29,7 @@ class TranscriptService:
             title=title,
             raw_text=raw_text,
             language=language,
-            status="draft",
+            status=status,
             created_at=now,
             updated_at=now,
         )
@@ -52,11 +53,17 @@ class TranscriptService:
         transcript: Transcript,
         *,
         title: str | None = None,
+        raw_text: str | None = None,
+        language: str | None = None,
         edited_text: str | None = None,
         status: str | None = None,
     ) -> Transcript:
         if title is not None:
             transcript.title = title
+        if raw_text is not None:
+            transcript.raw_text = raw_text
+        if language is not None:
+            transcript.language = language
         if edited_text is not None:
             transcript.edited_text = edited_text
         if status is not None:
