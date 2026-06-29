@@ -216,3 +216,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Finch runtime data
+data/
+backend/data/
+backend/*.db
+backend/.env
+finch.db
+
+# Local editor / OS
+.DS_Store
+.vscode/
+
+# Node / Next.js (future frontend)
+node_modules/
+.next/
+out/
+dist/
