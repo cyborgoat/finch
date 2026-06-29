@@ -41,12 +41,16 @@ Full product spec: [finch_sdd_spec.md](finch_sdd_spec.md)
 
 ### Backend
 
+Copy [`.env.example`](.env.example) to **repo root `.env`** or `backend/.env` (both are loaded):
+
 ```bash
+cp .env.example .env          # repo root (recommended)
 cd backend
-cp .env.example .env
 uv sync
 uv run uvicorn app.main:app --reload
 ```
+
+Watch the uvicorn terminal on startup for the configuration summary (ASR/diarization/LLM status and dependency checks).
 
 ### Frontend
 
@@ -76,7 +80,7 @@ cd backend && uv run pytest
 | `LLM_MOCK` | Mock OpenRouter responses |
 | `OPENROUTER_API_KEY` | Real LLM actions |
 
-See [backend/.env.example](backend/.env.example) for all options.
+See [`.env.example`](.env.example) and [backend/.env.example](backend/.env.example) for all options.
 
 ## Privacy
 

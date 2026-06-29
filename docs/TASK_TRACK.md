@@ -75,7 +75,7 @@ Living checklist aligned with [finch_sdd_spec.md](../finch_sdd_spec.md) Section 
 | Add Tailwind | ✅ | Tailwind v4 |
 | Add shadcn/ui | ✅ | button, card, input, textarea, badge, progress, separator, skeleton, sonner |
 | Add app shell | ✅ | `AppShell`, `Sidebar`, `Topbar` with health indicator |
-| Add pages (stubs) | ✅ | All routes; documents stubbed for M9 |
+| Add pages | ✅ | All routes wired (documents completed in M9) |
 | Add API client | ✅ | `lib/api.ts`, `lib/types.ts`, TanStack Query provider |
 
 **Acceptance:** `npm run dev` loads; navigation works; home page shows backend health.
@@ -115,11 +115,12 @@ Living checklist aligned with [finch_sdd_spec.md](../finch_sdd_spec.md) Section 
 | Task | Status | Notes |
 |------|--------|-------|
 | Transcripts list page | ✅ | Search/filter, delete with confirmation |
-| Transcript detail page | ✅ | Two-column layout with AI stub panel |
+| Transcript detail page | ✅ | Two-column layout: editor + `AiActionPanel` + linked documents |
 | Editable transcript | ✅ | `TranscriptEditor` |
 | Save edits (PATCH) | ✅ | `TranscriptToolbar` |
 | Copy / export TXT / MD | ✅ | `lib/export.ts` |
 | In-progress transcript status | ✅ | `transcribing` placeholder + list auto-refresh |
+| Failed transcript status | ✅ | `status=failed` + `errorMessage`; item kept in list |
 
 **Acceptance:** List, open, edit, save, copy, export TXT/MD, delete transcripts. Pending jobs show “Transcribing…” in the list.
 
@@ -179,8 +180,10 @@ Local speaker diarization via [pyannote-audio](https://github.com/pyannote/pyann
 | Job stage integration | ✅ | `running_diarization`, `running_asr_segment_*` |
 | `DIARIZATION_MOCK` mode | ✅ | CI tests without model download |
 | Frontend speaker labels | ✅ | Segment badges in editor, job stage labels |
+| Startup diagnostics | ✅ | Config summary + HF access check on boot |
+| Failed job retention | ✅ | Transcript not deleted; `errorMessage` stored |
 
-**Acceptance:** With `DIARIZATION_ENABLED=true`, multi-speaker audio produces labeled transcript. Default off preserves single-pass ASR.
+**Acceptance:** With `DIARIZATION_ENABLED=true` and valid HF access, multi-speaker audio produces labeled transcript. Default off preserves single-pass ASR.
 
 **Reference:** [pyannote/pyannote-audio](https://github.com/pyannote/pyannote-audio)
 
