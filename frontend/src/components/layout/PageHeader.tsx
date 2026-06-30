@@ -37,7 +37,7 @@ export function PageHeader({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="field-stack min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="page-title">{title}</h1>
+            <h1 className="page-title-display">{title}</h1>
             {badge}
           </div>
           {description ? <p className="section-hint">{description}</p> : null}

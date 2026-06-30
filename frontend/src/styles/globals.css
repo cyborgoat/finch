@@ -135,6 +135,9 @@
   .page-title {
     @apply text-2xl font-semibold tracking-tight text-foreground;
   }
+  .page-title-display {
+    @apply text-2xl font-medium tracking-tight text-foreground;
+  }
   .section-label {
     @apply text-sm font-medium text-foreground;
   }
@@ -142,10 +145,10 @@
     @apply text-sm leading-relaxed text-muted-foreground;
   }
   .page-stack {
-    @apply space-y-8;
+    @apply space-y-10 md:space-y-12;
   }
   .section-stack {
-    @apply space-y-6;
+    @apply space-y-8;
   }
   .field-stack {
     @apply space-y-3;

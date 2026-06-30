@@ -121,7 +121,7 @@ function DocumentDetailPage() {
 
   if (isLoading) {
     return (
-      <PageContainer size="detail">
+      <PageContainer size="wide">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="mt-8 h-96 w-full" />
       </PageContainer>
@@ -130,14 +130,14 @@ function DocumentDetailPage() {
 
   if (!document) {
     return (
-      <PageContainer size="detail">
+      <PageContainer size="wide">
         <p className="text-muted-foreground">Document not found.</p>
       </PageContainer>
     )
   }
 
   return (
-    <PageContainer size="detail">
+    <PageContainer size="wide">
       <DocumentDetailEditor
         key={`${document.id}-${document.updatedAt}`}
         document={document}

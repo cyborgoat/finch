@@ -91,7 +91,7 @@ export function TranscriptAiTab({
   const templates = data?.items ?? []
 
   return (
-    <BlurFade className="section-stack max-w-3xl">
+    <BlurFade className="section-stack">
       {!llmReady ? (
         <div className="surface-card text-sm text-muted-foreground">
           LLM actions are not configured. Set{" "}

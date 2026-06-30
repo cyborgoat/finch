@@ -71,18 +71,19 @@ function SettingsPage() {
   }
 
   return (
-    <PageContainer size="list">
-      <BlurFade className="section-stack max-w-2xl">
+    <PageContainer size="wide">
+      <BlurFade className="section-stack">
         <PageHeader
           title="Settings"
           description="Local configuration and privacy information."
         />
 
-        <Card className="rounded-xl border bg-card/50">
-          <CardHeader>
-            <CardTitle className="text-base">Backend status</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center gap-2 text-sm">
+        <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
+          <Card className="rounded-xl border bg-card/50">
+            <CardHeader>
+              <CardTitle className="text-base">Backend status</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center gap-2 px-8 pb-8 text-sm">
             {isLoading ? (
               <span className="text-muted-foreground">Checking…</span>
             ) : isError ? (
@@ -96,11 +97,11 @@ function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border bg-card/50">
-          <CardHeader>
-            <CardTitle className="text-base">ASR model</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <Card className="rounded-xl border bg-card/50">
+            <CardHeader>
+              <CardTitle className="text-base">ASR model</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 px-8 pb-8 text-sm text-muted-foreground">
             {data?.capabilities ? (
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={data.capabilities.asrMock ? "secondary" : "default"}>
@@ -116,11 +117,11 @@ function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border bg-card/50">
-          <CardHeader>
-            <CardTitle className="text-base">Speaker diarization</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <Card className="rounded-xl border bg-card/50">
+            <CardHeader>
+              <CardTitle className="text-base">Speaker diarization</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 px-8 pb-8 text-sm text-muted-foreground">
             {data?.capabilities ? (
               <>
                 <div className="flex flex-wrap items-center gap-2">
@@ -152,78 +153,11 @@ function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border bg-card/50">
-          <CardHeader>
-            <CardTitle className="text-base">Speaker memory</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
-            {memoryStatus ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={memoryStatus.enabled ? "default" : "secondary"}>
-                  {memoryStatus.enabled ? "Enabled" : "Disabled"}
-                </Badge>
-                <Badge variant={memoryStatus.consentGiven ? "default" : "outline"}>
-                  {memoryStatus.consentGiven ? "Consent given" : "Consent required"}
-                </Badge>
-                {memoryStatus.ready ? (
-                  <Badge variant="default">Ready</Badge>
-                ) : (
-                  <Badge variant="secondary">Not ready</Badge>
-                )}
-              </div>
-            ) : null}
-            {memoryStatus?.reason && (
-              <p className="text-amber-700 dark:text-amber-400">{memoryStatus.reason}</p>
-            )}
-            <p>
-              Remember speaker names across transcripts using local voice embeddings.
-              Enable here, then click speaker labels on any transcript turn to assign names
-              and update voiceprints. Requires diarization.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant={memoryStatus?.enabled ? "secondary" : "default"}
-                disabled={toggleMemory.isPending}
-                onClick={() => void handleToggle(!memoryStatus?.enabled)}
-              >
-                {memoryStatus?.enabled ? "Disable speaker memory" : "Enable speaker memory"}
-              </Button>
-              <DeleteConfirmDialog
-                title="Delete all voiceprints?"
-                description="Delete all speaker profiles and voiceprints? This cannot be undone."
-                triggerLabel="Delete all voiceprints"
-                confirmLabel="Delete all"
-                onConfirm={() => {
-                  void deleteAllData.mutateAsync().then(() => {
-                    toast.success("All speaker memory data deleted")
-                  })
-                }}
-                isPending={deleteAllData.isPending}
-              />
-            </div>
-            <div className="space-y-2">
-              <p className="font-medium text-foreground">Voice profiles</p>
-              <ScrollArea className="max-h-[420px] pr-3">
-                <SpeakerProfileManager
-                  profiles={profilesData?.items ?? []}
-                  isDeleting={deleteProfile.isPending}
-                  onDelete={(profileId, displayName) => {
-                    void deleteProfile.mutateAsync(profileId).then(() => {
-                      toast.success(`Deleted ${displayName}`)
-                    })
-                  }}
-                />
-              </ScrollArea>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl border bg-card/50">
-          <CardHeader>
-            <CardTitle className="text-base">OpenRouter / LLM</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <Card className="rounded-xl border bg-card/50">
+            <CardHeader>
+              <CardTitle className="text-base">OpenRouter / LLM</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 px-8 pb-8 text-sm text-muted-foreground">
             {data?.capabilities ? (
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={data.capabilities.llmMock ? "secondary" : "default"}>
@@ -251,16 +185,84 @@ function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border bg-card/50">
-          <CardHeader>
-            <CardTitle className="text-base">Privacy</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
+          <Card className="rounded-xl border bg-card/50 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base">Speaker memory</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 px-8 pb-8 text-sm text-muted-foreground">
+              {memoryStatus ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={memoryStatus.enabled ? "default" : "secondary"}>
+                    {memoryStatus.enabled ? "Enabled" : "Disabled"}
+                  </Badge>
+                  <Badge variant={memoryStatus.consentGiven ? "default" : "outline"}>
+                    {memoryStatus.consentGiven ? "Consent given" : "Consent required"}
+                  </Badge>
+                  {memoryStatus.ready ? (
+                    <Badge variant="default">Ready</Badge>
+                  ) : (
+                    <Badge variant="secondary">Not ready</Badge>
+                  )}
+                </div>
+              ) : null}
+              {memoryStatus?.reason && (
+                <p className="text-amber-700 dark:text-amber-400">{memoryStatus.reason}</p>
+              )}
+              <p>
+                Remember speaker names across transcripts using local voice embeddings.
+                Enable here, then click speaker labels on any transcript turn to assign names
+                and update voiceprints. Requires diarization.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant={memoryStatus?.enabled ? "secondary" : "default"}
+                  disabled={toggleMemory.isPending}
+                  onClick={() => void handleToggle(!memoryStatus?.enabled)}
+                >
+                  {memoryStatus?.enabled ? "Disable speaker memory" : "Enable speaker memory"}
+                </Button>
+                <DeleteConfirmDialog
+                  title="Delete all voiceprints?"
+                  description="Delete all speaker profiles and voiceprints? This cannot be undone."
+                  triggerLabel="Delete all voiceprints"
+                  confirmLabel="Delete all"
+                  onConfirm={() => {
+                    void deleteAllData.mutateAsync().then(() => {
+                      toast.success("All speaker memory data deleted")
+                    })
+                  }}
+                  isPending={deleteAllData.isPending}
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="font-medium text-foreground">Voice profiles</p>
+                <ScrollArea className="max-h-[420px] pr-3">
+                  <SpeakerProfileManager
+                    profiles={profilesData?.items ?? []}
+                    isDeleting={deleteProfile.isPending}
+                    onDelete={(profileId, displayName) => {
+                      void deleteProfile.mutateAsync(profileId).then(() => {
+                        toast.success(`Deleted ${displayName}`)
+                      })
+                    }}
+                  />
+                </ScrollArea>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-xl border bg-card/50 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base">Privacy</CardTitle>
+            </CardHeader>
+            <CardContent className="px-8 pb-8 text-sm text-muted-foreground">
             Audio stays on your machine for transcription and optional diarization.
             Speaker voiceprints are stored locally only when you consent. LLM features
             are optional and only process text you explicitly send via AI actions.
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         <SpeakerConsentDialog
           open={consentOpen}

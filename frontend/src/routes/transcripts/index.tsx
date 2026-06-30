@@ -54,7 +54,7 @@ function TranscriptsPage() {
   }
 
   return (
-    <PageContainer size="list">
+    <PageContainer size="wide">
       <PageHeader
         title="Transcripts"
         description="Browse and manage your transcribed audio."

@@ -71,7 +71,7 @@ function TranscriptDetailPage() {
 
   if (isLoading) {
     return (
-      <PageContainer size="detail">
+      <PageContainer size="wide">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="mt-8 h-10 w-48" />
         <Skeleton className="mt-6 h-96 w-full" />
@@ -81,7 +81,7 @@ function TranscriptDetailPage() {
 
   if (!transcript) {
     return (
-      <PageContainer size="detail">
+      <PageContainer size="wide">
         <p className="text-muted-foreground">Transcript not found.</p>
       </PageContainer>
     )
@@ -89,7 +89,7 @@ function TranscriptDetailPage() {
 
   if (transcript.status === "transcribing") {
     return (
-      <PageContainer size="detail">
+      <PageContainer size="wide">
         <PageHeader
           backHref="/transcripts"
           backLabel="Transcripts"
@@ -112,7 +112,7 @@ function TranscriptDetailPage() {
 
   if (transcript.status === "failed") {
     return (
-      <PageContainer size="detail">
+      <PageContainer size="wide">
         <PageHeader
           backHref="/transcripts"
           backLabel="Transcripts"
@@ -132,7 +132,7 @@ function TranscriptDetailPage() {
   }
 
   return (
-    <PageContainer size="detail">
+    <PageContainer size="wide">
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
         <TranscriptDetailEditor key={transcript.id} transcript={transcript} />
       </Suspense>

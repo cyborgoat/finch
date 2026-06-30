@@ -54,16 +54,18 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 | `/record` | Browser recording with live waveform |
 | `/transcripts` | Transcript library table (search, sort, length, rename, delete) |
 | `/transcripts/$id` | Player, current turn, **Transcript** tab (edit) and **AI** tab (actions + documents) |
-| `/documents` | Document library |
+| `/documents` | Document library table (search, sort, delete) |
 | `/documents/$id` | Markdown editor + preview + export |
 | `/settings` | Health, diarization, speaker memory profiles, privacy |
 
 ## Key UI behavior
 
+- **Layout:** wide `max-w-6xl` pages with generous spacing; upload/record use a centered content column inside the wide shell; settings uses a two-column card grid on large screens
 - **Sidebar:** **New** dropdown (Record voice / Upload audio); Home, Transcripts, Documents, Settings
 - **Home:** recent transcripts only, sorted by last updated
-- **Transcript lists:** TanStack Table with title, date, length, language; row styling reflects status (transcribing / failed) without a status column
-- **List actions:** ellipsis menu on each row for rename and delete (home and `/transcripts`)
+- **Library tables:** TanStack Table for transcripts and documents (title, date, type/length, ellipsis actions)
+- **Transcript lists:** row styling reflects status (transcribing / failed) without a status column
+- **List actions:** ellipsis menu on each row for rename/delete (transcripts) or delete (documents)
 - **Transcribing:** list and detail pages poll while `status=transcribing`
 - **Failed jobs:** transcript stays visible with error message (not removed)
 - **Transcript tab:** toolbar, title, full transcript (text or segments toggle)

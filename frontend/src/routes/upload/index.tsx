@@ -96,8 +96,8 @@ function UploadPage() {
   }
 
   return (
-    <PageContainer size="list">
-      <BlurFade className="section-stack max-w-2xl">
+    <PageContainer size="wide" contentWidth="content">
+      <BlurFade className="section-stack">
         <PageHeader
           title="Upload audio"
           description="Upload an existing file and transcribe it locally."

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
-import { DocumentList } from "@/components/documents/DocumentList"
+import { DocumentTable } from "@/components/documents/DocumentTable"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Input } from "@/components/ui/input"
@@ -37,7 +37,7 @@ function DocumentsPage() {
   }
 
   return (
-    <PageContainer size="list">
+    <PageContainer size="wide">
       <PageHeader
         title="Documents"
         description="AI-generated Markdown from your transcripts."
@@ -52,12 +52,13 @@ function DocumentsPage() {
       />
 
       {isLoading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
+        <Skeleton className="h-48 w-full rounded-xl" />
       ) : (
-        <DocumentList items={items} onDelete={(id) => void handleDelete(id)} />
+        <DocumentTable
+          items={items}
+          onDelete={(id) => void handleDelete(id)}
+          isDeleting={deleteMutation.isPending}
+        />
       )}
     </PageContainer>
   )

@@ -14,7 +14,7 @@ export function TranscriptEditor({
   disabled,
 }: TranscriptEditorProps) {
   return (
-    <div className="section-stack max-w-3xl">
+    <div className="section-stack">
       <Section title="Title">
         <Input
           id="transcript-title"

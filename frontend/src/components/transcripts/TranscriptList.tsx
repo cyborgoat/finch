@@ -41,24 +41,22 @@ function SortableHeader({
   label,
   sorted,
   onToggle,
-  large,
 }: {
   label: string
   sorted: false | "asc" | "desc"
   onToggle: (event: unknown) => void
-  large?: boolean
 }) {
   const Icon = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown
 
   return (
     <Button
       variant="ghost"
-      size={large ? "default" : "sm"}
-      className={cn("-ml-2", large ? "h-10 text-base font-normal" : "h-8 font-medium")}
+      size="default"
+      className="-ml-2 h-10 text-base font-normal"
       onClick={onToggle}
     >
       {label}
-      <Icon className={cn("text-muted-foreground", large ? "size-4" : "size-3.5")} />
+      <Icon className="size-4 text-muted-foreground" />
     </Button>
   )
 }
@@ -85,40 +83,27 @@ function useTranscriptColumns(
           const isFailed = item.status === "failed"
 
           return (
-            <div className="min-w-[12rem] max-w-md whitespace-normal">
+            <div className="min-w-48 max-w-md whitespace-normal">
               {isTranscribing ? (
-                <span
-                  className={cn(
-                    "text-muted-foreground",
-                    isRecent ? "text-base font-light" : "font-medium",
-                  )}
-                >
+                <span className="text-base font-light text-muted-foreground">
                   {item.title}
                 </span>
               ) : (
                 <Link
                   to="/transcripts/$id"
                   params={{ id: item.id }}
-                  className={cn(
-                    "hover:underline",
-                    isRecent ? "text-base font-light" : "font-medium",
-                  )}
+                  className="text-base font-light hover:underline"
                 >
                   {item.title}
                 </Link>
               )}
               {isTranscribing ? (
-                <p
-                  className={cn(
-                    "mt-1.5 leading-relaxed text-muted-foreground",
-                    isRecent ? "text-sm font-light" : "text-xs",
-                  )}
-                >
+                <p className="mt-1.5 text-sm font-light leading-relaxed text-muted-foreground">
                   Transcription is running locally. This usually takes a moment.
                 </p>
               ) : null}
               {isFailed && item.errorMessage ? (
-                <p className={cn("mt-1.5 text-destructive", isRecent ? "text-sm font-light" : "text-xs")}>
+                <p className="mt-1.5 text-sm font-light text-destructive">
                   {item.errorMessage}
                 </p>
               ) : null}
@@ -133,12 +118,7 @@ function useTranscriptColumns(
         accessorFn: (row) =>
           new Date(isRecent ? row.updatedAt : row.createdAt).getTime(),
         cell: ({ row }) => (
-          <span
-            className={cn(
-              "text-muted-foreground",
-              isRecent && "text-base font-light",
-            )}
-          >
+          <span className="text-base font-light text-muted-foreground">
             {new Date(
               isRecent ? row.original.updatedAt : row.original.createdAt,
             ).toLocaleString()}
@@ -150,20 +130,11 @@ function useTranscriptColumns(
         header: "Length",
         enableSorting: !isRecent,
         accessorFn: (row) => row.durationSeconds ?? -1,
-        cell: ({ row }) => {
-          const item = row.original
-
-          return (
-            <span
-              className={cn(
-                "tabular-nums text-muted-foreground",
-                isRecent && "text-base font-light",
-              )}
-            >
-              {formatDuration(item.durationSeconds ?? undefined)}
-            </span>
-          )
-        },
+        cell: ({ row }) => (
+          <span className="tabular-nums text-base font-light text-muted-foreground">
+            {formatDuration(row.original.durationSeconds ?? undefined)}
+          </span>
+        ),
       },
       {
         id: "language",
@@ -172,11 +143,11 @@ function useTranscriptColumns(
         accessorFn: (row) => row.language ?? "",
         cell: ({ row }) =>
           row.original.language ? (
-            <Badge variant="secondary" className={cn(isRecent && "text-sm font-normal")}>
+            <Badge variant="secondary" className="text-sm font-normal">
               {row.original.language}
             </Badge>
           ) : (
-            <span className={cn("text-muted-foreground", isRecent && "text-base font-light")}>—</span>
+            <span className="text-base font-light text-muted-foreground">—</span>
           ),
       },
       ...(onRename || onDelete
@@ -260,8 +231,8 @@ export function TranscriptTable({
   }
 
   return (
-    <div className={cn("rounded-xl bg-card/50", !isRecent && "border")}>
-      <Table className={cn(isRecent && "text-base font-light")}>
+    <div className="overflow-x-auto rounded-xl bg-card/50">
+      <Table className="text-base font-light">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
@@ -272,15 +243,12 @@ export function TranscriptTable({
                 return (
                   <TableHead
                     key={header.id}
-                    className={cn(
-                      isRecent && "h-12 px-4 text-base font-normal text-muted-foreground",
-                    )}
+                    className="h-12 px-4 text-base font-normal text-muted-foreground"
                   >
                     {header.isPlaceholder ? null : canSort ? (
                       <SortableHeader
                         label={String(header.column.columnDef.header)}
                         sorted={sorted}
-                        large={isRecent}
                         onToggle={
                           header.column.getToggleSortingHandler() ??
                           (() => undefined)
@@ -305,7 +273,7 @@ export function TranscriptTable({
               <TableRow
                 key={row.id}
                 className={cn(
-                  isRecent && "h-16",
+                  "h-16",
                   isTranscribing && "bg-muted/20 hover:bg-muted/25",
                   isFailed && "bg-destructive/5 hover:bg-destructive/10",
                 )}
@@ -314,8 +282,8 @@ export function TranscriptTable({
                   <TableCell
                     key={cell.id}
                     className={cn(
+                      "px-4 py-4",
                       cell.column.id === "title" && "whitespace-normal",
-                      isRecent && "px-4 py-4",
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
