@@ -126,7 +126,7 @@ Config loads from `backend/.env` and repo root `.env`.
 | GET/PATCH/DELETE | `/api/documents/{id}` | Document CRUD |
 | GET/POST/PATCH/DELETE | `/api/speaker-profiles/...` | Speaker profile CRUD + detail |
 | GET/POST/PATCH/DELETE | `/api/speaker-memory/...` | Consent, toggle, wipe voiceprint data |
-| PATCH | `/api/transcripts/{id}/speakers` | Rename/link speakers (`enroll: true` saves voiceprint) |
+| PATCH | `/api/transcripts/{id}/speakers` | Rename/link speakers (`enroll: true` saves voiceprint; optional `enrollStartSec` / `enrollEndSec` for turn-scoped samples) |
 
 ## Startup diagnostics
 

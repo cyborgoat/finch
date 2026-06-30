@@ -112,9 +112,24 @@ Higher threshold → stricter matching (more `Unknown Speaker`).
 | POST | `/api/speaker-memory/consent` | Record consent |
 | PATCH | `/api/speaker-memory/status` | Toggle enabled |
 | DELETE | `/api/speaker-memory/data` | Wipe all voiceprint data |
-| PATCH | `/api/transcripts/{id}/speakers` | Rename/link speakers; set `enroll: true` to save voiceprint |
+| PATCH | `/api/transcripts/{id}/speakers` | Rename/link speakers; `enroll: true` saves voiceprint from optional turn timestamps |
 
-Primary enrollment path: `PATCH /api/transcripts/{id}/speakers` with `{ mappings: [{ clusterId, displayName, profileId?, enroll? }] }`.
+Primary enrollment path: `PATCH /api/transcripts/{id}/speakers` with:
+
+```json
+{
+  "mappings": [{
+    "clusterId": "SPEAKER_00",
+    "displayName": "Robert",
+    "profileId": "speaker_…",
+    "enroll": true,
+    "enrollStartSec": 12.4,
+    "enrollEndSec": 18.9
+  }]
+}
+```
+
+When `enrollStartSec` / `enrollEndSec` are omitted, enrollment uses the longest cluster segment.
 
 ## Privacy
 

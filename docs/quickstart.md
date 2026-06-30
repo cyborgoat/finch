@@ -131,7 +131,7 @@ SPEAKER_MEMORY_ENABLED=true
 SPEAKER_MEMORY_MOCK=false
 ```
 
-In the UI: **Settings → Speaker memory** to enable and give consent. On a transcript, use the **Speaker names** panel to match unknown speakers to saved profiles, then click **Save**.
+In the UI: **Settings → Speaker memory** to enable and give consent. On a transcript, **click a speaker pill** on any turn to assign or update a name (voiceprints update from that turn when memory is enabled).
 
 See **[speaker-memory.md](speaker-memory.md)** for full setup.
 
@@ -160,6 +160,6 @@ Tests mock ffmpeg and use `ASR_MOCK` / `DIARIZATION_MOCK` — no model download 
 | `403` / `gated repo` (diarization) | Accept [pyannote model terms](https://huggingface.co/pyannote/speaker-diarization-community-1); same HF account as `HF_TOKEN` |
 | `ffmpeg is not installed` | `brew install ffmpeg` (macOS) |
 | No speaker labels | Run `uv run python scripts/validate_diarization.py` |
-| Speaker names not saving | Use main Save button; enable speaker memory in Settings |
+| Speaker names not saving | Click the speaker pill on a turn — names save immediately; enable speaker memory in Settings for voiceprints |
 | Slow long audio | Expected on CPU/MPS; ASR chunks ~45s segments |
 | Failed transcript visible | By design — check `errorMessage`, fix issue, re-transcribe |

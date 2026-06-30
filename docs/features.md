@@ -37,8 +37,9 @@ What Finch does today and what is intentionally out of scope.
 ### Transcript library
 
 - List, search, edit, copy, export TXT/MD
+- Tabbed detail page: **Transcript** (inline speaker pills, full-text editor) and **AI** (templates, generated documents)
 - In-progress (`transcribing`) and failed states in the UI
-- Speaker segment badges when diarization ran
+- Clickable speaker pills per turn when diarization ran
 
 ### AI actions (optional)
 

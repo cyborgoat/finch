@@ -85,7 +85,7 @@ Loads settings from `backend/.env` and repo root `.env`.
 | `speaker_embedding_service.py` | pyannote/embedding extraction (mock or real) |
 | `speaker_profile_service.py` | Profile CRUD, enrollment, centroid computation |
 | `speaker_matching_service.py` | Cosine match embeddings → display names |
-| `speaker_transcript_service.py` | Bulk speaker rename on transcripts |
+| `speaker_transcript_service.py` | Speaker rename on transcripts; optional turn-scoped voiceprint enrollment |
 | `app_preference_service.py` | Speaker memory consent and enable toggle |
 | `transcript_service.py` | Transcript CRUD |
 | `document_service.py` | Document CRUD |
