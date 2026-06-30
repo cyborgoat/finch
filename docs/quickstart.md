@@ -86,7 +86,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 — **Upload**, **Record**, **Transcripts**, **Documents**, **Settings**.
+Open http://localhost:3000 — **New** (Record / Upload), **Transcripts**, **Documents**, **Settings**. Home shows your most recently updated transcripts.
 
 ## 6. Real ASR
 

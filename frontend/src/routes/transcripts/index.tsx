@@ -3,11 +3,16 @@ import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { PageHeader } from "@/components/layout/PageHeader"
-import { TranscriptList } from "@/components/transcripts/TranscriptList"
+import { TranscriptTable } from "@/components/transcripts/TranscriptList"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useDeleteTranscript, useTranscripts } from "@/hooks/useTranscripts"
+import {
+  useDeleteTranscript,
+  useRenameTranscript,
+  useTranscripts,
+} from "@/hooks/useTranscripts"
 import { transcriptsQuery } from "@/lib/queries/transcripts"
+import type { TranscriptSummary } from "@/lib/types"
 
 export const Route = createFileRoute("/transcripts/")({
   loader: ({ context }) =>
@@ -18,14 +23,26 @@ export const Route = createFileRoute("/transcripts/")({
 function TranscriptsPage() {
   const { data, isLoading } = useTranscripts()
   const deleteMutation = useDeleteTranscript()
+  const renameMutation = useRenameTranscript()
   const [query, setQuery] = useState("")
 
   const items = useMemo(() => {
     const all = data?.items ?? []
     if (!query.trim()) return all
     const q = query.toLowerCase()
-    return all.filter((t) => t.title.toLowerCase().includes(q))
+    return all.filter((t: TranscriptSummary) =>
+      t.title.toLowerCase().includes(q),
+    )
   }, [data?.items, query])
+
+  const handleRename = async (id: string, title: string) => {
+    try {
+      await renameMutation.mutateAsync({ id, title })
+      toast.success("Transcript renamed")
+    } catch {
+      toast.error("Failed to rename transcript")
+    }
+  }
 
   const handleDelete = async (id: string) => {
     try {
@@ -52,14 +69,14 @@ function TranscriptsPage() {
       />
 
       {isLoading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
+        <Skeleton className="h-48 w-full rounded-xl" />
       ) : (
-        <TranscriptList
+        <TranscriptTable
           items={items}
+          onRename={(id, title) => void handleRename(id, title)}
           onDelete={(id) => void handleDelete(id)}
+          isRenaming={renameMutation.isPending}
+          isDeleting={deleteMutation.isPending}
         />
       )}
     </PageContainer>

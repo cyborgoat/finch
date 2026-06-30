@@ -49,10 +49,10 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 
 | Route | Purpose |
 |-------|---------|
-| `/` | Home, recent transcripts and documents |
+| `/` | Recent transcripts (updated recently), rename/delete actions |
 | `/upload` | Upload audio and transcribe |
 | `/record` | Browser recording with live waveform |
-| `/transcripts` | Transcript library (transcribing / failed / draft states) |
+| `/transcripts` | Transcript library table (search, sort, length, rename, delete) |
 | `/transcripts/$id` | Player, current turn, **Transcript** tab (edit) and **AI** tab (actions + documents) |
 | `/documents` | Document library |
 | `/documents/$id` | Markdown editor + preview + export |
@@ -60,6 +60,10 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 
 ## Key UI behavior
 
+- **Sidebar:** **New** dropdown (Record voice / Upload audio); Home, Transcripts, Documents, Settings
+- **Home:** recent transcripts only, sorted by last updated
+- **Transcript lists:** TanStack Table with title, date, length, language; row styling reflects status (transcribing / failed) without a status column
+- **List actions:** ellipsis menu on each row for rename and delete (home and `/transcripts`)
 - **Transcribing:** list and detail pages poll while `status=transcribing`
 - **Failed jobs:** transcript stays visible with error message (not removed)
 - **Transcript tab:** toolbar, title, full transcript (text or segments toggle)
@@ -73,4 +77,4 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 
 ## Stack
 
-TanStack Start (Router + SSR), Vite, Tailwind v4, shadcn/ui, TanStack Query, motion, Web Audio API (recording waveform).
+TanStack Start (Router + SSR), Vite, Tailwind v4, shadcn/ui, TanStack Query, TanStack Table, motion, Web Audio API (recording waveform).

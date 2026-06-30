@@ -1,6 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, Depends
-from sqlmodel import Session
+from sqlmodel import Session, select
 
+from app.models.audio_asset import AudioAsset
 from app.models.transcript import Transcript
 from app.schemas.audio import OkResponse
 from app.schemas.transcript import (
@@ -29,8 +30,22 @@ from app.workers.transcription_worker import run_transcription_job
 router = APIRouter(prefix="/transcripts", tags=["transcripts"])
 
 
-def _to_summary(transcript: Transcript) -> TranscriptSummary:
-    return TranscriptSummary.model_validate(transcript)
+def _to_summary(
+    transcript: Transcript,
+    duration_seconds: float | None = None,
+) -> TranscriptSummary:
+    return TranscriptSummary(
+        id=transcript.id,
+        audio_asset_id=transcript.audio_asset_id,
+        title=transcript.title,
+        language=transcript.language,
+        status=transcript.status,
+        duration_seconds=duration_seconds,
+        error_message=transcript.error_message,
+        processing_note=transcript.processing_note,
+        created_at=transcript.created_at,
+        updated_at=transcript.updated_at,
+    )
 
 
 def _segment_to_schema(segment) -> SpeakerSegmentSchema:
@@ -103,7 +118,23 @@ def create_transcript_job(
 @router.get("", response_model=TranscriptListResponse)
 def list_transcripts(session: Session = Depends(get_session)) -> TranscriptListResponse:
     service = TranscriptService(session)
-    items = [_to_summary(transcript) for transcript in service.list_transcripts()]
+    transcripts = service.list_transcripts()
+    audio_ids = {transcript.audio_asset_id for transcript in transcripts}
+    duration_by_audio_id: dict[str, float | None] = {}
+    if audio_ids:
+        audio_assets = session.exec(
+            select(AudioAsset).where(AudioAsset.id.in_(audio_ids))
+        ).all()
+        duration_by_audio_id = {
+            asset.id: asset.duration_seconds for asset in audio_assets
+        }
+    items = [
+        _to_summary(
+            transcript,
+            duration_by_audio_id.get(transcript.audio_asset_id),
+        )
+        for transcript in transcripts
+    ]
     return TranscriptListResponse(items=items)
 
 

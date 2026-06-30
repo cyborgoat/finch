@@ -44,6 +44,18 @@ export function useUpdateTranscript(id: string) {
   })
 }
 
+export function useRenameTranscript() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, title }: { id: string; title: string }) =>
+      updateTranscript(id, { title }),
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["transcripts"] })
+      queryClient.invalidateQueries({ queryKey: ["transcripts", id] })
+    },
+  })
+}
+
 export function useDeleteTranscript() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -31,6 +31,7 @@ class TranscriptSummary(CamelModel):
     title: str
     language: str | None = None
     status: str
+    duration_seconds: float | None = None
     error_message: str | None = None
     processing_note: str | None = None
     created_at: datetime

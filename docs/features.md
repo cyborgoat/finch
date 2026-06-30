@@ -36,7 +36,11 @@ What Finch does today and what is intentionally out of scope.
 
 ### Transcript library
 
-- List, search, edit, copy, export TXT/MD
+- Sortable table on `/transcripts` (title, created, length, language)
+- Home shows recent transcripts sorted by last updated
+- Rename and delete from an ellipsis menu on each row
+- List API includes audio duration (`durationSeconds`)
+- Search, edit, copy, export TXT/MD
 - Transcript detail: built-in audio player (seek, ±15s skip, playback speed), current turn synced to playback, prev/next turn navigation
 - **Transcript tab:** toolbar, title, full transcript (plain text or all segments)
 - **AI tab:** AI action templates, job progress, and generated documents only

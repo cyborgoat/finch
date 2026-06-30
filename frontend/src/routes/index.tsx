@@ -1,89 +1,63 @@
-import { Link, createFileRoute } from "@tanstack/react-router"
-import { useDocuments } from "@/hooks/useDocuments"
-import { useTranscripts } from "@/hooks/useTranscripts"
-import { RecentDocumentList } from "@/components/documents/DocumentList"
+import { createFileRoute } from "@tanstack/react-router"
+import { toast } from "sonner"
+import {
+  useDeleteTranscript,
+  useRenameTranscript,
+  useTranscripts,
+} from "@/hooks/useTranscripts"
 import { RecentTranscriptList } from "@/components/transcripts/TranscriptList"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { PageHeader } from "@/components/layout/PageHeader"
-import { Section } from "@/components/layout/Section"
-import { buttonVariants } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { documentsQuery } from "@/lib/queries/documents"
 import { transcriptsQuery } from "@/lib/queries/transcripts"
-import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) =>
-    Promise.all([
-      context.queryClient.ensureQueryData(transcriptsQuery()),
-      context.queryClient.ensureQueryData(documentsQuery()),
-    ]),
+    context.queryClient.ensureQueryData(transcriptsQuery()),
   component: HomePage,
 })
 
 function HomePage() {
   const { data: transcripts, isLoading: transcriptsLoading } = useTranscripts()
-  const { data: documents, isLoading: documentsLoading } = useDocuments()
+  const deleteMutation = useDeleteTranscript()
+  const renameMutation = useRenameTranscript()
+
+  const handleRename = async (id: string, title: string) => {
+    try {
+      await renameMutation.mutateAsync({ id, title })
+      toast.success("Transcript renamed")
+    } catch {
+      toast.error("Failed to rename transcript")
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+      toast.success("Transcript deleted")
+    } catch {
+      toast.error("Failed to delete transcript")
+    }
+  }
 
   return (
     <PageContainer size="wide">
       <PageHeader
-        title="Finch"
-        description="Local-first voice transcription. Record or upload audio, get an editable transcript, and generate Markdown documents with optional AI actions."
-        actions={
-          <div className="flex flex-wrap gap-3">
-            <Link to="/record" className={cn(buttonVariants())}>
-              Record voice
-            </Link>
-            <Link
-              to="/upload"
-              className={cn(buttonVariants({ variant: "outline" }))}
-            >
-              Upload audio
-            </Link>
-          </div>
-        }
+        title="Recent"
+        description="Your latest transcripts, sorted by most recently updated."
       />
 
-      <Section title="Recent transcripts">
-        {transcriptsLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-          </div>
-        ) : (
-          <RecentTranscriptList items={transcripts?.items ?? []} />
-        )}
-      </Section>
-
-      <Section title="Recent documents">
-        <div className="mb-3 flex justify-end">
-          <Link
-            to="/documents"
-            className="text-sm text-muted-foreground hover:underline"
-          >
-            View all documents
-          </Link>
-        </div>
-        {documentsLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-20 w-full" />
-          </div>
-        ) : (
-          <RecentDocumentList items={documents?.items ?? []} />
-        )}
-      </Section>
-
-      <Card className="rounded-xl border bg-card/50">
-        <CardHeader>
-          <CardTitle className="text-base">Privacy</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm leading-relaxed text-muted-foreground">
-          ASR runs locally on your machine. AI document generation sends transcript
-          text to OpenRouter only when you run an action.
-        </CardContent>
-      </Card>
+      {transcriptsLoading ? (
+        <Skeleton className="h-56 w-full rounded-xl" />
+      ) : (
+        <RecentTranscriptList
+          items={transcripts?.items ?? []}
+          onRename={(id, title) => void handleRename(id, title)}
+          onDelete={(id) => void handleDelete(id)}
+          isRenaming={renameMutation.isPending}
+          isDeleting={deleteMutation.isPending}
+        />
+      )}
     </PageContainer>
   )
 }
