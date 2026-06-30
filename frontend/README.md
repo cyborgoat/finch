@@ -56,28 +56,44 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 | `/record` | Browser recording with live waveform |
 | `/settings` | User profile, language, AI summarization prefs, speakers |
 
+## Layout and navigation
+
+- **Sidebar:** **New** dropdown (Record voice / Upload audio); Home, Files, Settings
+- **Topbar:** breadcrumb trail (route-aware); on recording detail, download and actions buttons on the right
+- **Pages:** wide `max-w-6xl` content; upload/record use a centered column; settings uses `max-w-3xl`
+
 ## Key UI behavior
 
-- **Layout:** wide `max-w-6xl` pages with generous spacing; upload/record use a centered content column; settings uses a single-column layout (`max-w-3xl`)
-- **Sidebar:** **New** dropdown (Record voice / Upload audio); Home, Files, Settings
+### Files and home
+
 - **Home:** recent voice recordings, sorted by last updated
-- **Files browser:** voice recordings only; AI documents and artifacts live under each recording (see the AI tab on the detail page)
-- **File lists:** row styling reflects transcription status without a status column
-- **List actions:** ellipsis menu — rename and delete for recordings
-- **Transcribing:** list and detail pages poll while `status=transcribing`
-- **Failed jobs:** transcript stays visible with error message (not removed)
-- **Source tab:** toolbar, title, full transcript (text or segments toggle)
+- **Files browser:** voice recordings only; AI documents live under each recording’s **AI** tab
+- **Search:** filters recordings by title (client-side)
+- **List actions:** ellipsis menu — rename and delete
+- **Transcribing / failed:** list and detail pages poll while `status=transcribing`; failed jobs stay visible with `errorMessage`
+
+### Recording detail (`/files/transcript_*`)
+
+- **Topbar download menu:** audio file, transcript `.txt`, summary (coming soon dialog)
+- **Topbar actions menu:** rename recording, delete session
+- **Source tab:** audio player, then compact scrollable transcript
+  - Each turn: speaker name, timestamp range, text (typography distinguishes the three)
+  - Active turn highlighted; list auto-scrolls during playback
+  - Click timestamp to seek; click speaker name to assign/rename (when diarization data exists)
+  - Transcript text is read-only
 - **Summary tab:** placeholder for future LLM-generated overview
-- **AI tab:** AI action templates, job progress, and generated documents
-- **Audio player:** centered play control below the track, ±15s skip, speed dropdown (0.5×–5×)
-- **Current turn:** single active segment below the player, with prev/next arrows
-- **Speaker labels:** click any speaker pill on a turn to assign or rename; updates all turns in that cluster immediately
-- **Settings → Speakers:** auto-label toggle (with consent on first enable), rename/delete saved speaker profiles; map one profile as **You**
-- **Settings → You:** display name and link to your speaker profile (stored via `GET/PATCH /api/user-settings`)
-- **Settings → Language / AI summarization:** user preferences persisted on the backend
-- **Backend capabilities** (ASR, diarization, LLM): configured in `.env` only — startup logs and `/api/health`; not shown on the settings page
-- **Save:** toolbar **Save** persists title and full text; speaker names save via the pill dialog
-- **AI actions:** run from the **AI** tab; poll job → open new document at `/files/{id}`
+- **AI tab:** action templates, job progress, linked documents; open documents at `/files/doc_*`
+
+### Document detail (`/files/doc_*`)
+
+- Markdown editor, preview, toolbar (save, copy, export `.md`, delete)
+
+### Settings
+
+- **You:** display name and linked speaker profile (`GET/PATCH /api/user-settings`)
+- **Language / AI summarization:** preferences persisted on the backend (not yet applied to UI or LLM prompts)
+- **Speakers:** auto-label toggle (consent on first enable), rename/delete profiles
+- **Backend capabilities** (ASR, diarization, LLM): configured in `.env` only — startup logs and `/api/health`; not on the settings page
 
 ## IDs
 
