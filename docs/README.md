@@ -16,7 +16,7 @@ Finch is a local-first voice transcription app. Audio is transcribed on your mac
 ## Package READMEs
 
 - [backend/README.md](../backend/README.md) — API, env vars, tests
-- [frontend/README.md](../frontend/README.md) — Next.js dev setup
+- [frontend/README.md](../frontend/README.md) — TanStack Start dev setup
 
 ## Core model
 

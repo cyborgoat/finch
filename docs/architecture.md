@@ -141,7 +141,7 @@ On boot, the backend logs a configuration summary: loaded env files, ASR/diariza
 | ASR | `qwen-asr`, PyTorch, Qwen3-ASR-1.7B |
 | Diarization | `pyannote-audio`, `pyannote/speaker-diarization-community-1` |
 | Audio | ffmpeg, librosa |
-| Frontend | Next.js 16, Tailwind v4, shadcn/ui, TanStack Query |
+| Frontend | TanStack Start, Tailwind v4, shadcn/ui, TanStack Query |
 | LLM | OpenRouter (`LLM_MOCK` for development) |
 
 ## Deployment notes (MVP)

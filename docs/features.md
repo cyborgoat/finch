@@ -87,5 +87,5 @@ What Finch does today and what is intentionally out of scope.
 | ASR | `qwen-asr`, PyTorch, Qwen3-ASR-1.7B |
 | Diarization | `pyannote-audio`, pyannote community-1 |
 | Audio | ffmpeg, librosa |
-| Frontend | Next.js 16, Tailwind v4, shadcn/ui, TanStack Query |
+| Frontend | TanStack Start, Tailwind v4, shadcn/ui, TanStack Query |
 | LLM | OpenRouter |
