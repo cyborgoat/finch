@@ -3,7 +3,6 @@ import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { FileBrowser } from "@/components/files/FileBrowser"
 import { PageContainer } from "@/components/layout/PageContainer"
-import { PageHeader } from "@/components/layout/PageHeader"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useFiles } from "@/hooks/useFiles"
@@ -46,18 +45,14 @@ function FilesPage() {
 
   return (
     <PageContainer size="wide">
-      <PageHeader
-        title="Files"
-        description="Voice recordings. Open a file to view its transcript and AI-generated documents."
-        actions={
-          <Input
-            placeholder="Search by name…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full min-w-[200px] max-w-xs"
-          />
-        }
-      />
+      <div className="mb-6 flex justify-end">
+        <Input
+          placeholder="Search by name…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full min-w-[200px] max-w-xs"
+        />
+      </div>
 
       {isLoading ? (
         <Skeleton className="h-48 w-full rounded-xl" />

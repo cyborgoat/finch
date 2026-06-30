@@ -25,15 +25,6 @@ export function exportTranscriptTxt(title: string, text: string) {
   )
 }
 
-export function exportTranscriptMd(title: string, text: string) {
-  const content = `# ${title}\n\n## Transcript\n\n${text}`
-  downloadText(
-    `finch-transcript-${sanitizeFilename(title)}.md`,
-    content,
-    "text/markdown;charset=utf-8",
-  )
-}
-
 export function exportDocumentMd(title: string, markdown: string) {
   downloadText(
     `finch-document-${sanitizeFilename(title)}.md`,

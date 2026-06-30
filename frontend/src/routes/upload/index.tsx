@@ -9,7 +9,6 @@ import {
 import { JobProgress } from "@/components/jobs/JobProgress"
 import { PipelineStepper } from "@/components/jobs/PipelineStepper"
 import { PageContainer } from "@/components/layout/PageContainer"
-import { PageHeader } from "@/components/layout/PageHeader"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -98,11 +97,6 @@ function UploadPage() {
   return (
     <PageContainer size="wide" contentWidth="content">
       <BlurFade className="section-stack">
-        <PageHeader
-          title="Upload audio"
-          description="Upload an existing file and transcribe it locally."
-        />
-
         <PipelineStepper current={displayStep} />
 
         <AudioUploader

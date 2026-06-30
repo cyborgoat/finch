@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router"
 import { toast } from "sonner"
 import { RecentFileList } from "@/components/files/RecentFileList"
 import { PageContainer } from "@/components/layout/PageContainer"
-import { PageHeader } from "@/components/layout/PageHeader"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useRecentFiles } from "@/hooks/useFiles"
 import {
@@ -41,11 +40,6 @@ function HomePage() {
 
   return (
     <PageContainer size="wide">
-      <PageHeader
-        title="Recent"
-        description="Your latest voice recordings, sorted by most recently updated."
-      />
-
       {isLoading ? (
         <Skeleton className="h-56 w-full rounded-xl" />
       ) : (

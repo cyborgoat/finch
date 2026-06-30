@@ -6,7 +6,6 @@ import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { DocumentToolbar } from "@/components/documents/DocumentToolbar"
 import { MarkdownPreview } from "@/components/documents/MarkdownPreview"
 import { PageContainer } from "@/components/layout/PageContainer"
-import { PageHeader } from "@/components/layout/PageHeader"
 import { Section } from "@/components/layout/Section"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { TextShimmer } from "@/components/motion-primitives/text-shimmer"
@@ -74,17 +73,12 @@ function TranscriptDetailEditor({ transcript }: { transcript: Transcript }) {
       memoryStatus={editor.memoryStatus}
       documents={documentsData?.items ?? []}
       llmReady={llmReady}
-      saving={editor.saving}
       speakerSavePending={editor.speakerSavePending}
+      renamePending={editor.renamePending}
       deletePending={editor.deletePending}
-      onTitleChange={editor.setTitle}
-      onTextChange={editor.setText}
-      onSegmentSpeakerSave={editor.applySegmentSpeaker}
-      onSave={() => void editor.handleSave()}
-      onCopy={() => void editor.handleCopy()}
-      onExportTxt={editor.exportTxt}
-      onExportMd={editor.exportMd}
+      onRename={(nextTitle) => editor.handleRename(nextTitle)}
       onDelete={() => void editor.handleDelete()}
+      onSegmentSpeakerSave={editor.applySegmentSpeaker}
     />
   )
 }
@@ -123,14 +117,6 @@ function DocumentDetailEditor({ document }: { document: Document }) {
 
   return (
     <BlurFade className="section-stack">
-      <PageHeader
-        backHref="/files"
-        backLabel="Files"
-        title={title || "Untitled document"}
-        description="Edit Markdown or preview the rendered output."
-        meta={`Updated ${new Date(document.updatedAt).toLocaleString()}`}
-      />
-
       <DocumentToolbar
         onSave={() => void handleSave()}
         onCopy={() => void handleCopy()}
@@ -252,12 +238,6 @@ function TranscriptFileDetail({ id }: { id: string }) {
   if (transcript.status === "transcribing") {
     return (
       <PageContainer size="wide">
-        <PageHeader
-          backHref="/files"
-          backLabel="Files"
-          title={transcript.title}
-          description="Transcription is running locally. This page will update when the text is ready."
-        />
         <TranscriptPageAudio audioAssetId={transcript.audioAssetId} />
         <div className="surface-card">
           <p className="text-sm font-medium">
@@ -275,12 +255,6 @@ function TranscriptFileDetail({ id }: { id: string }) {
   if (transcript.status === "failed") {
     return (
       <PageContainer size="wide">
-        <PageHeader
-          backHref="/files"
-          backLabel="Files"
-          title={transcript.title}
-          description="Transcription failed."
-        />
         <TranscriptPageAudio audioAssetId={transcript.audioAssetId} />
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
           <p className="text-sm font-medium text-destructive">Error</p>

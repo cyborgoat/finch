@@ -10,7 +10,6 @@ import {
   useDeleteTranscript,
   useUpdateTranscript,
 } from "@/hooks/useTranscripts"
-import { exportTranscriptMd, exportTranscriptTxt } from "@/lib/export"
 import { updateTranscriptSpeakers, FinchApiError } from "@/lib/api"
 import {
   resolveSpeakerSegments,
@@ -42,10 +41,7 @@ export function useTranscriptEditor(transcript: Transcript) {
       initialSegments,
     ),
   )
-  const [isSaving, setIsSaving] = useState(false)
   const [speakerSavePending, setSpeakerSavePending] = useState(false)
-
-  const saving = isSaving || updateMutation.isPending
 
   const applySpeakerUpdate = (updatedSegments: SpeakerSegment[], rawText: string) => {
     setSegments(updatedSegments)
@@ -93,52 +89,41 @@ export function useTranscriptEditor(transcript: Transcript) {
     }
   }
 
-  const handleSave = async () => {
-    setIsSaving(true)
+  const handleRename = async (nextTitle: string) => {
     try {
-      const savedText =
-        segments.length > 0 ? formatSpeakerTranscript(segments) || text : text
-      await updateMutation.mutateAsync({ title, editedText: savedText })
-      setText(savedText)
-      toast.success("Transcript saved")
+      await updateMutation.mutateAsync({ title: nextTitle })
+      setTitle(nextTitle)
+      queryClient.setQueryData<Transcript>(["transcripts", transcript.id], (current) =>
+        current ? { ...current, title: nextTitle } : current,
+      )
+      toast.success("Recording renamed")
     } catch {
-      toast.error("Failed to save")
-    } finally {
-      setIsSaving(false)
+      toast.error("Failed to rename recording")
+      throw new Error("Failed to rename recording")
     }
-  }
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(text)
-    toast.success("Copied to clipboard")
   }
 
   const handleDelete = async () => {
     try {
       await deleteMutation.mutateAsync(transcript.id)
-      toast.success("Transcript deleted")
+      toast.success("Session deleted")
       void navigate({ to: "/files" })
     } catch {
-      toast.error("Failed to delete")
+      toast.error("Failed to delete session")
     }
   }
 
   return {
     title,
-    setTitle,
     text,
-    setText,
     segments,
     profiles,
     memoryStatus,
     speakerSavePending,
-    saving,
+    renamePending: updateMutation.isPending,
     deletePending: deleteMutation.isPending,
-    handleSave,
-    handleCopy,
+    handleRename,
     handleDelete,
     applySegmentSpeaker,
-    exportTxt: () => exportTranscriptTxt(title, text),
-    exportMd: () => exportTranscriptMd(title, text),
   }
 }

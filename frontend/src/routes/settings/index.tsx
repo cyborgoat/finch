@@ -6,7 +6,6 @@ import { UserProfileSettings } from "@/components/settings/UserProfileSettings"
 import { SpeakerConsentDialog } from "@/components/speakers/SpeakerConsentDialog"
 import { SpeakerProfileManager } from "@/components/speakers/SpeakerProfileManager"
 import { PageContainer } from "@/components/layout/PageContainer"
-import { PageHeader } from "@/components/layout/PageHeader"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { Switch } from "@/components/ui/switch"
 import {
@@ -110,11 +109,6 @@ function SettingsPage() {
   return (
     <PageContainer size="content">
       <BlurFade className="section-stack">
-        <PageHeader
-          title="Settings"
-          description="Your profile, language, AI preferences, and speakers."
-        />
-
         <UserProfileSettings
           preferences={preferences}
           profiles={profiles}

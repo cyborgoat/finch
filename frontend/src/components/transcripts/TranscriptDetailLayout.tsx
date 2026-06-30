@@ -1,16 +1,13 @@
 import { useNavigate, useSearch } from "@tanstack/react-router"
-import { useCallback } from "react"
+import { useCallback, useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
-import { PageHeader } from "@/components/layout/PageHeader"
+import { useRegisterTopbarActions } from "@/components/layout/TopbarActionsContext"
 import { TranscriptAiTab } from "@/components/transcripts/TranscriptAiTab"
 import { TranscriptSummaryTab } from "@/components/transcripts/TranscriptSummaryTab"
 import { TranscriptAudioPlayer } from "@/components/transcripts/TranscriptAudioPlayer"
-import { TranscriptEditor } from "@/components/transcripts/TranscriptEditor"
-import { ActiveTranscriptSegment } from "@/components/transcripts/ActiveTranscriptSegment"
 import { FullTranscriptPanel } from "@/components/transcripts/FullTranscriptPanel"
-import { TranscriptToolbar } from "@/components/transcripts/TranscriptToolbar"
 import { useAudioAsset } from "@/hooks/useAudioAsset"
 import { useTranscriptPlayback } from "@/hooks/useTranscriptPlayback"
 import type { DocumentSummary, SpeakerMemoryStatus, SpeakerProfileSummary, Transcript } from "@/lib/types"
@@ -30,21 +27,16 @@ type TranscriptDetailLayoutProps = {
   memoryStatus?: SpeakerMemoryStatus
   documents: DocumentSummary[]
   llmReady?: boolean
-  saving: boolean
   speakerSavePending: boolean
+  renamePending: boolean
   deletePending: boolean
-  onTitleChange: (value: string) => void
-  onTextChange: (value: string) => void
+  onRename: (title: string) => void | Promise<void>
+  onDelete: () => void
   onSegmentSpeakerSave: (
     clusterId: string,
     segment: SpeakerSegment,
     payload: { displayName: string; profileId?: string },
   ) => Promise<void>
-  onSave: () => void
-  onCopy: () => void
-  onExportTxt: () => void
-  onExportMd: () => void
-  onDelete: () => void
 }
 
 export function TranscriptDetailLayout({
@@ -56,17 +48,12 @@ export function TranscriptDetailLayout({
   memoryStatus,
   documents,
   llmReady,
-  saving,
   speakerSavePending,
+  renamePending,
   deletePending,
-  onTitleChange,
-  onTextChange,
-  onSegmentSpeakerSave,
-  onSave,
-  onCopy,
-  onExportTxt,
-  onExportMd,
+  onRename,
   onDelete,
+  onSegmentSpeakerSave,
 }: TranscriptDetailLayoutProps) {
   const navigate = useNavigate({ from: "/files/$id/" })
   const { tab } = useSearch({ from: "/files/$id/" })
@@ -87,61 +74,33 @@ export function TranscriptDetailLayout({
     [navigate],
   )
 
-  const updatedLabel = new Date(transcript.updatedAt).toLocaleString()
+  const topbarActions = useMemo(
+    () => ({
+      audioAssetId: transcript.audioAssetId,
+      audioFilename: audioAsset?.filename,
+      title,
+      transcriptText: text,
+      onRename,
+      onDelete,
+      isRenaming: renamePending,
+      isDeleting: deletePending,
+    }),
+    [
+      transcript.audioAssetId,
+      audioAsset?.filename,
+      title,
+      text,
+      onRename,
+      onDelete,
+      renamePending,
+      deletePending,
+    ],
+  )
+
+  useRegisterTopbarActions(topbarActions, [topbarActions])
 
   return (
     <div className="section-stack">
-      <PageHeader
-        backHref="/files"
-        backLabel="Files"
-        title={title || "Untitled transcript"}
-        description="Listen, edit, and explore this recording."
-        badge={<Badge variant="secondary">Draft</Badge>}
-        meta={
-          <>
-            Updated {updatedLabel}
-            {transcript.language ? ` · ${transcript.language}` : null}
-          </>
-        }
-      />
-
-      <TranscriptAudioPlayer
-        filename={audioAsset?.filename}
-        audioRef={playback.audioRef}
-        src={playback.src}
-        isPlaying={playback.isPlaying}
-        currentTime={playback.currentTime}
-        duration={playback.duration || audioAsset?.durationSeconds || 0}
-        isReady={playback.isReady}
-        playbackRate={playback.playbackRate}
-        onPlaybackRateChange={playback.setPlaybackRate}
-        onTogglePlay={playback.togglePlay}
-        onSkipBackward={playback.skipBackward}
-        onSkipForward={playback.skipForward}
-        onSeekInput={playback.handleSeekInput}
-        onTimeUpdate={playback.handleTimeUpdate}
-        onLoadedMetadata={playback.handleLoadedMetadata}
-        onCanPlay={playback.handleCanPlay}
-        onDurationChange={playback.handleDurationChange}
-        onPlay={playback.handlePlay}
-        onPause={playback.handlePause}
-        onEnded={playback.handleEnded}
-      />
-
-      <ActiveTranscriptSegment
-        segments={segments}
-        fallbackText={text}
-        profiles={profiles}
-        memoryStatus={memoryStatus}
-        processingNote={transcript.processingNote}
-        currentPlaybackTime={playback.currentTime}
-        isPlaying={playback.isPlaying}
-        onSeekToTime={playback.seekAndPlay}
-        onSegmentSpeakerSave={onSegmentSpeakerSave}
-        speakerSavePending={speakerSavePending}
-        disabled={saving || speakerSavePending}
-      />
-
       <Tabs value={activeTab} onValueChange={setTab} className="section-stack">
         <TabsList variant="line" className="w-full justify-start border-b border-border pb-0">
           <TabsTrigger value="source" className="px-4 pb-3">
@@ -162,19 +121,27 @@ export function TranscriptDetailLayout({
 
         <TabsContent value="source" className="mt-0 pt-6">
           <BlurFade className="section-stack">
-            <TranscriptToolbar
-              onSave={onSave}
-              onCopy={onCopy}
-              onExportTxt={onExportTxt}
-              onExportMd={onExportMd}
-              onDelete={onDelete}
-              isSaving={saving}
-              isDeleting={deletePending}
-            />
-            <TranscriptEditor
-              title={title}
-              onTitleChange={onTitleChange}
-              disabled={saving || speakerSavePending}
+            <TranscriptAudioPlayer
+              filename={audioAsset?.filename}
+              audioRef={playback.audioRef}
+              src={playback.src}
+              isPlaying={playback.isPlaying}
+              currentTime={playback.currentTime}
+              duration={playback.duration || audioAsset?.durationSeconds || 0}
+              isReady={playback.isReady}
+              playbackRate={playback.playbackRate}
+              onPlaybackRateChange={playback.setPlaybackRate}
+              onTogglePlay={playback.togglePlay}
+              onSkipBackward={playback.skipBackward}
+              onSkipForward={playback.skipForward}
+              onSeekInput={playback.handleSeekInput}
+              onTimeUpdate={playback.handleTimeUpdate}
+              onLoadedMetadata={playback.handleLoadedMetadata}
+              onCanPlay={playback.handleCanPlay}
+              onDurationChange={playback.handleDurationChange}
+              onPlay={playback.handlePlay}
+              onPause={playback.handlePause}
+              onEnded={playback.handleEnded}
             />
             <FullTranscriptPanel
               text={text}
@@ -183,10 +150,9 @@ export function TranscriptDetailLayout({
               memoryStatus={memoryStatus}
               currentPlaybackTime={playback.currentTime}
               onSeekToTime={playback.seekAndPlay}
-              onTextChange={onTextChange}
               onSegmentSpeakerSave={onSegmentSpeakerSave}
               speakerSavePending={speakerSavePending}
-              disabled={saving || speakerSavePending}
+              disabled={speakerSavePending || renamePending || deletePending}
             />
           </BlurFade>
         </TabsContent>

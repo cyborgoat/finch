@@ -6,7 +6,6 @@ import { AudioRecorder } from "@/components/audio/AudioRecorder"
 import { JobProgress } from "@/components/jobs/JobProgress"
 import { PipelineStepper } from "@/components/jobs/PipelineStepper"
 import { PageContainer } from "@/components/layout/PageContainer"
-import { PageHeader } from "@/components/layout/PageHeader"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { Button } from "@/components/ui/button"
 import { useAudioRecorder } from "@/hooks/useAudioRecorder"
@@ -87,11 +86,6 @@ function RecordPage() {
   return (
     <PageContainer size="wide" contentWidth="content">
       <BlurFade className="section-stack">
-        <PageHeader
-          title="Record voice"
-          description="Record in the browser, then transcribe locally."
-        />
-
         <PipelineStepper current={displayStep} />
 
         <AudioRecorder
