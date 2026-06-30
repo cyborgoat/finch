@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Form, UploadFile
+from fastapi.responses import FileResponse
 from sqlmodel import Session
 
 from app.models.audio_asset import AudioAsset
@@ -22,6 +23,17 @@ def upload_audio(
     service = AudioService(session)
     audio_asset = service.save_upload(file, source)
     return _to_response(audio_asset)
+
+
+@router.get("/{audio_id}/stream")
+def stream_audio(
+    audio_id: str,
+    session: Session = Depends(get_session),
+) -> FileResponse:
+    service = AudioService(session)
+    audio_asset = service.get_audio(audio_id)
+    path, media_type = service.get_playback_path(audio_asset)
+    return FileResponse(path, media_type=media_type, filename=audio_asset.filename)
 
 
 @router.get("/{audio_id}", response_model=AudioAssetResponse)

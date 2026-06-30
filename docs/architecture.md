@@ -118,6 +118,7 @@ Config loads from `backend/.env` and repo root `.env`.
 |--------|------|-------------|
 | GET | `/api/health` | Liveness + capability flags (ASR/diarization/LLM) |
 | POST | `/api/audio/upload` | Upload + normalize |
+| GET | `/api/audio/{id}/stream` | Stream normalized (or original) audio for playback |
 | GET/DELETE | `/api/audio/{id}` | Audio metadata / delete |
 | POST | `/api/transcripts` | Start transcription job |
 | GET/PATCH/DELETE | `/api/transcripts/{id}` | Transcript CRUD |

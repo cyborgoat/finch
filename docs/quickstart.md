@@ -142,7 +142,7 @@ LLM_MOCK=false
 OPENROUTER_API_KEY=sk-or-...
 ```
 
-Run actions from a transcript detail page in the UI, or via `POST /api/ai-actions`.
+Run actions from the **AI** tab on a transcript detail page, or via `POST /api/ai-actions`.
 
 ## 10. Tests
 

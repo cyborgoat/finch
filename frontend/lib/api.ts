@@ -78,6 +78,10 @@ export async function uploadAudio(
   return request("/api/audio/upload", { method: "POST", body: form })
 }
 
+export async function getAudioAsset(audioId: string): Promise<AudioAsset> {
+  return request(`/api/audio/${audioId}`)
+}
+
 export async function createTranscriptJob(input: {
   audioAssetId: string
   language?: string

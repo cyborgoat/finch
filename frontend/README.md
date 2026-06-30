@@ -51,7 +51,7 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 | `/upload` | Upload audio and transcribe |
 | `/record` | Browser recording with live waveform |
 | `/transcripts` | Transcript library (transcribing / failed / draft states) |
-| `/transcripts/[id]` | Tabbed detail: **Transcript** (edit, inline speaker pills) and **AI** (templates, documents) |
+| `/transcripts/[id]` | Player, current turn, **Transcript** tab (edit) and **AI** tab (actions + documents) |
 | `/documents` | Document library |
 | `/documents/[id]` | Markdown editor + preview + export |
 | `/settings` | Health, diarization, speaker memory profiles, privacy |
@@ -60,7 +60,10 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 
 - **Transcribing:** list and detail pages poll while `status=transcribing`
 - **Failed jobs:** transcript stays visible with error message (not removed)
-- **Transcript detail:** **Transcript** tab (title, per-turn speaker pills, full text) and **AI** tab (templates, job progress, generated documents)
+- **Transcript tab:** toolbar, title, full transcript (text or segments toggle)
+- **AI tab:** AI action templates, job progress, and generated documents only
+- **Audio player:** centered play control below the track, ±15s skip, speed dropdown (0.5×–5×)
+- **Current turn:** single active segment below the player, with prev/next arrows
 - **Speaker labels:** click any speaker pill on a turn to assign or rename; updates all turns in that cluster immediately
 - **Speaker memory:** enable and consent in **Settings** only; editing a pill updates the voiceprint from that turn’s audio when memory is on
 - **Save:** toolbar **Save** persists title and full text; speaker names save via the pill dialog

@@ -37,9 +37,11 @@ What Finch does today and what is intentionally out of scope.
 ### Transcript library
 
 - List, search, edit, copy, export TXT/MD
-- Tabbed detail page: **Transcript** (inline speaker pills, full-text editor) and **AI** (templates, generated documents)
+- Transcript detail: built-in audio player (seek, ±15s skip, playback speed), current turn synced to playback, prev/next turn navigation
+- **Transcript tab:** toolbar, title, full transcript (plain text or all segments)
+- **AI tab:** AI action templates, job progress, and generated documents only
+- Inline speaker pills on turns; click timestamps to jump in the audio
 - In-progress (`transcribing`) and failed states in the UI
-- Clickable speaker pills per turn when diarization ran
 
 ### AI actions (optional)
 
@@ -64,7 +66,7 @@ What Finch does today and what is intentionally out of scope.
 
 | Area | Examples |
 |------|----------|
-| Timestamps | Segment-level timestamps, click-to-play audio |
+| Timestamps | Waveform and finer scrubbing beyond click-to-seek |
 | Search | Full-text over transcripts and documents; later semantic search |
 | Export | PDF, DOCX, HTML, Obsidian vault, Notion Markdown |
 | Local LLM | Ollama, llama.cpp, LM Studio, vLLM for fully local summaries |

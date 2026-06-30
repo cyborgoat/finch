@@ -7,8 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { TranscriptAiTab } from "@/components/transcripts/TranscriptAiTab"
+import { TranscriptAudioPlayer } from "@/components/transcripts/TranscriptAudioPlayer"
 import { TranscriptEditor } from "@/components/transcripts/TranscriptEditor"
+import { ActiveTranscriptSegment } from "@/components/transcripts/ActiveTranscriptSegment"
+import { FullTranscriptPanel } from "@/components/transcripts/FullTranscriptPanel"
 import { TranscriptToolbar } from "@/components/transcripts/TranscriptToolbar"
+import { useAudioAsset } from "@/hooks/useAudioAsset"
+import { useTranscriptPlayback } from "@/hooks/useTranscriptPlayback"
 import type { DocumentSummary, SpeakerMemoryStatus, SpeakerProfileSummary, Transcript } from "@/lib/types"
 import type { SpeakerSegment } from "@/lib/types"
 
@@ -62,6 +67,8 @@ export function TranscriptDetailLayout({
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeTab = searchParams.get("tab") === "ai" ? "ai" : "transcript"
+  const { data: audioAsset } = useAudioAsset(transcript.audioAssetId)
+  const playback = useTranscriptPlayback(transcript.audioAssetId)
 
   const setTab = useCallback(
     (value: string) => {
@@ -88,7 +95,7 @@ export function TranscriptDetailLayout({
         backHref="/transcripts"
         backLabel="Transcripts"
         title={title || "Untitled transcript"}
-        description="Edit transcript content or generate AI documents."
+        description="Listen, edit, and review this transcript."
         badge={<Badge variant="secondary">Draft</Badge>}
         meta={
           <>
@@ -96,6 +103,41 @@ export function TranscriptDetailLayout({
             {transcript.language ? ` · ${transcript.language}` : null}
           </>
         }
+      />
+
+      <TranscriptAudioPlayer
+        filename={audioAsset?.filename}
+        audioRef={playback.audioRef}
+        src={playback.src}
+        isPlaying={playback.isPlaying}
+        currentTime={playback.currentTime}
+        duration={playback.duration || audioAsset?.durationSeconds || 0}
+        isReady={playback.isReady}
+        playbackRate={playback.playbackRate}
+        onPlaybackRateChange={playback.setPlaybackRate}
+        onTogglePlay={playback.togglePlay}
+        onSkipBackward={playback.skipBackward}
+        onSkipForward={playback.skipForward}
+        onSeekInput={playback.handleSeekInput}
+        onTimeUpdate={playback.handleTimeUpdate}
+        onLoadedMetadata={playback.handleLoadedMetadata}
+        onPlay={playback.handlePlay}
+        onPause={playback.handlePause}
+        onEnded={playback.handleEnded}
+      />
+
+      <ActiveTranscriptSegment
+        segments={segments}
+        fallbackText={text}
+        profiles={profiles}
+        memoryStatus={memoryStatus}
+        processingNote={transcript.processingNote}
+        currentPlaybackTime={playback.currentTime}
+        isPlaying={playback.isPlaying}
+        onSeekToTime={playback.seekAndPlay}
+        onSegmentSpeakerSave={onSegmentSpeakerSave}
+        speakerSavePending={speakerSavePending}
+        disabled={saving || speakerSavePending}
       />
 
       <Tabs value={activeTab} onValueChange={setTab} className="section-stack">
@@ -114,7 +156,7 @@ export function TranscriptDetailLayout({
         </TabsList>
 
         <TabsContent value="transcript" className="mt-0 pt-6">
-          <BlurFade>
+          <BlurFade className="section-stack">
             <TranscriptToolbar
               onSave={onSave}
               onCopy={onCopy}
@@ -126,12 +168,16 @@ export function TranscriptDetailLayout({
             />
             <TranscriptEditor
               title={title}
+              onTitleChange={onTitleChange}
+              disabled={saving || speakerSavePending}
+            />
+            <FullTranscriptPanel
               text={text}
-              speakerSegments={segments}
+              segments={segments}
               profiles={profiles}
               memoryStatus={memoryStatus}
-              processingNote={transcript.processingNote}
-              onTitleChange={onTitleChange}
+              currentPlaybackTime={playback.currentTime}
+              onSeekToTime={playback.seekAndPlay}
               onTextChange={onTextChange}
               onSegmentSpeakerSave={onSegmentSpeakerSave}
               speakerSavePending={speakerSavePending}

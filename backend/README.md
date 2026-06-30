@@ -98,7 +98,7 @@ If diarization or speaker matching is unavailable, the worker falls back gracefu
 ## API
 
 - `GET /api/health` — liveness + capability flags
-- `POST /api/audio/upload` · `GET/DELETE /api/audio/{id}`
+- `POST /api/audio/upload` · `GET /api/audio/{id}/stream` · `GET/DELETE /api/audio/{id}`
 - `POST /api/transcripts` — start transcription job
 - `GET/PATCH/DELETE /api/transcripts/{id}`
 - `PATCH /api/transcripts/{id}/speakers` — rename/link speakers on a transcript

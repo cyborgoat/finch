@@ -47,7 +47,7 @@ Loads settings from `backend/.env` and repo root `.env`.
 | Module | Routes |
 |--------|--------|
 | `routes_health.py` | `GET /api/health` (includes capability flags) |
-| `routes_audio.py` | `POST /api/audio/upload`, `GET/DELETE /api/audio/{id}` |
+| `routes_audio.py` | `POST /api/audio/upload`, `GET /api/audio/{id}/stream`, `GET/DELETE /api/audio/{id}` |
 | `routes_transcripts.py` | CRUD + `POST /api/transcripts` + `PATCH /api/transcripts/{id}/speakers` |
 | `routes_jobs.py` | `GET /api/jobs/{id}` |
 | `routes_ai_actions.py` | Templates + `POST /api/ai-actions` |

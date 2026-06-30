@@ -53,6 +53,30 @@ def test_upload_stores_valid_wav(mock_run, client, sample_wav_bytes):
 
 
 @patch("app.services.audio_service.subprocess.run")
+def test_stream_audio_returns_playback_file(mock_run, client, sample_wav_bytes):
+    from pathlib import Path
+
+    def fake_ffmpeg(cmd, check, capture_output):
+        output_path = Path(cmd[-1])
+        output_path.write_bytes(sample_wav_bytes)
+        return type("Result", (), {"returncode": 0})()
+
+    mock_run.side_effect = fake_ffmpeg
+
+    upload_response = client.post(
+        "/api/audio/upload",
+        data={"source": "upload"},
+        files={"file": ("sample.wav", BytesIO(sample_wav_bytes), "audio/wav")},
+    )
+    audio_id = upload_response.json()["id"]
+
+    stream_response = client.get(f"/api/audio/{audio_id}/stream")
+    assert stream_response.status_code == 200
+    assert stream_response.headers["content-type"] == "audio/wav"
+    assert stream_response.content == sample_wav_bytes
+
+
+@patch("app.services.audio_service.subprocess.run")
 def test_upload_accepts_webm_with_codec_param(mock_run, client, sample_wav_bytes):
     from pathlib import Path
 

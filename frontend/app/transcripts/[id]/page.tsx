@@ -6,6 +6,7 @@ import { PageContainer } from "@/components/layout/PageContainer"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { TextShimmer } from "@/components/motion-primitives/text-shimmer"
 import { TranscriptDetailLayout } from "@/components/transcripts/TranscriptDetailLayout"
+import { TranscriptPageAudio } from "@/components/transcripts/TranscriptPageAudio"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDocuments } from "@/hooks/useDocuments"
 import { useTranscriptEditor } from "@/hooks/useTranscriptEditor"
@@ -86,6 +87,7 @@ export default function TranscriptDetailPage({
           title={transcript.title}
           description="Transcription is running locally. This page will update when the text is ready."
         />
+        <TranscriptPageAudio audioAssetId={transcript.audioAssetId} />
         <div className="surface-card">
           <p className="text-sm font-medium">
             <TextShimmer>Transcribing…</TextShimmer>
@@ -108,6 +110,7 @@ export default function TranscriptDetailPage({
           title={transcript.title}
           description="Transcription failed."
         />
+        <TranscriptPageAudio audioAssetId={transcript.audioAssetId} />
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
           <p className="text-sm font-medium text-destructive">Error</p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

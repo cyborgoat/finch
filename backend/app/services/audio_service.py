@@ -182,6 +182,21 @@ class AudioService:
             raise AppError("AUDIO_NOT_FOUND", "Audio asset not found.", 404)
         return audio_asset
 
+    def get_playback_path(self, audio_asset: AudioAsset) -> tuple[Path, str]:
+        if audio_asset.normalized_path:
+            normalized = Path(audio_asset.normalized_path)
+            if normalized.is_file():
+                return normalized, "audio/wav"
+
+        original = Path(audio_asset.original_path)
+        if not original.is_file():
+            raise AppError(
+                "AUDIO_FILE_MISSING",
+                "Audio file is missing from local storage.",
+                404,
+            )
+        return original, normalize_mime_type(audio_asset.mime_type)
+
     def delete_audio(self, audio_asset: AudioAsset) -> None:
         Path(audio_asset.original_path).unlink(missing_ok=True)
         if audio_asset.normalized_path:

@@ -94,21 +94,25 @@ export function TranscriptAiTab({
 
   return (
     <BlurFade className="section-stack max-w-3xl">
+      {!llmReady ? (
+        <div className="surface-card text-sm text-muted-foreground">
+          LLM actions are not configured. Set{" "}
+          <code className="text-xs">OPENROUTER_API_KEY</code> or enable mock mode in{" "}
+          <Link href="/settings" className="text-foreground underline-offset-4 hover:underline">
+            Settings
+          </Link>
+          .
+        </div>
+      ) : null}
+
       <Section
-        title="Generate"
+        title="AI actions"
         description="Create Markdown documents from this transcript via OpenRouter. Only transcript text is sent—not audio."
       >
-        {!llmReady ? (
-          <div className="surface-card text-sm text-muted-foreground">
-            LLM actions are not configured. Set{" "}
-            <code className="text-xs">OPENROUTER_API_KEY</code> or enable mock mode in{" "}
-            <Link href="/settings" className="text-foreground underline-offset-4 hover:underline">
-              Settings
-            </Link>
-            .
-          </div>
-        ) : isLoading ? (
+        {isLoading ? (
           <p className="section-hint">Loading actions…</p>
+        ) : !llmReady ? (
+          <p className="section-hint">Configure LLM access in Settings to run AI actions.</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {templates.map((action) => (
@@ -157,13 +161,13 @@ export function TranscriptAiTab({
       )}
 
       <Section
-        title="Generated documents"
-        description="Documents created from this transcript appear here."
+        title="Documents"
+        description="Markdown documents generated from this transcript."
       >
         {documents.length === 0 ? (
           <EmptyState
             title="No documents yet"
-            description="Run an AI action above to generate a Markdown document from this transcript."
+            description="Run an AI action above to generate a document from this transcript."
           />
         ) : (
           <LinkedDocumentList items={documents} />
