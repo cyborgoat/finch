@@ -24,6 +24,15 @@ What Finch does today and what is intentionally out of scope.
 - Falls back to full-file ASR if diarization is unavailable
 - Tunable segment merge and audio source — see [diarization.md](diarization.md)
 
+### Speaker memory (optional)
+
+- Local voiceprint storage with [pyannote/embedding](https://huggingface.co/pyannote/embedding)
+- Match unknown speakers to saved profiles or assign new names on a transcript
+- “Remember this voice” enrollment with consent
+- Auto-match known speakers on future transcripts
+- Profile management in Settings (embeddings, related transcripts)
+- Consent-gated, deletable from Settings — see [speaker-memory.md](speaker-memory.md)
+
 ### Transcript library
 
 - List, search, edit, copy, export TXT/MD

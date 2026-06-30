@@ -50,6 +50,12 @@ class Settings(BaseSettings):
     diarization_max_segments: int = 0
     hf_token: str | None = None
 
+    speaker_memory_enabled: bool = False
+    speaker_memory_mock: bool = True
+    speaker_embedding_model_id: str = "pyannote/embedding"
+    speaker_match_threshold: float = 0.75
+    speaker_min_enroll_seconds: float = 2.0
+
     max_upload_mb: int = 500
     max_audio_duration_seconds: int = 7200
 

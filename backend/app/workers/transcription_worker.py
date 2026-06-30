@@ -90,6 +90,7 @@ def _transcribe_with_diarization(
     audio_service: AudioService,
     audio_asset,
     language: str,
+    session: Session,
 ) -> tuple[str, str | None, list[SpeakerSegment]]:
     settings = get_settings()
     diarization_path = (
@@ -117,8 +118,44 @@ def _transcribe_with_diarization(
     min_segment = settings.diarization_min_segment_seconds
     if not merged_turns:
         merged_turns = [
-            DiarizationTurn("Speaker 1", 0.0, max(duration or min_segment, min_segment))
+            DiarizationTurn(
+                "Speaker 1",
+                0.0,
+                max(duration or min_segment, min_segment),
+                cluster_id="SPEAKER_00",
+            )
         ]
+
+    cluster_resolutions: dict[str, "SpeakerMatchResult"] = {}
+    from app.services.app_preference_service import AppPreferenceService
+    from app.services.speaker_embedding_service import SpeakerEmbeddingService
+    from app.services.speaker_matching_service import SpeakerMatchingService, SpeakerMatchResult
+
+    preference_service = AppPreferenceService(session, settings)
+    speaker_memory_active = preference_service.is_speaker_memory_enabled()
+    if speaker_memory_active and preference_service.has_speaker_memory_consent():
+        job_service.update_job(job, progress=0.27, stage="running_speaker_matching")
+        try:
+            embedding_service = SpeakerEmbeddingService(settings)
+            cluster_embeddings = embedding_service.extract_cluster_embeddings(
+                diarization_path,
+                merged_turns,
+            )
+            matching_service = SpeakerMatchingService(session, settings)
+            cluster_resolutions = matching_service.resolve_display_names(
+                merged_turns,
+                cluster_embeddings,
+            )
+            merged_turns = matching_service.apply_names_to_turns(
+                merged_turns,
+                cluster_resolutions,
+            )
+            embedding_service.unload_model()
+        except AppError as exc:
+            logger.warning(
+                "Speaker matching unavailable (%s) — using generic speaker labels",
+                exc.message,
+            )
 
     diarization_service.unload_pipeline()
     job_service.update_job(job, progress=0.28, stage="loading_model")
@@ -147,12 +184,22 @@ def _transcribe_with_diarization(
             result = asr_service.transcribe(slice_path, language=language)
             if result.language and not detected_language:
                 detected_language = result.language
+            cluster_id = turn.cluster_id or turn.speaker
+            resolution = cluster_resolutions.get(cluster_id)
             segments.append(
                 SpeakerSegment(
                     speaker=turn.speaker,
                     start_sec=turn.start_sec,
                     end_sec=turn.end_sec,
                     text=result.text.strip(),
+                    cluster_id=turn.cluster_id,
+                    speaker_profile_id=(
+                        resolution.speaker_profile_id if resolution else None
+                    ),
+                    match_confidence=(
+                        resolution.match_confidence if resolution else None
+                    ),
+                    match_status=resolution.match_status if resolution else None,
                 )
             )
     finally:
@@ -211,6 +258,7 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
                         audio_service=audio_service,
                         audio_asset=audio_asset,
                         language=language,
+                        session=session,
                     )
                 except AppError as exc:
                     diarization_service.unload_pipeline()

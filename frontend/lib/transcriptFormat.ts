@@ -1,7 +1,7 @@
 import type { SpeakerSegment, Transcript } from "@/lib/types"
 
 const SPEAKER_BLOCK_PATTERN =
-  /(?:^|\n\n)(Speaker \d+):\s*([\s\S]*?)(?=(?:\n\nSpeaker \d+:)|$)/g
+  /(?:^|\n\n)([^:]+):\s*([\s\S]*?)(?=(?:\n\n[^:]+:)|$)/g
 
 export function parseSpeakerLabeledText(text: string): SpeakerSegment[] {
   const segments: SpeakerSegment[] = []
@@ -68,10 +68,4 @@ export function transcriptDisplayText(
     return formatSpeakerTranscript(parsedRaw)
   }
   return rawText
-}
-
-export function hasSpeakerLabels(
-  transcript: Pick<Transcript, "speakerSegments" | "rawText" | "editedText">,
-): boolean {
-  return resolveSpeakerSegments(transcript).length > 0
 }

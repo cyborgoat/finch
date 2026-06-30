@@ -52,6 +52,9 @@ Document
 |--------|---------|
 | `AudioAsset` | Uploaded or recorded file metadata + paths to original/normalized WAV |
 | `Transcript` | `rawText`, optional `editedText`, `speakerSegments`, `status` (`draft` / `final` / `transcribing` / `failed`) |
+| `SpeakerProfile` | Enrolled speaker identity (`displayName`, `notes`) |
+| `SpeakerEmbedding` | Local voiceprint vectors linked to a profile |
+| `AppPreference` | Speaker memory consent and enable toggle |
 | `Job` | Async work unit (`transcription`, `ai_action`) with progress/stage |
 | `Document` | LLM-generated Markdown linked to a transcript |
 
@@ -77,6 +80,7 @@ POST /api/transcripts { audioAssetId }
   → create Job, resultId = transcript.id
   → transcription_worker
        → optional: pyannote diarization → speaker segments
+       → optional: speaker memory match → named labels
        → Qwen3-ASR per segment (or full file if diarization off/fallback)
        → update Transcript (rawText, speakerSegments, status=draft)
        → Job completed
@@ -120,6 +124,9 @@ Config loads from `backend/.env` and repo root `.env`.
 | GET | `/api/jobs/{id}` | Job status and progress |
 | GET/POST | `/api/ai-actions/...` | AI action templates + jobs |
 | GET/PATCH/DELETE | `/api/documents/{id}` | Document CRUD |
+| GET/POST/PATCH/DELETE | `/api/speaker-profiles/...` | Speaker profile CRUD + detail |
+| GET/POST/PATCH/DELETE | `/api/speaker-memory/...` | Consent, toggle, wipe voiceprint data |
+| PATCH | `/api/transcripts/{id}/speakers` | Rename/link speakers (`enroll: true` saves voiceprint) |
 
 ## Startup diagnostics
 
@@ -141,4 +148,4 @@ On boot, the backend logs a configuration summary: loaded env files, ASR/diariza
 - Single process: FastAPI + in-process `BackgroundTasks` (no Redis/Celery)
 - Job polling from clients (no WebSockets)
 - CORS enabled for `http://localhost:3000`
-- Mock modes: `ASR_MOCK`, `DIARIZATION_MOCK`, `LLM_MOCK`
+- Mock modes: `ASR_MOCK`, `DIARIZATION_MOCK`, `SPEAKER_MEMORY_MOCK`, `LLM_MOCK`

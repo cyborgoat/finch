@@ -1,12 +1,14 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { LinkedDocumentList } from "@/components/documents/DocumentList"
 import { AiActionPanel } from "@/components/transcripts/AiActionPanel"
 import { TranscriptEditor } from "@/components/transcripts/TranscriptEditor"
 import { TranscriptToolbar } from "@/components/transcripts/TranscriptToolbar"
+import { SpeakerConsentDialog } from "@/components/speakers/SpeakerConsentDialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDocuments } from "@/hooks/useDocuments"
 import {
@@ -14,35 +16,129 @@ import {
   useTranscript,
   useUpdateTranscript,
 } from "@/hooks/useTranscripts"
+import {
+  useRecordSpeakerConsent,
+  useSpeakerMemoryStatus,
+  useSpeakerProfiles,
+} from "@/hooks/useSpeakerProfiles"
 import { exportTranscriptMd, exportTranscriptTxt } from "@/lib/export"
+import { updateTranscriptSpeakers, FinchApiError } from "@/lib/api"
 import {
   resolveSpeakerSegments,
   transcriptDisplayText,
+  formatSpeakerTranscript,
 } from "@/lib/transcriptFormat"
-import type { Transcript } from "@/lib/types"
+import {
+  buildSpeakerMappings,
+  createSpeakerDraft,
+  hasSpeakerDraftChanges,
+  uniqueSpeakerClusters,
+} from "@/lib/speakerMappings"
+import type { SpeakerSegment, Transcript } from "@/lib/types"
 
 function TranscriptDetailEditor({ transcript }: { transcript: Transcript }) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const updateMutation = useUpdateTranscript(transcript.id)
   const deleteMutation = useDeleteTranscript()
   const { data: documentsData } = useDocuments(transcript.id)
+  const { data: memoryStatus } = useSpeakerMemoryStatus()
+  const { data: profilesData } = useSpeakerProfiles()
+  const consentMutation = useRecordSpeakerConsent()
 
-  const speakerSegments = resolveSpeakerSegments(transcript)
+  const initialSegments = resolveSpeakerSegments(transcript)
+  const initialClusters = useMemo(
+    () => uniqueSpeakerClusters(initialSegments),
+    [initialSegments],
+  )
+
   const [title, setTitle] = useState(transcript.title)
+  const [segments, setSegments] = useState(initialSegments)
+  const [speakerDraft, setSpeakerDraft] = useState(() =>
+    createSpeakerDraft(initialClusters),
+  )
   const [text, setText] = useState(() =>
     transcriptDisplayText(
       transcript.rawText,
       transcript.editedText,
-      speakerSegments,
+      initialSegments,
     ),
   )
+  const [isSaving, setIsSaving] = useState(false)
+  const [consentOpen, setConsentOpen] = useState(false)
+
+  const clusters = useMemo(() => uniqueSpeakerClusters(segments), [segments])
+  const speakerChanges = hasSpeakerDraftChanges(clusters, speakerDraft)
+  const wantsEnroll = Object.values(speakerDraft.enroll).some(Boolean)
+
+  const applySpeakerUpdate = (updatedSegments: SpeakerSegment[], rawText: string) => {
+    setSegments(updatedSegments)
+    const formatted = formatSpeakerTranscript(updatedSegments) || rawText
+    setText(formatted)
+    setSpeakerDraft(createSpeakerDraft(uniqueSpeakerClusters(updatedSegments)))
+    void queryClient.invalidateQueries({ queryKey: ["transcripts", transcript.id] })
+    void queryClient.invalidateQueries({ queryKey: ["speaker-profiles"] })
+  }
+
+  const performSave = async () => {
+    setIsSaving(true)
+    try {
+      let savedText = text
+
+      if (speakerChanges && segments.length > 0) {
+        const mappings = buildSpeakerMappings(
+          clusters,
+          speakerDraft,
+          profilesData?.items ?? [],
+        )
+        const result = await updateTranscriptSpeakers(transcript.id, mappings)
+        const updatedSegments = result.speakerSegments ?? []
+        savedText = formatSpeakerTranscript(updatedSegments) || result.rawText
+        applySpeakerUpdate(updatedSegments, result.rawText)
+      } else if (segments.length > 0) {
+        savedText =
+          formatSpeakerTranscript(
+            segments.map((segment) => {
+              const clusterId = segment.clusterId || segment.speaker
+              return {
+                ...segment,
+                speaker: speakerDraft.names[clusterId] ?? segment.speaker,
+              }
+            }),
+          ) || text
+      }
+
+      await updateMutation.mutateAsync({ title, editedText: savedText })
+      setText(savedText)
+      toast.success("Transcript saved")
+    } catch (error) {
+      const message =
+        error instanceof FinchApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Failed to save"
+      toast.error(message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   const handleSave = async () => {
+    if (wantsEnroll && !memoryStatus?.consentGiven) {
+      setConsentOpen(true)
+      return
+    }
+    await performSave()
+  }
+
+  const handleConsent = async () => {
     try {
-      await updateMutation.mutateAsync({ title, editedText: text })
-      toast.success("Transcript saved")
+      await consentMutation.mutateAsync()
+      setConsentOpen(false)
+      await performSave()
     } catch {
-      toast.error("Failed to save")
+      toast.error("Failed to record consent")
     }
   }
 
@@ -62,6 +158,8 @@ function TranscriptDetailEditor({ transcript }: { transcript: Transcript }) {
     }
   }
 
+  const saving = isSaving || updateMutation.isPending
+
   return (
     <div className="space-y-6">
       <TranscriptToolbar
@@ -70,30 +168,37 @@ function TranscriptDetailEditor({ transcript }: { transcript: Transcript }) {
         onExportTxt={() => exportTranscriptTxt(title, text)}
         onExportMd={() => exportTranscriptMd(title, text)}
         onDelete={() => void handleDelete()}
-        isSaving={updateMutation.isPending}
+        isSaving={saving}
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
         <TranscriptEditor
           title={title}
           text={text}
-          speakerSegments={speakerSegments}
+          speakerSegments={segments}
+          speakerClusters={clusters}
+          speakerDraft={speakerDraft}
           processingNote={transcript.processingNote}
           onTitleChange={setTitle}
           onTextChange={setText}
-          disabled={updateMutation.isPending}
+          onSpeakerDraftChange={setSpeakerDraft}
+          disabled={saving}
         />
         <div className="space-y-4">
-          <AiActionPanel
-            transcriptId={transcript.id}
-            disabled={updateMutation.isPending}
-          />
+          <AiActionPanel transcriptId={transcript.id} disabled={saving} />
           <section className="space-y-2">
             <h2 className="text-sm font-medium">Generated documents</h2>
             <LinkedDocumentList items={documentsData?.items ?? []} />
           </section>
         </div>
       </div>
+
+      <SpeakerConsentDialog
+        open={consentOpen}
+        onOpenChange={setConsentOpen}
+        onConfirm={() => void handleConsent()}
+        isPending={consentMutation.isPending || saving}
+      />
     </div>
   )
 }
@@ -145,9 +250,7 @@ export default function TranscriptDetailPage({
       <div className="space-y-4">
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold">{transcript.title}</h1>
-          <p className="text-sm text-destructive">
-            Transcription failed
-          </p>
+          <p className="text-sm text-destructive">Transcription failed</p>
         </div>
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6">
           <p className="text-sm font-medium">Error</p>
@@ -160,10 +263,5 @@ export default function TranscriptDetailPage({
     )
   }
 
-  return (
-    <TranscriptDetailEditor
-      key={`${transcript.id}-${transcript.updatedAt}`}
-      transcript={transcript}
-    />
-  )
+  return <TranscriptDetailEditor key={transcript.id} transcript={transcript} />
 }

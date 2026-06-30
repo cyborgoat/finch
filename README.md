@@ -8,6 +8,7 @@ Finch is a local-first voice transcription app. Audio is transcribed on your mac
 - Browser recording with live waveform visualization
 - Local ASR with [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) (or mock mode)
 - Optional speaker diarization via [pyannote-audio](https://github.com/pyannote/pyannote-audio)
+- Optional speaker memory — persistent names via local voiceprints
 - Background transcription jobs with in-progress status in the UI
 - Transcript library: edit, copy, export TXT/MD
 - AI actions (summaries, action items, meeting notes) via OpenRouter (`LLM_MOCK` for dev)
@@ -22,6 +23,7 @@ See [docs/features.md](docs/features.md) for the full feature list and roadmap.
 | [docs/README.md](docs/README.md) | Documentation index |
 | [docs/quickstart.md](docs/quickstart.md) | Install, configure, run, transcribe |
 | [docs/diarization.md](docs/diarization.md) | Speaker labels: setup, validation, tuning |
+| [docs/speaker-memory.md](docs/speaker-memory.md) | Persistent speaker names and voiceprints |
 | [docs/architecture.md](docs/architecture.md) | System design and data flow |
 | [docs/modules.md](docs/modules.md) | Backend module reference |
 | [docs/features.md](docs/features.md) | Implemented features and planned work |
@@ -78,6 +80,8 @@ cd backend && uv run python scripts/validate_diarization.py
 | `DIARIZATION_ENABLED` | Enable speaker diarization pipeline |
 | `DIARIZATION_MOCK` | Mock diarization (CI/dev) |
 | `HF_TOKEN` | Hugging Face token for pyannote models |
+| `SPEAKER_MEMORY_ENABLED` | Remember speaker names across transcripts |
+| `SPEAKER_MATCH_THRESHOLD` | Auto-match similarity threshold (default `0.75`) |
 | `LLM_MOCK` | Mock OpenRouter responses |
 | `OPENROUTER_API_KEY` | Real LLM actions |
 

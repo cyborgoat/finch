@@ -1,15 +1,17 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlmodel import Session
 
 from app.config import get_settings
-from app.core.startup_diagnostics import get_capability_status
+from app.core.startup_diagnostics import get_capability_status_with_session
+from app.storage.database import get_session
 
 router = APIRouter(tags=["health"])
 
 
 @router.get("/health")
-def health() -> dict:
+def health(session: Session = Depends(get_session)) -> dict:
     settings = get_settings()
-    capabilities = get_capability_status(settings)
+    capabilities = get_capability_status_with_session(session, settings)
     diarization_reason: str | None = capabilities.diarization_reason
     if (
         capabilities.diarization_enabled
@@ -32,5 +34,10 @@ def health() -> dict:
             "asrMock": capabilities.asr_mock,
             "llmMock": capabilities.llm_mock,
             "openrouterConfigured": capabilities.openrouter_configured,
+            "speakerMemoryEnabled": capabilities.speaker_memory_enabled,
+            "speakerMemoryMock": capabilities.speaker_memory_mock,
+            "speakerMemoryReady": capabilities.speaker_memory_ready,
+            "speakerMemoryReason": capabilities.speaker_memory_reason,
+            "speakerMemoryConsentGiven": capabilities.speaker_memory_consent_given,
         },
     }

@@ -9,6 +9,7 @@ from app.api import (
     routes_documents,
     routes_health,
     routes_jobs,
+    routes_speaker_profiles,
     routes_transcripts,
 )
 from app.config import get_settings
@@ -48,6 +49,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_jobs.router, prefix="/api")
     app.include_router(routes_ai_actions.router, prefix="/api")
     app.include_router(routes_documents.router, prefix="/api")
+    app.include_router(routes_speaker_profiles.router, prefix="/api")
 
     return app
 

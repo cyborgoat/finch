@@ -13,6 +13,58 @@ export type SpeakerSegment = {
   startSec: number
   endSec: number
   text: string
+  clusterId?: string | null
+  speakerProfileId?: string | null
+  matchConfidence?: number | null
+  matchStatus?: "matched" | "unknown" | "manual" | "unmatched" | null
+}
+
+export type SpeakerProfileSummary = {
+  id: string
+  displayName: string
+  notes?: string | null
+  embeddingCount: number
+  relatedTranscriptCount?: number
+  createdAt: string
+  updatedAt: string
+}
+
+export type SpeakerEmbeddingSummary = {
+  id: string
+  modelId: string
+  sourceTranscriptId?: string | null
+  sourceClusterId?: string | null
+  durationSec?: number | null
+  dimensions: number
+  createdAt: string
+}
+
+export type RelatedTranscriptSummary = {
+  id: string
+  title: string
+  segmentCount: number
+  updatedAt: string
+}
+
+export type SpeakerProfileDetail = {
+  id: string
+  displayName: string
+  notes?: string | null
+  embeddingCount: number
+  embeddingDescription: string
+  embeddings: SpeakerEmbeddingSummary[]
+  relatedTranscripts: RelatedTranscriptSummary[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type SpeakerMemoryStatus = {
+  enabled: boolean
+  consentGiven: boolean
+  consentAt?: string | null
+  profileCount: number
+  ready: boolean
+  reason?: string | null
 }
 
 export type Transcript = {

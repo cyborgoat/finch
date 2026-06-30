@@ -5,6 +5,9 @@ import type {
   Document,
   DocumentSummary,
   Job,
+  SpeakerMemoryStatus,
+  SpeakerProfileDetail,
+  SpeakerProfileSummary,
   Transcript,
   TranscriptSummary,
 } from "@/lib/types"
@@ -55,6 +58,11 @@ export async function getHealth(): Promise<{
     asrMock: boolean
     llmMock: boolean
     openrouterConfigured: boolean
+    speakerMemoryEnabled?: boolean
+    speakerMemoryMock?: boolean
+    speakerMemoryReady?: boolean
+    speakerMemoryReason?: string | null
+    speakerMemoryConsentGiven?: boolean
   }
 }> {
   return request("/api/health")
@@ -150,4 +158,59 @@ export async function updateDocument(
 
 export async function deleteDocument(id: string): Promise<{ ok: boolean }> {
   return request(`/api/documents/${id}`, { method: "DELETE" })
+}
+
+export async function updateTranscriptSpeakers(
+  transcriptId: string,
+  mappings: Array<{
+    clusterId: string
+    displayName: string
+    profileId?: string | null
+    enroll?: boolean
+  }>,
+): Promise<{
+  id: string
+  speakerSegments: Transcript["speakerSegments"]
+  rawText: string
+  updatedAt: string
+}> {
+  return request(`/api/transcripts/${transcriptId}/speakers`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mappings }),
+  })
+}
+
+export async function listSpeakerProfiles(): Promise<{
+  items: SpeakerProfileSummary[]
+}> {
+  return request("/api/speaker-profiles")
+}
+
+export async function getSpeakerProfile(id: string): Promise<SpeakerProfileDetail> {
+  return request(`/api/speaker-profiles/${id}`)
+}
+
+export async function deleteSpeakerProfile(id: string): Promise<{ ok: boolean }> {
+  return request(`/api/speaker-profiles/${id}`, { method: "DELETE" })
+}
+
+export async function getSpeakerMemoryStatus(): Promise<SpeakerMemoryStatus> {
+  return request("/api/speaker-memory/status")
+}
+
+export async function recordSpeakerMemoryConsent(): Promise<{ consentAt: string }> {
+  return request("/api/speaker-memory/consent", { method: "POST" })
+}
+
+export async function toggleSpeakerMemory(enabled: boolean): Promise<SpeakerMemoryStatus> {
+  return request("/api/speaker-memory/status", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled }),
+  })
+}
+
+export async function deleteSpeakerMemoryData(): Promise<{ ok: boolean }> {
+  return request("/api/speaker-memory/data", { method: "DELETE" })
 }

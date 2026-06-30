@@ -13,11 +13,16 @@ from app.schemas.transcript import (
     UpdateTranscriptRequest,
     UpdateTranscriptResponse,
 )
+from app.schemas.speaker import (
+    UpdateTranscriptSpeakersRequest,
+    UpdateTranscriptSpeakersResponse,
+)
 from app.services.audio_service import AudioService
 from app.services.diarization_service import speaker_segments_from_json
 from app.services.document_service import DocumentService
 from app.services.job_service import JobService
 from app.services.transcript_service import TranscriptService
+from app.services.speaker_transcript_service import SpeakerTranscriptService
 from app.storage.database import get_session
 from app.workers.transcription_worker import run_transcription_job
 
@@ -26,6 +31,19 @@ router = APIRouter(prefix="/transcripts", tags=["transcripts"])
 
 def _to_summary(transcript: Transcript) -> TranscriptSummary:
     return TranscriptSummary.model_validate(transcript)
+
+
+def _segment_to_schema(segment) -> SpeakerSegmentSchema:
+    return SpeakerSegmentSchema(
+        speaker=segment.speaker,
+        start_sec=segment.start_sec,
+        end_sec=segment.end_sec,
+        text=segment.text,
+        cluster_id=segment.cluster_id,
+        speaker_profile_id=segment.speaker_profile_id,
+        match_confidence=segment.match_confidence,
+        match_status=segment.match_status,
+    )
 
 
 def _to_response(transcript: Transcript) -> TranscriptResponse:
@@ -38,15 +56,7 @@ def _to_response(transcript: Transcript) -> TranscriptResponse:
         edited_text=transcript.edited_text,
         language=transcript.language,
         status=transcript.status,
-        speaker_segments=[
-            SpeakerSegmentSchema(
-                speaker=segment.speaker,
-                start_sec=segment.start_sec,
-                end_sec=segment.end_sec,
-                text=segment.text,
-            )
-            for segment in segments
-        ]
+        speaker_segments=[_segment_to_schema(segment) for segment in segments]
         if segments
         else None,
         error_message=transcript.error_message,
@@ -126,6 +136,32 @@ def update_transcript(
         edited_text=updated.edited_text,
         status=updated.status,
         updated_at=updated.updated_at,
+    )
+
+
+@router.patch("/{transcript_id}/speakers", response_model=UpdateTranscriptSpeakersResponse)
+def update_transcript_speakers(
+    transcript_id: str,
+    payload: UpdateTranscriptSpeakersRequest,
+    session: Session = Depends(get_session),
+) -> UpdateTranscriptSpeakersResponse:
+    service = SpeakerTranscriptService(session)
+    mappings = [
+        {
+            "cluster_id": item.cluster_id,
+            "display_name": item.display_name,
+            "profile_id": item.profile_id,
+            "enroll": item.enroll,
+        }
+        for item in payload.mappings
+    ]
+    segments, raw_text = service.update_speakers(transcript_id, mappings)
+    transcript = TranscriptService(session).get_transcript(transcript_id)
+    return UpdateTranscriptSpeakersResponse(
+        id=transcript.id,
+        speaker_segments=[_segment_to_schema(segment) for segment in segments],
+        raw_text=raw_text,
+        updated_at=transcript.updated_at,
     )
 
 

@@ -4,9 +4,11 @@ from sqlalchemy import inspect
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.config import get_settings
+from app.models.app_preference import AppPreference  # noqa: F401
 from app.models.audio_asset import AudioAsset  # noqa: F401
 from app.models.document import Document  # noqa: F401
 from app.models.job import Job  # noqa: F401
+from app.models.speaker_profile import SpeakerEmbedding, SpeakerProfile  # noqa: F401
 from app.models.transcript import Transcript  # noqa: F401
 
 _engine = None

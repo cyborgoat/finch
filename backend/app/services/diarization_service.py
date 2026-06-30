@@ -86,6 +86,7 @@ class DiarizationTurn:
     speaker: str
     start_sec: float
     end_sec: float
+    cluster_id: str | None = None
 
 
 class SpeakerSegment(BaseModel):
@@ -93,6 +94,10 @@ class SpeakerSegment(BaseModel):
     start_sec: float
     end_sec: float
     text: str = ""
+    cluster_id: str | None = None
+    speaker_profile_id: str | None = None
+    match_confidence: float | None = None
+    match_status: str | None = None
 
 
 class DiarizationService:
@@ -174,8 +179,13 @@ class DiarizationService:
         min_segment = self.settings.diarization_min_segment_seconds
         midpoint = max(duration_seconds / 2, min_segment)
         return [
-            DiarizationTurn("Speaker 1", 0.0, midpoint),
-            DiarizationTurn("Speaker 2", midpoint, max(duration_seconds, midpoint + 0.5)),
+            DiarizationTurn("Speaker 1", 0.0, midpoint, cluster_id="SPEAKER_00"),
+            DiarizationTurn(
+                "Speaker 2",
+                midpoint,
+                max(duration_seconds, midpoint + 0.5),
+                cluster_id="SPEAKER_01",
+            ),
         ]
 
     def diarize(self, audio_path: str, duration_seconds: float | None = None) -> list[DiarizationTurn]:
@@ -210,6 +220,7 @@ class DiarizationService:
                         speaker=speaker_map[label],
                         start_sec=float(turn.start),
                         end_sec=float(turn.end),
+                        cluster_id=label,
                     )
                 )
             logger.info(
@@ -243,11 +254,16 @@ def merge_adjacent_turns(
     for turn in turns[1:]:
         previous = merged[-1]
         gap = max(turn.start_sec - previous.end_sec, 0.0)
-        if turn.speaker == previous.speaker and gap <= merge_gap_seconds:
+        if turn.speaker == previous.speaker and (
+            previous.cluster_id is None
+            or turn.cluster_id is None
+            or turn.cluster_id == previous.cluster_id
+        ) and gap <= merge_gap_seconds:
             merged[-1] = DiarizationTurn(
                 previous.speaker,
                 previous.start_sec,
                 max(previous.end_sec, turn.end_sec),
+                cluster_id=previous.cluster_id or turn.cluster_id,
             )
         else:
             merged.append(turn)

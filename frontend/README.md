@@ -1,6 +1,6 @@
 # Finch Frontend
 
-Next.js app for Finch (milestones 4–11): upload, record, transcripts, speaker labels, AI actions, and documents.
+Next.js app for Finch: upload, record, transcripts, speaker labels, speaker memory, AI actions, and documents.
 
 **Project docs:** [../docs/README.md](../docs/README.md)
 
@@ -33,7 +33,7 @@ Run the backend in a separate terminal (`cd backend && uv run uvicorn app.main:a
 |----------|---------|---------|
 | `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` | Finch API base URL |
 
-Backend config (ASR, diarization, LLM) lives in repo root `.env` or `backend/.env` — not in the frontend.
+Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env` or `backend/.env` — not in the frontend.
 
 ## Scripts
 
@@ -51,18 +51,19 @@ Backend config (ASR, diarization, LLM) lives in repo root `.env` or `backend/.en
 | `/upload` | Upload audio and transcribe |
 | `/record` | Browser recording with live waveform |
 | `/transcripts` | Transcript library (transcribing / failed / draft states) |
-| `/transcripts/[id]` | Edit transcript, speaker segments, AI actions, linked documents |
+| `/transcripts/[id]` | Edit transcript, assign speaker names, AI actions |
 | `/documents` | Document library |
 | `/documents/[id]` | Markdown editor + preview + export |
-| `/settings` | Backend health, ASR/diarization/LLM capability status, privacy |
+| `/settings` | Health, diarization, speaker memory profiles, privacy |
 
 ## Key UI behavior
 
 - **Transcribing:** list and detail pages poll while `status=transcribing`
 - **Failed jobs:** transcript stays visible with error message (not removed)
-- **Speaker labels:** “By speaker” section when backend returns `speakerSegments` or labeled `rawText`
+- **Speaker labels:** “By speaker” section with per-cluster rename
+- **Speaker memory:** match unknown speakers to saved profiles; optional voiceprint enrollment; manage profiles in Settings
+- **Save:** one Save button persists title, transcript text, and speaker assignments together
 - **AI actions:** run from transcript detail; poll job → navigate to new document
-- **Settings:** reads `/api/health` capability flags (diarization ready, mock modes, etc.)
 
 ## Stack
 

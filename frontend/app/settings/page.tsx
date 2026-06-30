@@ -1,15 +1,59 @@
 "use client"
 
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { toast } from "sonner"
+import { SpeakerConsentDialog } from "@/components/speakers/SpeakerConsentDialog"
+import { SpeakerProfileManager } from "@/components/speakers/SpeakerProfileManager"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { getHealth } from "@/lib/api"
+import {
+  useDeleteSpeakerMemoryData,
+  useDeleteSpeakerProfile,
+  useRecordSpeakerConsent,
+  useSpeakerMemoryStatus,
+  useSpeakerProfiles,
+  useToggleSpeakerMemory,
+} from "@/hooks/useSpeakerProfiles"
 
 export default function SettingsPage() {
   const { data, isError, isLoading } = useQuery({
     queryKey: ["health"],
     queryFn: getHealth,
   })
+  const { data: memoryStatus } = useSpeakerMemoryStatus()
+  const { data: profilesData } = useSpeakerProfiles()
+  const toggleMemory = useToggleSpeakerMemory()
+  const consentMutation = useRecordSpeakerConsent()
+  const deleteProfile = useDeleteSpeakerProfile()
+  const deleteAllData = useDeleteSpeakerMemoryData()
+  const [consentOpen, setConsentOpen] = useState(false)
+
+  const handleToggle = async (enabled: boolean) => {
+    if (enabled && !memoryStatus?.consentGiven) {
+      setConsentOpen(true)
+      return
+    }
+    try {
+      await toggleMemory.mutateAsync(enabled)
+      toast.success(enabled ? "Speaker memory enabled" : "Speaker memory disabled")
+    } catch {
+      toast.error("Failed to update speaker memory")
+    }
+  }
+
+  const handleConsent = async () => {
+    try {
+      await consentMutation.mutateAsync()
+      await toggleMemory.mutateAsync(true)
+      setConsentOpen(false)
+      toast.success("Speaker memory enabled")
+    } catch {
+      toast.error("Failed to enable speaker memory")
+    }
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -87,12 +131,84 @@ export default function SettingsPage() {
             </>
           ) : null}
           <p>
-            Transcripts show <code className="text-xs">Speaker 1: …</code>,{" "}
-            <code className="text-xs">Speaker 2: …</code> when diarization runs.
-            Set <code className="text-xs">HF_TOKEN</code> in{" "}
-            <code className="text-xs">.env</code> or run{" "}
-            <code className="text-xs">huggingface-cli login</code>, then re-transcribe.
+            Transcripts show speaker labels when diarization runs. Set{" "}
+            <code className="text-xs">HF_TOKEN</code> in{" "}
+            <code className="text-xs">.env</code>, then re-transcribe.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Speaker memory</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm text-muted-foreground">
+          {memoryStatus ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={memoryStatus.enabled ? "default" : "secondary"}>
+                {memoryStatus.enabled ? "Enabled" : "Disabled"}
+              </Badge>
+              <Badge variant={memoryStatus.consentGiven ? "default" : "outline"}>
+                {memoryStatus.consentGiven ? "Consent given" : "Consent required"}
+              </Badge>
+              {memoryStatus.ready ? (
+                <Badge variant="default">Ready</Badge>
+              ) : (
+                <Badge variant="secondary">Not ready</Badge>
+              )}
+            </div>
+          ) : null}
+          {memoryStatus?.reason && (
+            <p className="text-amber-700 dark:text-amber-400">{memoryStatus.reason}</p>
+          )}
+          <p>
+            Remember speaker names across transcripts using local voice embeddings.
+            Requires diarization. Voiceprints stay on your machine only.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant={memoryStatus?.enabled ? "secondary" : "default"}
+              disabled={toggleMemory.isPending}
+              onClick={() => void handleToggle(!memoryStatus?.enabled)}
+            >
+              {memoryStatus?.enabled ? "Disable speaker memory" : "Enable speaker memory"}
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={deleteAllData.isPending}
+              onClick={() => {
+                if (
+                  !confirm(
+                    "Delete all speaker profiles and voiceprints? This cannot be undone.",
+                  )
+                ) {
+                  return
+                }
+                void deleteAllData.mutateAsync().then(() => {
+                  toast.success("All speaker memory data deleted")
+                })
+              }}
+            >
+              Delete all voiceprints
+            </Button>
+          </div>
+          <div className="space-y-2">
+            <p className="font-medium text-foreground">Voice profiles</p>
+            <SpeakerProfileManager
+              profiles={profilesData?.items ?? []}
+              isDeleting={deleteProfile.isPending}
+              onDelete={(profileId, displayName) => {
+                if (!confirm(`Delete profile "${displayName}" and all voiceprints?`)) {
+                  return
+                }
+                void deleteProfile.mutateAsync(profileId).then(() => {
+                  toast.success(`Deleted ${displayName}`)
+                })
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -134,10 +250,17 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
           Audio stays on your machine for transcription and optional diarization.
-          LLM features are optional and only process text you explicitly send via AI
-          actions.
+          Speaker voiceprints are stored locally only when you consent. LLM features
+          are optional and only process text you explicitly send via AI actions.
         </CardContent>
       </Card>
+
+      <SpeakerConsentDialog
+        open={consentOpen}
+        onOpenChange={setConsentOpen}
+        onConfirm={() => void handleConsent()}
+        isPending={consentMutation.isPending || toggleMemory.isPending}
+      />
     </div>
   )
 }

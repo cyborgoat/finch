@@ -3,6 +3,8 @@
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { SpeakerRenamePanel } from "@/components/transcripts/SpeakerRenamePanel"
+import type { SpeakerCluster, SpeakerDraft } from "@/lib/speakerMappings"
 import type { SpeakerSegment } from "@/lib/types"
 import { formatSpeakerTranscript } from "@/lib/transcriptFormat"
 
@@ -10,9 +12,12 @@ type TranscriptEditorProps = {
   title: string
   text: string
   speakerSegments?: SpeakerSegment[] | null
+  speakerClusters?: SpeakerCluster[]
+  speakerDraft?: SpeakerDraft
   processingNote?: string | null
   onTitleChange: (value: string) => void
   onTextChange: (value: string) => void
+  onSpeakerDraftChange?: (draft: SpeakerDraft) => void
   disabled?: boolean
 }
 
@@ -27,15 +32,27 @@ export function TranscriptEditor({
   title,
   text,
   speakerSegments,
+  speakerClusters = [],
+  speakerDraft,
   processingNote,
   onTitleChange,
   onTextChange,
+  onSpeakerDraftChange,
   disabled,
 }: TranscriptEditorProps) {
   const segments = speakerSegments ?? []
   const hasTimedSegments = segments.some(
     (segment) => segment.endSec > segment.startSec,
   )
+
+  const displaySegments =
+    speakerDraft && speakerClusters.length > 0
+      ? segments.map((segment) => {
+          const clusterId = segment.clusterId || segment.speaker
+          const name = speakerDraft.names[clusterId] ?? segment.speaker
+          return { ...segment, speaker: name }
+        })
+      : segments
 
   return (
     <div className="space-y-4">
@@ -58,33 +75,46 @@ export function TranscriptEditor({
       )}
 
       {segments.length > 0 ? (
-        <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
-          <p className="text-sm font-medium">By speaker</p>
-          <div className="space-y-4">
-            {segments.map((segment, index) => {
-              const start = formatTime(segment.startSec)
-              const end = formatTime(segment.endSec)
-              const timeRange =
-                hasTimedSegments && start && end ? `${start} – ${end}` : null
+        <div className="space-y-3">
+          {speakerDraft && onSpeakerDraftChange ? (
+            <SpeakerRenamePanel
+              clusters={speakerClusters}
+              draft={speakerDraft}
+              disabled={disabled}
+              onDraftChange={onSpeakerDraftChange}
+            />
+          ) : null}
+          <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
+            <p className="text-sm font-medium">By speaker</p>
+            <div className="space-y-4">
+              {displaySegments.map((segment, index) => {
+                const start = formatTime(segment.startSec)
+                const end = formatTime(segment.endSec)
+                const timeRange =
+                  hasTimedSegments && start && end ? `${start} – ${end}` : null
 
-              return (
-                <div
-                  key={`${segment.speaker}-${segment.startSec}-${index}`}
-                  className="space-y-1 border-b border-border/60 pb-4 last:border-b-0 last:pb-0"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">{segment.speaker}</Badge>
-                    {timeRange && (
-                      <span className="text-xs text-muted-foreground">{timeRange}</span>
-                    )}
+                return (
+                  <div
+                    key={`${segment.speaker}-${segment.startSec}-${index}`}
+                    className="space-y-1 border-b border-border/60 pb-4 last:border-b-0 last:pb-0"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary">{segment.speaker}</Badge>
+                      {segment.matchStatus === "unknown" && (
+                        <Badge variant="outline">Unknown</Badge>
+                      )}
+                      {timeRange && (
+                        <span className="text-xs text-muted-foreground">{timeRange}</span>
+                      )}
+                    </div>
+                    <p className="text-sm leading-relaxed">
+                      <span className="font-medium">{segment.speaker}:</span>{" "}
+                      {segment.text}
+                    </p>
                   </div>
-                  <p className="text-sm leading-relaxed">
-                    <span className="font-medium">{segment.speaker}:</span>{" "}
-                    {segment.text}
-                  </p>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         </div>
       ) : (
@@ -107,7 +137,9 @@ export function TranscriptEditor({
           disabled={disabled}
           onChange={(e) => onTextChange(e.target.value)}
           placeholder={
-            segments.length > 0 ? formatSpeakerTranscript(segments) : undefined
+            displaySegments.length > 0
+              ? formatSpeakerTranscript(displaySegments)
+              : undefined
           }
           className="min-h-[420px] resize-y font-mono text-sm leading-relaxed"
         />

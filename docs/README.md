@@ -8,6 +8,7 @@ Finch is a local-first voice transcription app. Audio is transcribed on your mac
 |-----|-------------|
 | [Quickstart](quickstart.md) | Install, configure, run, and transcribe |
 | [Diarization](diarization.md) | Speaker labels: setup, validation, tuning |
+| [Speaker memory](speaker-memory.md) | Persistent speaker names and voiceprints |
 | [Architecture](architecture.md) | System design, data model, request flows |
 | [Features & roadmap](features.md) | What's built and what's planned |
 | [Backend modules](modules.md) | `backend/app/` package reference |

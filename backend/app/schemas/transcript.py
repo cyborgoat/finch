@@ -8,6 +8,10 @@ class SpeakerSegmentSchema(CamelModel):
     start_sec: float
     end_sec: float
     text: str = ""
+    cluster_id: str | None = None
+    speaker_profile_id: str | None = None
+    match_confidence: float | None = None
+    match_status: str | None = None
 
 
 class CreateTranscriptRequest(CamelModel):

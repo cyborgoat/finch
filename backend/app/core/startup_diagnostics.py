@@ -33,6 +33,17 @@ class CapabilityStatus:
     asr_mock: bool
     llm_mock: bool
     openrouter_configured: bool
+    speaker_memory_enabled: bool
+    speaker_memory_mock: bool
+    speaker_memory_ready: bool
+    speaker_memory_reason: str | None
+    speaker_memory_consent_given: bool
+
+
+@dataclass(frozen=True)
+class SpeakerMemoryStatus:
+    ready: bool
+    reason: str | None
 
 
 def _dependency_installed(module_name: str) -> bool:
@@ -101,6 +112,8 @@ def get_capability_status(settings: Settings | None = None) -> CapabilityStatus:
         or (bool(hf_token) and pyannote_installed and diarization_reason is None)
     )
 
+    memory_status = get_speaker_memory_status(settings=settings)
+
     return CapabilityStatus(
         diarization_enabled=settings.diarization_enabled,
         diarization_mock=settings.diarization_mock,
@@ -109,6 +122,60 @@ def get_capability_status(settings: Settings | None = None) -> CapabilityStatus:
         asr_mock=settings.asr_mock,
         llm_mock=settings.llm_mock,
         openrouter_configured=bool(settings.openrouter_api_key),
+        speaker_memory_enabled=settings.speaker_memory_enabled,
+        speaker_memory_mock=settings.speaker_memory_mock,
+        speaker_memory_ready=memory_status.ready and settings.speaker_memory_enabled,
+        speaker_memory_reason=memory_status.reason,
+        speaker_memory_consent_given=False,
+    )
+
+
+def get_speaker_memory_status(
+    session=None,
+    settings: Settings | None = None,
+) -> SpeakerMemoryStatus:
+    settings = settings or get_settings()
+    hf_token = resolve_hf_token(settings)
+    pyannote_installed = _dependency_installed("pyannote.audio")
+    reason: str | None = None
+
+    if not settings.diarization_enabled:
+        reason = "Speaker memory requires DIARIZATION_ENABLED=true."
+    elif settings.speaker_memory_mock:
+        return SpeakerMemoryStatus(ready=True, reason=None)
+    elif not hf_token:
+        reason = "HF_TOKEN is required for speaker embeddings."
+    elif not pyannote_installed:
+        reason = "pyannote-audio is not installed."
+
+    ready = reason is None or settings.speaker_memory_mock
+    return SpeakerMemoryStatus(ready=ready, reason=reason)
+
+
+def get_capability_status_with_session(
+    session,
+    settings: Settings | None = None,
+) -> CapabilityStatus:
+    settings = settings or get_settings()
+    base = get_capability_status(settings)
+    from app.services.app_preference_service import AppPreferenceService
+
+    preference_service = AppPreferenceService(session, settings)
+    memory_status = get_speaker_memory_status(session, settings)
+    enabled = preference_service.is_speaker_memory_enabled()
+    return CapabilityStatus(
+        diarization_enabled=base.diarization_enabled,
+        diarization_mock=base.diarization_mock,
+        diarization_ready=base.diarization_ready,
+        diarization_reason=base.diarization_reason,
+        asr_mock=base.asr_mock,
+        llm_mock=base.llm_mock,
+        openrouter_configured=base.openrouter_configured,
+        speaker_memory_enabled=enabled,
+        speaker_memory_mock=settings.speaker_memory_mock,
+        speaker_memory_ready=memory_status.ready and enabled,
+        speaker_memory_reason=memory_status.reason,
+        speaker_memory_consent_given=preference_service.has_speaker_memory_consent(),
     )
 
 
@@ -202,6 +269,23 @@ def log_startup_summary(settings: Settings | None = None) -> None:
             _log_action("Set HF_TOKEN=hf_... in .env, restart backend, re-transcribe")
             _log_action("Install dependency: cd backend && uv add pyannote-audio")
 
+    _log_section("Speaker memory")
+    if not settings.speaker_memory_enabled:
+        _log_bullet("Disabled (SPEAKER_MEMORY_ENABLED=false) — generic Speaker 1/2 labels only.")
+        _log_action("Enable in .env and Settings to remember speaker names across transcripts.")
+    elif settings.speaker_memory_mock:
+        _log_bullet("Enabled in mock mode (SPEAKER_MEMORY_MOCK=true) — deterministic test embeddings.")
+    else:
+        _log_bullet(f"Enabled — embedding model: {settings.speaker_embedding_model_id}")
+        _log_bullet(f"Match threshold: {settings.speaker_match_threshold}")
+        memory_status = get_speaker_memory_status(settings=settings)
+        if memory_status.ready:
+            _log_bullet("Status: READY — auto-match uses enrolled voiceprints when consent is given.")
+        else:
+            _log_bullet("Status: NOT READY")
+            if memory_status.reason:
+                _log_bullet(f"Reason: {memory_status.reason}")
+
     _log_section("AI actions (LLM)")
     if settings.llm_mock:
         _log_bullet("Mode: mock (LLM_MOCK=true) — AI actions return sample Markdown.")
@@ -231,6 +315,9 @@ def log_startup_summary(settings: Settings | None = None) -> None:
         _log_bullet(f"Quickstart: {quickstart}")
     if diarization_doc.is_file():
         _log_bullet(f"Diarization guide: {diarization_doc}")
+    speaker_memory_doc = repo_root / "docs" / "speaker-memory.md"
+    if speaker_memory_doc.is_file():
+        _log_bullet(f"Speaker memory guide: {speaker_memory_doc}")
     if env_example.is_file():
         _log_bullet(f"Environment reference: {env_example}")
     _log_bullet("Validate diarization: cd backend && uv run python scripts/validate_diarization.py")

@@ -88,7 +88,9 @@ def test_mock_diarization_returns_two_speakers(diarization_settings: Settings):
     turns = service.diarize("unused.wav", duration_seconds=10.0)
     assert len(turns) == 2
     assert turns[0].speaker == "Speaker 1"
+    assert turns[0].cluster_id == "SPEAKER_00"
     assert turns[1].speaker == "Speaker 2"
+    assert turns[1].cluster_id == "SPEAKER_01"
 
 
 def test_format_diarization_load_error_detects_gated_repo():

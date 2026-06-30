@@ -1,8 +1,8 @@
 # Finch Backend
 
-Local ASR transcription API for Finch — optional speaker diarization and OpenRouter AI actions.
+Local ASR transcription API for Finch — optional speaker diarization, speaker memory, and OpenRouter AI actions.
 
-**Project docs:** [../docs/README.md](../docs/README.md) · **Diarization:** [../docs/diarization.md](../docs/diarization.md)
+**Project docs:** [../docs/README.md](../docs/README.md) · **Diarization:** [../docs/diarization.md](../docs/diarization.md) · **Speaker memory:** [../docs/speaker-memory.md](../docs/speaker-memory.md)
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ uv sync
 uv run uvicorn app.main:app --reload
 ```
 
-On startup, the terminal prints a **configuration summary**: loaded env files, ASR/diarization/LLM mode, dependency checks, and fix hints when something is missing (`app/core/startup_diagnostics.py`).
+On startup, the terminal prints a **configuration summary**: loaded env files, ASR/diarization/speaker memory/LLM mode, dependency checks, and fix hints (`app/core/startup_diagnostics.py`).
 
 API docs: http://localhost:8000/docs
 
@@ -35,7 +35,7 @@ API docs: http://localhost:8000/docs
 uv run pytest
 ```
 
-27 tests; mock `ffmpeg`, `ASR_MOCK`, and `DIARIZATION_MOCK` by default in the test suite.
+35 tests; mock `ffmpeg`, `ASR_MOCK`, `DIARIZATION_MOCK`, and `SPEAKER_MEMORY_MOCK` by default.
 
 ## Environment
 
@@ -51,6 +51,11 @@ uv run pytest
 | `DIARIZATION_MERGE_GAP_SECONDS` | Merge same-speaker turns within this gap (default `0.5`) |
 | `DIARIZATION_MAX_SEGMENTS` | Cap segment count (`0` = unlimited) |
 | `HF_TOKEN` | Hugging Face token for pyannote gated models (or use `huggingface-cli login`) |
+| `SPEAKER_MEMORY_ENABLED` | Remember speaker names across transcripts |
+| `SPEAKER_MEMORY_MOCK` | Mock voiceprint embeddings for CI/dev |
+| `SPEAKER_EMBEDDING_MODEL_ID` | Embedding model (default `pyannote/embedding`) |
+| `SPEAKER_MATCH_THRESHOLD` | Cosine similarity threshold for auto-match (default `0.75`) |
+| `SPEAKER_MIN_ENROLL_SECONDS` | Min speech duration for enrollment samples (default `2.0`) |
 | `DATABASE_URL` | SQLite connection string |
 | `MAX_UPLOAD_MB` | Maximum upload size in megabytes |
 
@@ -84,17 +89,23 @@ uv run python scripts/validate_diarization.py
 uv run python scripts/validate_diarization.py --audio path/to/sample.wav
 ```
 
-If diarization is unavailable, the worker falls back to full-file ASR and stores a `processingNote` on the transcript.
+## Speaker memory
+
+Optional local voiceprint storage for persistent speaker names. Requires diarization. See [../docs/speaker-memory.md](../docs/speaker-memory.md).
+
+If diarization or speaker matching is unavailable, the worker falls back gracefully and stores a `processingNote` when relevant.
 
 ## API
 
-- `GET /api/health` — liveness + capability flags (`asrMock`, `diarizationReady`, `llmMock`, etc.)
-- `POST /api/audio/upload`
-- `GET /api/audio/{id}` · `DELETE /api/audio/{id}`
-- `POST /api/transcripts` — returns `jobId` + `transcriptId` (placeholder with `status=transcribing`)
-- `GET /api/transcripts` · `GET/PATCH/DELETE /api/transcripts/{id}`
+- `GET /api/health` — liveness + capability flags
+- `POST /api/audio/upload` · `GET/DELETE /api/audio/{id}`
+- `POST /api/transcripts` — start transcription job
+- `GET/PATCH/DELETE /api/transcripts/{id}`
+- `PATCH /api/transcripts/{id}/speakers` — rename/link speakers on a transcript
 - `GET /api/jobs/{id}`
-- `GET /api/ai-actions/templates` · `POST /api/ai-actions`
-- `GET /api/documents` · `GET/PATCH/DELETE /api/documents/{id}`
+- `GET/POST /api/ai-actions` · `GET /api/ai-actions/templates`
+- `GET/PATCH/DELETE /api/documents/{id}` · `GET /api/documents`
+- `GET/POST/PATCH/DELETE /api/speaker-profiles` · `GET /api/speaker-profiles/{id}`
+- `GET/PATCH/DELETE /api/speaker-memory/status` · `POST /api/speaker-memory/consent` · `DELETE /api/speaker-memory/data`
 
 Transcripts may include `speakerSegments`, `processingNote`, or `errorMessage` when diarization is skipped or a job fails.

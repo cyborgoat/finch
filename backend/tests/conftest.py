@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, Session
 
 from app.config import Settings, get_settings
 from app.main import create_app
@@ -31,6 +31,8 @@ def test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
         llm_mock=True,
         diarization_enabled=False,
         diarization_mock=True,
+        speaker_memory_enabled=False,
+        speaker_memory_mock=True,
     )
 
     monkeypatch.setenv("DATABASE_URL", settings.database_url)
@@ -42,6 +44,8 @@ def test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.setenv("LLM_MOCK", "true")
     monkeypatch.setenv("DIARIZATION_ENABLED", "false")
     monkeypatch.setenv("DIARIZATION_MOCK", "true")
+    monkeypatch.setenv("SPEAKER_MEMORY_ENABLED", "false")
+    monkeypatch.setenv("SPEAKER_MEMORY_MOCK", "true")
     get_settings.cache_clear()
     database.reset_engine(settings.database_url)
     return settings
@@ -55,6 +59,12 @@ def client(test_settings: Settings) -> Generator[TestClient]:
     get_settings.cache_clear()
     database.reset_engine()
     SQLModel.metadata.drop_all(database.get_engine())
+
+
+@pytest.fixture
+def db_session(test_settings: Settings):
+    with Session(database.get_engine()) as session:
+        yield session
 
 
 @pytest.fixture
