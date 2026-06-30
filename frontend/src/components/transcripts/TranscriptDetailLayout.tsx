@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { TranscriptAiTab } from "@/components/transcripts/TranscriptAiTab"
+import { TranscriptSummaryTab } from "@/components/transcripts/TranscriptSummaryTab"
 import { TranscriptAudioPlayer } from "@/components/transcripts/TranscriptAudioPlayer"
 import { TranscriptEditor } from "@/components/transcripts/TranscriptEditor"
 import { ActiveTranscriptSegment } from "@/components/transcripts/ActiveTranscriptSegment"
@@ -14,6 +15,11 @@ import { useAudioAsset } from "@/hooks/useAudioAsset"
 import { useTranscriptPlayback } from "@/hooks/useTranscriptPlayback"
 import type { DocumentSummary, SpeakerMemoryStatus, SpeakerProfileSummary, Transcript } from "@/lib/types"
 import type { SpeakerSegment } from "@/lib/types"
+import {
+  fileDetailTabSearch,
+  parseFileDetailTab,
+  type FileDetailTab,
+} from "@/lib/fileDetailTabs"
 
 type TranscriptDetailLayoutProps = {
   transcript: Transcript
@@ -64,14 +70,14 @@ export function TranscriptDetailLayout({
 }: TranscriptDetailLayoutProps) {
   const navigate = useNavigate({ from: "/files/$id/" })
   const { tab } = useSearch({ from: "/files/$id/" })
-  const activeTab = tab === "ai" ? "ai" : "transcript"
+  const activeTab = parseFileDetailTab(tab)
   const { data: audioAsset } = useAudioAsset(transcript.audioAssetId)
   const playback = useTranscriptPlayback(transcript.audioAssetId)
 
   const setTab = useCallback(
     (value: string) => {
       void navigate({
-        search: value === "ai" ? { tab: "ai" } : {},
+        search: fileDetailTabSearch(value as FileDetailTab),
         replace: true,
       })
     },
@@ -86,7 +92,7 @@ export function TranscriptDetailLayout({
         backHref="/files"
         backLabel="Files"
         title={title || "Untitled transcript"}
-        description="Listen, edit, and review this transcript."
+        description="Listen, edit, and explore this recording."
         badge={<Badge variant="secondary">Draft</Badge>}
         meta={
           <>
@@ -133,8 +139,11 @@ export function TranscriptDetailLayout({
 
       <Tabs value={activeTab} onValueChange={setTab} className="section-stack">
         <TabsList variant="line" className="w-full justify-start border-b border-border pb-0">
-          <TabsTrigger value="transcript" className="px-4 pb-3">
-            Transcript
+          <TabsTrigger value="source" className="px-4 pb-3">
+            Source
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="px-4 pb-3">
+            Summary
           </TabsTrigger>
           <TabsTrigger value="ai" className="px-4 pb-3">
             AI
@@ -146,7 +155,7 @@ export function TranscriptDetailLayout({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="transcript" className="mt-0 pt-6">
+        <TabsContent value="source" className="mt-0 pt-6">
           <BlurFade className="section-stack">
             <TranscriptToolbar
               onSave={onSave}
@@ -175,6 +184,10 @@ export function TranscriptDetailLayout({
               disabled={saving || speakerSavePending}
             />
           </BlurFade>
+        </TabsContent>
+
+        <TabsContent value="summary" className="mt-0 pt-6">
+          <TranscriptSummaryTab />
         </TabsContent>
 
         <TabsContent value="ai" className="mt-0 pt-6">

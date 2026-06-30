@@ -22,33 +22,35 @@ import {
 } from "@/hooks/useDocuments"
 import { useTranscript } from "@/hooks/useTranscripts"
 import { useTranscriptEditor } from "@/hooks/useTranscriptEditor"
-import { resolveFileKind } from "@/lib/files"
+import { parseFileDetailTab, type FileDetailTab } from "@/lib/fileDetailTabs"
 import { exportDocumentMd } from "@/lib/export"
 import { documentQuery, documentsQuery } from "@/lib/queries/documents"
 import { healthQuery } from "@/lib/queries/health"
+import { resolveFileKind } from "@/lib/queries/files"
 import { transcriptQuery } from "@/lib/queries/transcripts"
 import type { Document, Transcript } from "@/lib/types"
 
 type FileSearch = {
-  tab?: "ai"
+  tab?: FileDetailTab
 }
 
 export const Route = createFileRoute("/files/$id/")({
-  validateSearch: (search: Record<string, unknown>): FileSearch =>
-    search.tab === "ai" ? { tab: "ai" } : {},
-  loader: ({ context, params }) => {
-    const kind = resolveFileKind(params.id)
+  validateSearch: (search: Record<string, unknown>): FileSearch => {
+    const tab = parseFileDetailTab(search.tab)
+    return tab === "source" ? {} : { tab }
+  },
+  loader: async ({ context, params }) => {
+    const kind = await resolveFileKind(context.queryClient, params.id)
     if (kind === "document") {
-      return context.queryClient.ensureQueryData(documentQuery(params.id))
-    }
-    if (kind === "transcript") {
-      return Promise.all([
+      await context.queryClient.ensureQueryData(documentQuery(params.id))
+    } else if (kind === "transcript") {
+      await Promise.all([
         context.queryClient.ensureQueryData(transcriptQuery(params.id)),
         context.queryClient.ensureQueryData(healthQuery()),
         context.queryClient.ensureQueryData(documentsQuery(params.id)),
       ])
     }
-    return Promise.resolve(null)
+    return { kind }
   },
   component: FileDetailPage,
 })
@@ -179,7 +181,7 @@ function DocumentDetailEditor({ document }: { document: Document }) {
 
 function FileDetailPage() {
   const { id } = Route.useParams()
-  const kind = resolveFileKind(id)
+  const { kind } = Route.useLoaderData()
 
   if (kind === "document") {
     return <DocumentFileDetail id={id} />

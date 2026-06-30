@@ -11,14 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UploadIndexRouteImport } from './routes/upload/index'
-import { Route as TranscriptsIndexRouteImport } from './routes/transcripts/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as RecordIndexRouteImport } from './routes/record/index'
 import { Route as FilesIndexRouteImport } from './routes/files/index'
-import { Route as DocumentsIndexRouteImport } from './routes/documents/index'
-import { Route as TranscriptsIdIndexRouteImport } from './routes/transcripts/$id/index'
 import { Route as FilesIdIndexRouteImport } from './routes/files/$id/index'
-import { Route as DocumentsIdIndexRouteImport } from './routes/documents/$id/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,11 +24,6 @@ const IndexRoute = IndexRouteImport.update({
 const UploadIndexRoute = UploadIndexRouteImport.update({
   id: '/upload/',
   path: '/upload/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TranscriptsIndexRoute = TranscriptsIndexRouteImport.update({
-  id: '/transcripts/',
-  path: '/transcripts/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
@@ -50,114 +41,60 @@ const FilesIndexRoute = FilesIndexRouteImport.update({
   path: '/files/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DocumentsIndexRoute = DocumentsIndexRouteImport.update({
-  id: '/documents/',
-  path: '/documents/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TranscriptsIdIndexRoute = TranscriptsIdIndexRouteImport.update({
-  id: '/transcripts/$id/',
-  path: '/transcripts/$id/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const FilesIdIndexRoute = FilesIdIndexRouteImport.update({
   id: '/files/$id/',
   path: '/files/$id/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DocumentsIdIndexRoute = DocumentsIdIndexRouteImport.update({
-  id: '/documents/$id/',
-  path: '/documents/$id/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/documents/': typeof DocumentsIndexRoute
   '/files/': typeof FilesIndexRoute
   '/record/': typeof RecordIndexRoute
   '/settings/': typeof SettingsIndexRoute
-  '/transcripts/': typeof TranscriptsIndexRoute
   '/upload/': typeof UploadIndexRoute
-  '/documents/$id/': typeof DocumentsIdIndexRoute
   '/files/$id/': typeof FilesIdIndexRoute
-  '/transcripts/$id/': typeof TranscriptsIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/documents': typeof DocumentsIndexRoute
   '/files': typeof FilesIndexRoute
   '/record': typeof RecordIndexRoute
   '/settings': typeof SettingsIndexRoute
-  '/transcripts': typeof TranscriptsIndexRoute
   '/upload': typeof UploadIndexRoute
-  '/documents/$id': typeof DocumentsIdIndexRoute
   '/files/$id': typeof FilesIdIndexRoute
-  '/transcripts/$id': typeof TranscriptsIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/documents/': typeof DocumentsIndexRoute
   '/files/': typeof FilesIndexRoute
   '/record/': typeof RecordIndexRoute
   '/settings/': typeof SettingsIndexRoute
-  '/transcripts/': typeof TranscriptsIndexRoute
   '/upload/': typeof UploadIndexRoute
-  '/documents/$id/': typeof DocumentsIdIndexRoute
   '/files/$id/': typeof FilesIdIndexRoute
-  '/transcripts/$id/': typeof TranscriptsIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/documents/'
-    | '/files/'
-    | '/record/'
-    | '/settings/'
-    | '/transcripts/'
-    | '/upload/'
-    | '/documents/$id/'
-    | '/files/$id/'
-    | '/transcripts/$id/'
+    '/' | '/files/' | '/record/' | '/settings/' | '/upload/' | '/files/$id/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/documents'
-    | '/files'
-    | '/record'
-    | '/settings'
-    | '/transcripts'
-    | '/upload'
-    | '/documents/$id'
-    | '/files/$id'
-    | '/transcripts/$id'
+  to: '/' | '/files' | '/record' | '/settings' | '/upload' | '/files/$id'
   id:
     | '__root__'
     | '/'
-    | '/documents/'
     | '/files/'
     | '/record/'
     | '/settings/'
-    | '/transcripts/'
     | '/upload/'
-    | '/documents/$id/'
     | '/files/$id/'
-    | '/transcripts/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DocumentsIndexRoute: typeof DocumentsIndexRoute
   FilesIndexRoute: typeof FilesIndexRoute
   RecordIndexRoute: typeof RecordIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
-  TranscriptsIndexRoute: typeof TranscriptsIndexRoute
   UploadIndexRoute: typeof UploadIndexRoute
-  DocumentsIdIndexRoute: typeof DocumentsIdIndexRoute
   FilesIdIndexRoute: typeof FilesIdIndexRoute
-  TranscriptsIdIndexRoute: typeof TranscriptsIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -174,13 +111,6 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload/'
       preLoaderRoute: typeof UploadIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/transcripts/': {
-      id: '/transcripts/'
-      path: '/transcripts'
-      fullPath: '/transcripts/'
-      preLoaderRoute: typeof TranscriptsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/': {
@@ -204,20 +134,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FilesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/documents/': {
-      id: '/documents/'
-      path: '/documents'
-      fullPath: '/documents/'
-      preLoaderRoute: typeof DocumentsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/transcripts/$id/': {
-      id: '/transcripts/$id/'
-      path: '/transcripts/$id'
-      fullPath: '/transcripts/$id/'
-      preLoaderRoute: typeof TranscriptsIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/files/$id/': {
       id: '/files/$id/'
       path: '/files/$id'
@@ -225,27 +141,16 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FilesIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/documents/$id/': {
-      id: '/documents/$id/'
-      path: '/documents/$id'
-      fullPath: '/documents/$id/'
-      preLoaderRoute: typeof DocumentsIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DocumentsIndexRoute: DocumentsIndexRoute,
   FilesIndexRoute: FilesIndexRoute,
   RecordIndexRoute: RecordIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
-  TranscriptsIndexRoute: TranscriptsIndexRoute,
   UploadIndexRoute: UploadIndexRoute,
-  DocumentsIdIndexRoute: DocumentsIdIndexRoute,
   FilesIdIndexRoute: FilesIdIndexRoute,
-  TranscriptsIdIndexRoute: TranscriptsIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -57,13 +57,13 @@ curl -X POST http://localhost:8000/api/transcripts \
   -d '{"audioAssetId": "audio_abc123", "language": "auto"}'
 ```
 
-Returns `jobId` and `transcriptId`. A placeholder with `status: "transcribing"` appears immediately.
+Returns `jobId` and `transcriptId` (bare hex, e.g. `a1b2c3d4e5f67890`). A placeholder with `status: "transcribing"` appears immediately.
 
 ### Poll and read
 
 ```bash
 curl http://localhost:8000/api/jobs/job_abc123
-curl http://localhost:8000/api/transcripts/transcript_abc123
+curl http://localhost:8000/api/transcripts/abc123def456
 ```
 
 ## 4. CLI script
@@ -86,7 +86,13 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 — **New** (Record / Upload), **Files**, **Settings**. Home shows your most recently updated files.
+Open http://localhost:3000 — **New** (Record / Upload), **Files**, **Settings**.
+
+- **Home** and **Files** list voice recordings only.
+- Open a recording for the **Source** (transcript), **Summary** (coming soon), and **AI** (actions + documents) tabs.
+- URLs use bare hex IDs: `/files/a1b2c3d4e5f67890`.
+
+If you have an old local database from before the ID format change, delete `backend/finch.db` and restart the backend.
 
 ## 6. Real ASR
 
@@ -142,7 +148,7 @@ LLM_MOCK=false
 OPENROUTER_API_KEY=sk-or-...
 ```
 
-Run actions from the **AI** tab on a transcript detail page, or via `POST /api/ai-actions`.
+Run actions from the **AI** tab on a recording detail page (`/files/{id}?tab=ai`), or via `POST /api/ai-actions`.
 
 ## 10. Tests
 

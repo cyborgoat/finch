@@ -80,7 +80,7 @@ def test_speaker_profile_requires_consent_for_enroll(db_session: Session):
     ]
     db_session.add(
         Transcript(
-            id="transcript_test",
+            id="b1b1b1b1b1b1b1b1",
             audio_asset_id="audio_test",
             title="Test",
             raw_text="Speaker 1: Hello",
@@ -94,7 +94,7 @@ def test_speaker_profile_requires_consent_for_enroll(db_session: Session):
 
     with pytest.raises(AppError) as exc_info:
         profile_service.enroll_from_transcript(
-            "transcript_test",
+            "b1b1b1b1b1b1b1b1",
             "SPEAKER_00",
             "Robert",
         )

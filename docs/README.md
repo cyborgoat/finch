@@ -21,10 +21,22 @@ Finch is a local-first voice transcription app. Audio is transcribed on your mac
 ## Core model
 
 ```txt
-AudioAsset → Transcript → Document(s)
+AudioAsset → Transcript (recording) → Document(s)
 ```
 
-The transcript is the durable artifact. AI-generated Markdown documents are optional derivatives.
+The transcript is the durable artifact. AI-generated Markdown documents are optional derivatives nested under their source recording.
+
+## Frontend routes
+
+| Route | Purpose |
+|-------|---------|
+| `/` | Recent voice recordings |
+| `/files` | Full recordings library |
+| `/files/{id}` | Recording detail (Source / Summary / AI) or document editor |
+| `/upload`, `/record` | Create new recordings |
+| `/settings` | Health, diarization, speaker memory |
+
+Recording and document IDs are bare 16-character hex strings (no type prefix). Audio, job, and speaker IDs keep short prefixes (`audio_`, `job_`, etc.).
 
 ## Privacy
 

@@ -14,12 +14,6 @@ export type FileSummary = {
   errorMessage?: string | null
 }
 
-export function resolveFileKind(id: string): FileKind | null {
-  if (id.startsWith("transcript_")) return "transcript"
-  if (id.startsWith("doc_")) return "document"
-  return null
-}
-
 export function transcriptSummaries(items: TranscriptSummary[]): FileSummary[] {
   return items.map((item) => ({
     id: item.id,

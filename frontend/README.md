@@ -49,12 +49,11 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 
 | Route | Purpose |
 |-------|---------|
-| `/` | Recent files (transcripts + documents), sorted by last updated |
-| `/files` | File browser — transcripts as folders with nested documents |
-| `/files/$id` | Transcript detail (player, edit, AI) or document editor |
+| `/` | Recent voice recordings, sorted by last updated |
+| `/files` | Voice recordings library |
+| `/files/$id` | Recording detail (Source, Summary, AI tabs) or document editor |
 | `/upload` | Upload audio and transcribe |
 | `/record` | Browser recording with live waveform |
-| `/transcripts`, `/documents` | Redirect to `/files` (legacy URLs) |
 | `/settings` | Health, diarization, speaker memory profiles, privacy |
 
 ## Key UI behavior
@@ -67,14 +66,19 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 - **List actions:** ellipsis menu — rename and delete for recordings
 - **Transcribing:** list and detail pages poll while `status=transcribing`
 - **Failed jobs:** transcript stays visible with error message (not removed)
-- **Transcript tab:** toolbar, title, full transcript (text or segments toggle)
-- **AI tab:** AI action templates, job progress, and generated documents only
+- **Source tab:** toolbar, title, full transcript (text or segments toggle)
+- **Summary tab:** placeholder for future LLM-generated overview
+- **AI tab:** AI action templates, job progress, and generated documents
 - **Audio player:** centered play control below the track, ±15s skip, speed dropdown (0.5×–5×)
 - **Current turn:** single active segment below the player, with prev/next arrows
 - **Speaker labels:** click any speaker pill on a turn to assign or rename; updates all turns in that cluster immediately
 - **Speaker memory:** enable and consent in **Settings** only; editing a pill updates the voiceprint from that turn's audio when memory is on
 - **Save:** toolbar **Save** persists title and full text; speaker names save via the pill dialog
-- **AI actions:** run from the **AI** tab on transcript detail; poll job → navigate to new document
+- **AI actions:** run from the **AI** tab; poll job → open new document at `/files/{id}`
+
+## IDs
+
+Transcript and document IDs are bare 16-character hex strings in URLs and API paths. Prefixed IDs (`audio_`, `job_`, `speaker_`, etc.) are used for other resource types only.
 
 ## Stack
 

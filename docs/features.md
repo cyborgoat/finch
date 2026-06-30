@@ -37,13 +37,15 @@ What Finch does today and what is intentionally out of scope.
 ### File library
 
 - Unified **Files** browser at `/files` — voice recordings only; generated documents and artifacts belong to each recording
-- Home shows recent voice recordings sorted by last updated; open a recording’s **AI tab** for related documents
+- Home shows recent voice recordings sorted by last updated
+- Recording detail at `/files/{id}` with three tabs:
+  - **Source** — toolbar, title, full transcript (plain text or all segments), audio player
+  - **Summary** — placeholder for a future LLM-generated overview
+  - **AI** — action templates, job progress, and generated documents linked to the recording
+- Bare hex IDs in URLs (e.g. `/files/a1b2c3d4e5f67890`); no `transcript_` or `doc_` prefix
 - Rename and delete from an ellipsis menu; list API includes audio duration (`durationSeconds`)
-- Legacy `/transcripts` and `/documents` URLs redirect to `/files`
-- Search, edit, copy, export TXT/MD on transcript files
-- Transcript detail: built-in audio player (seek, ±15s skip, playback speed), current turn synced to playback, prev/next turn navigation
-- **Transcript tab:** toolbar, title, full transcript (plain text or all segments)
-- **AI tab:** AI action templates, job progress, and generated documents only
+- Search, edit, copy, export TXT/MD on the Source tab
+- Built-in audio player (seek, ±15s skip, playback speed), current turn synced to playback, prev/next turn navigation
 - Inline speaker pills on turns; click timestamps to jump in the audio
 - In-progress (`transcribing`) and failed states in the UI
 
@@ -71,6 +73,7 @@ What Finch does today and what is intentionally out of scope.
 | Area | Examples |
 |------|----------|
 | Timestamps | Waveform and finer scrubbing beyond click-to-seek |
+| Summary tab | LLM-generated recording overview on the detail page |
 | Search | Full-text over transcripts and documents; later semantic search |
 | Export | PDF, DOCX, HTML, Obsidian vault, Notion Markdown |
 | Local LLM | Ollama, llama.cpp, LM Studio, vLLM for fully local summaries |
