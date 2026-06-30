@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -129,28 +128,14 @@ export function SpeakerTurnDialog({
             />
           </div>
 
-          {memoryStatus?.enabled ? (
-            memoryReady ? (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Speaker memory is on. Saving updates the voiceprint from this turn&apos;s
-                audio in Settings-managed profiles.
-              </p>
-            ) : (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Enable speaker memory and consent in{" "}
-                <Link to="/settings" className="text-foreground underline-offset-4 hover:underline">
-                  Settings
-                </Link>{" "}
-                to save voiceprints. You can still assign a display name here.
-              </p>
-            )
+          {memoryReady ? (
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Saving updates the voiceprint from this turn&apos;s audio.
+            </p>
           ) : (
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Turn on speaker memory in{" "}
-              <Link to="/settings" className="text-foreground underline-offset-4 hover:underline">
-                Settings
-              </Link>{" "}
-              to remember voices across transcripts.
+              The display name applies to this transcript. Voiceprints across recordings
+              depend on server configuration.
             </p>
           )}
         </div>

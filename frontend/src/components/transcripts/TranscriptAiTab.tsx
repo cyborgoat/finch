@@ -96,11 +96,8 @@ export function TranscriptAiTab({
       {!llmReady ? (
         <div className="surface-card text-sm text-muted-foreground">
           LLM actions are not configured. Set{" "}
-          <code className="text-xs">OPENROUTER_API_KEY</code> or enable mock mode in{" "}
-          <Link to="/settings" className="text-foreground underline-offset-4 hover:underline">
-            Settings
-          </Link>
-          .
+          <code className="text-xs">OPENROUTER_API_KEY</code> in the backend{" "}
+          <code className="text-xs">.env</code>, or enable mock mode for development.
         </div>
       ) : null}
 
@@ -111,7 +108,9 @@ export function TranscriptAiTab({
         {isLoading ? (
           <p className="section-hint">Loading actions…</p>
         ) : !llmReady ? (
-          <p className="section-hint">Configure LLM access in Settings to run AI actions.</p>
+          <p className="section-hint">
+            LLM access must be configured on the backend before AI actions can run.
+          </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {templates.map((action) => (

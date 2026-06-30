@@ -132,7 +132,7 @@ Documents store a `transcript_id` foreign key pointing at the parent recording.
 | `/files` | Recordings library |
 | `/files/{id}` | Recording detail (Source / Summary / AI tabs) or document editor |
 | `/upload`, `/record` | Ingest new audio |
-| `/settings` | Capabilities, speaker memory, privacy |
+| `/settings` | User profile, language, AI prefs, speakers |
 
 The file detail page routes by ID prefix (`transcript_` → recording detail, `doc_` → document editor). Lists show recordings only; documents appear on a recording’s **AI** tab.
 
@@ -150,7 +150,8 @@ The file detail page routes by ID prefix (`transcript_` → recording detail, `d
 | GET/POST | `/api/ai-actions/...` | AI action templates + jobs |
 | GET/PATCH/DELETE | `/api/documents/{id}` | Document CRUD |
 | GET/POST/PATCH/DELETE | `/api/speaker-profiles/...` | Speaker profile CRUD + detail |
-| GET/POST/PATCH/DELETE | `/api/speaker-memory/...` | Consent, toggle, wipe voiceprint data |
+| GET/POST/PATCH/DELETE | `/api/speaker-memory/...` | Consent, auto-label toggle, wipe voiceprint data |
+| GET/PATCH | `/api/user-settings` | User name, language, summarization prefs, linked speaker profile |
 | PATCH | `/api/transcripts/{id}/speakers` | Rename/link speakers (`enroll: true` saves voiceprint; optional `enrollStartSec` / `enrollEndSec` for turn-scoped samples) |
 
 ## Startup diagnostics

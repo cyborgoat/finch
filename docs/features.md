@@ -29,10 +29,10 @@ What Finch does today and what is intentionally out of scope.
 - Local voiceprint storage with [pyannote/embedding](https://huggingface.co/pyannote/embedding)
 - Match unknown speakers to saved profiles or assign new names on a transcript
 - Clickable speaker pills on each turn to assign or update names
-- Voiceprint enrollment from Settings (consent-gated); updates when you edit a speaker pill
-- Auto-match known speakers on future transcripts
-- Profile management in Settings (embeddings, related transcripts)
-- Consent-gated, deletable from Settings — see [speaker-memory.md](speaker-memory.md)
+- Voiceprint enrollment when you edit a speaker pill (when auto-label is on and consent given)
+- Auto-match known speakers on future transcripts (when auto-label is enabled in Settings)
+- Profile management in **Settings → Speakers** (rename, delete, map **You**)
+- Consent-gated auto-label toggle — see [speaker-memory.md](speaker-memory.md)
 
 ### File library
 
@@ -61,11 +61,18 @@ What Finch does today and what is intentionally out of scope.
 - Markdown library with editor, preview, and export
 - Created manually or via AI actions from a transcript
 
+### User settings
+
+- **You:** display name and link to your speaker profile
+- **Language:** English or 中文 (Chinese)
+- **AI summarization:** style (concise / balanced / detailed) and format (paragraphs / bullets) — placeholders for Summary tab and AI actions
+- **Speakers:** auto-label toggle, saved speaker list (rename / delete)
+- Persisted via `GET/PATCH /api/user-settings` (stored in `AppPreference`)
+
 ### Operations
 
 - Startup configuration summary and dependency checks
-- `/api/health` capability flags
-- Settings page shows ASR/diarization/LLM status
+- `/api/health` capability flags (backend topbar; not on settings page)
 - `scripts/validate_diarization.py` for pre-flight checks
 
 ## Planned (post-MVP)

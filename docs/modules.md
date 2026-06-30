@@ -53,6 +53,7 @@ Loads settings from `backend/.env` and repo root `.env`.
 | `routes_ai_actions.py` | Templates + `POST /api/ai-actions` |
 | `routes_documents.py` | Document CRUD |
 | `routes_speaker_profiles.py` | Speaker profiles + speaker memory status/consent |
+| `routes_user_settings.py` | `GET/PATCH /api/user-settings` |
 
 ## `core/`
 
@@ -71,7 +72,7 @@ Loads settings from `backend/.env` and repo root `.env`.
 | `Transcript` | `raw_text`, `edited_text`, `speaker_segments`, `error_message`, `processing_note`, `status` |
 | `SpeakerProfile` | `display_name`, `notes` |
 | `SpeakerEmbedding` | `embedding` JSON vector, `model_id`, source transcript/cluster |
-| `AppPreference` | Key/value store (speaker memory consent, enabled toggle) |
+| `AppPreference` | Key/value store (speaker memory consent, auto-label toggle, `user_settings` JSON) |
 | `Job` | `type`, `status`, `progress`, `stage`, `result_id`, `error` |
 | `Document` | `transcript_id`, `markdown`, `type`, `model` |
 
@@ -86,7 +87,8 @@ Loads settings from `backend/.env` and repo root `.env`.
 | `speaker_profile_service.py` | Profile CRUD, enrollment, centroid computation |
 | `speaker_matching_service.py` | Cosine match embeddings → display names |
 | `speaker_transcript_service.py` | Speaker rename on transcripts; optional turn-scoped voiceprint enrollment |
-| `app_preference_service.py` | Speaker memory consent and enable toggle |
+| `app_preference_service.py` | Speaker memory consent and auto-label toggle |
+| `user_settings_service.py` | User profile, language, summarization prefs, linked speaker |
 | `transcript_service.py` | Transcript CRUD |
 | `document_service.py` | Document CRUD |
 | `llm_service.py` | OpenRouter chat completions (mock or real) |
@@ -109,7 +111,7 @@ Failed transcription jobs keep the transcript with `status=failed` and `errorMes
 
 ## `tests/`
 
-35 tests covering health, upload, transcripts, diarization, speaker memory, AI actions, DB migration, and startup diagnostics.
+40 tests covering health, upload, transcripts, diarization, speaker memory, user settings, AI actions, DB migration, and startup diagnostics.
 
 ## `scripts/`
 

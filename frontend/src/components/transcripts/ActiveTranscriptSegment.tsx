@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -128,11 +127,8 @@ export function ActiveTranscriptSegment({
     return (
       <Section title="Current turn">
         <p className="section-hint">
-          No transcript segments yet. Enable diarization in{" "}
-          <Link to="/settings" className="text-foreground underline-offset-4 hover:underline">
-            Settings
-          </Link>{" "}
-          and re-transcribe to label speakers by turn.
+          No transcript segments yet. Configure diarization in the backend and
+          re-transcribe to label speakers by turn.
         </p>
       </Section>
     )

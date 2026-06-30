@@ -55,7 +55,7 @@ uv run python scripts/validate_diarization.py --audio ../path/to/meeting.wav
 
 The script checks config, dependencies, Hugging Face access, and optionally prints segment timing.
 
-On backend startup, the uvicorn terminal also prints diarization readiness. The frontend **Settings** page reads `/api/health` for live status.
+On backend startup, the uvicorn terminal prints diarization readiness. Use `GET /api/health` or startup logs to verify configuration.
 
 ## How it works
 

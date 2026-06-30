@@ -54,11 +54,11 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 | `/files/$id` | Recording detail (Source, Summary, AI tabs) or document editor |
 | `/upload` | Upload audio and transcribe |
 | `/record` | Browser recording with live waveform |
-| `/settings` | Health, diarization, speaker memory profiles, privacy |
+| `/settings` | User profile, language, AI summarization prefs, speakers |
 
 ## Key UI behavior
 
-- **Layout:** wide `max-w-6xl` pages with generous spacing; upload/record use a centered content column inside the wide shell; settings uses a two-column card grid on large screens
+- **Layout:** wide `max-w-6xl` pages with generous spacing; upload/record use a centered content column; settings uses a single-column layout (`max-w-3xl`)
 - **Sidebar:** **New** dropdown (Record voice / Upload audio); Home, Files, Settings
 - **Home:** recent voice recordings, sorted by last updated
 - **Files browser:** voice recordings only; AI documents and artifacts live under each recording (see the AI tab on the detail page)
@@ -72,7 +72,10 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 - **Audio player:** centered play control below the track, ±15s skip, speed dropdown (0.5×–5×)
 - **Current turn:** single active segment below the player, with prev/next arrows
 - **Speaker labels:** click any speaker pill on a turn to assign or rename; updates all turns in that cluster immediately
-- **Speaker memory:** enable and consent in **Settings** only; editing a pill updates the voiceprint from that turn's audio when memory is on
+- **Settings → Speakers:** auto-label toggle (with consent on first enable), rename/delete saved speaker profiles; map one profile as **You**
+- **Settings → You:** display name and link to your speaker profile (stored via `GET/PATCH /api/user-settings`)
+- **Settings → Language / AI summarization:** user preferences persisted on the backend
+- **Backend capabilities** (ASR, diarization, LLM): configured in `.env` only — startup logs and `/api/health`; not shown on the settings page
 - **Save:** toolbar **Save** persists title and full text; speaker names save via the pill dialog
 - **AI actions:** run from the **AI** tab; poll job → open new document at `/files/{id}`
 

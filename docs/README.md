@@ -34,7 +34,7 @@ The transcript is the durable artifact. AI-generated Markdown documents are opti
 | `/files` | Full recordings library |
 | `/files/{id}` | Recording detail (Source / Summary / AI) or document editor |
 | `/upload`, `/record` | Create new recordings |
-| `/settings` | Health, diarization, speaker memory |
+| `/settings` | User profile, language, AI prefs, speakers (auto-label) |
 
 Recording and document IDs use type prefixes (`transcript_`, `doc_`) so routes can infer file kind from the URL. Other resources use their own prefixes (`audio_`, `job_`, etc.).
 

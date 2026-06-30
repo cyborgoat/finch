@@ -10,6 +10,7 @@ import type {
   SpeakerProfileSummary,
   Transcript,
   TranscriptSummary,
+  UserSettings,
 } from "@/lib/types"
 
 import { getApiBaseUrl } from "@/lib/api-base"
@@ -196,6 +197,17 @@ export async function getSpeakerProfile(id: string): Promise<SpeakerProfileDetai
   return request(`/api/speaker-profiles/${id}`)
 }
 
+export async function updateSpeakerProfile(
+  id: string,
+  payload: { displayName?: string; notes?: string | null },
+): Promise<SpeakerProfileSummary> {
+  return request(`/api/speaker-profiles/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function deleteSpeakerProfile(id: string): Promise<{ ok: boolean }> {
   return request(`/api/speaker-profiles/${id}`, { method: "DELETE" })
 }
@@ -218,4 +230,18 @@ export async function toggleSpeakerMemory(enabled: boolean): Promise<SpeakerMemo
 
 export async function deleteSpeakerMemoryData(): Promise<{ ok: boolean }> {
   return request("/api/speaker-memory/data", { method: "DELETE" })
+}
+
+export async function getUserSettings(): Promise<UserSettings> {
+  return request("/api/user-settings")
+}
+
+export async function updateUserSettings(
+  patch: Partial<UserSettings>,
+): Promise<UserSettings> {
+  return request("/api/user-settings", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  })
 }

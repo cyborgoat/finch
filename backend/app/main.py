@@ -11,6 +11,7 @@ from app.api import (
     routes_jobs,
     routes_speaker_profiles,
     routes_transcripts,
+    routes_user_settings,
 )
 from app.config import get_settings
 from app.core.errors import AppError, app_error_handler
@@ -50,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_ai_actions.router, prefix="/api")
     app.include_router(routes_documents.router, prefix="/api")
     app.include_router(routes_speaker_profiles.router, prefix="/api")
+    app.include_router(routes_user_settings.router, prefix="/api")
 
     return app
 

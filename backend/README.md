@@ -35,7 +35,7 @@ API docs: http://localhost:8000/docs
 uv run pytest
 ```
 
-35 tests; mock `ffmpeg`, `ASR_MOCK`, `DIARIZATION_MOCK`, and `SPEAKER_MEMORY_MOCK` by default.
+40 tests; mock `ffmpeg`, `ASR_MOCK`, `DIARIZATION_MOCK`, and `SPEAKER_MEMORY_MOCK` by default.
 
 ## Environment
 
@@ -107,5 +107,6 @@ If diarization or speaker matching is unavailable, the worker falls back gracefu
 - `GET/PATCH/DELETE /api/documents/{id}` · `GET /api/documents`
 - `GET/POST/PATCH/DELETE /api/speaker-profiles` · `GET /api/speaker-profiles/{id}`
 - `GET/PATCH/DELETE /api/speaker-memory/status` · `POST /api/speaker-memory/consent` · `DELETE /api/speaker-memory/data`
+- `GET/PATCH /api/user-settings` — user name, language, summarization prefs, linked speaker profile
 
 Transcripts may include `speakerSegments`, `processingNote`, or `errorMessage` when diarization is skipped or a job fails.

@@ -17,6 +17,7 @@ from app.schemas.speaker import (
 )
 from app.services.app_preference_service import AppPreferenceService
 from app.services.speaker_profile_service import SpeakerProfileService
+from app.services.user_settings_service import UserSettingsService
 from app.storage.database import get_session
 
 router = APIRouter(tags=["speaker-profiles"])
@@ -132,6 +133,7 @@ def delete_speaker_profile(
     service = SpeakerProfileService(session)
     profile = service.get_profile(profile_id)
     service.delete_profile(profile)
+    UserSettingsService(session).clear_user_speaker_profile(profile_id)
     return OkResponse()
 
 
@@ -165,4 +167,5 @@ def toggle_speaker_memory(
 def delete_speaker_memory_data(session: Session = Depends(get_session)) -> OkResponse:
     service = SpeakerProfileService(session)
     service.delete_all_data()
+    UserSettingsService(session).clear_user_speaker_profile_if_set()
     return OkResponse()

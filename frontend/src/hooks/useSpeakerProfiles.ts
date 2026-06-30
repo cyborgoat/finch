@@ -7,6 +7,7 @@ import {
   listSpeakerProfiles,
   recordSpeakerMemoryConsent,
   toggleSpeakerMemory,
+  updateSpeakerProfile,
 } from "@/lib/api"
 
 export function useSpeakerProfiles() {
@@ -45,6 +46,22 @@ export function useToggleSpeakerMemory() {
   })
 }
 
+export function useUpdateSpeakerProfile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      profileId,
+      displayName,
+    }: {
+      profileId: string
+      displayName: string
+    }) => updateSpeakerProfile(profileId, { displayName }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["speaker-profiles"] })
+    },
+  })
+}
+
 export function useDeleteSpeakerProfile() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -52,6 +69,7 @@ export function useDeleteSpeakerProfile() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["speaker-profiles"] })
       void queryClient.invalidateQueries({ queryKey: ["speaker-memory-status"] })
+      void queryClient.invalidateQueries({ queryKey: ["user-settings"] })
     },
   })
 }

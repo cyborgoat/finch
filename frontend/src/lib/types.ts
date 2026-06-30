@@ -67,6 +67,14 @@ export type SpeakerMemoryStatus = {
   reason?: string | null
 }
 
+export type UserSettings = {
+  language: "en" | "zh"
+  summaryStyle: "concise" | "balanced" | "detailed"
+  summaryFormat: "paragraphs" | "bullets"
+  userName: string
+  userSpeakerProfileId: string | null
+}
+
 export type Transcript = {
   id: string
   audioAssetId: string

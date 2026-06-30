@@ -20,13 +20,13 @@ Audio → diarization (SPEAKER_00, SPEAKER_01)
       → per-segment ASR
 ```
 
-Speaker memory is **optional** and **off by default**. Voiceprints are stored locally only after you consent.
+Speaker memory is **optional**. Server defaults come from `.env` (`SPEAKER_MEMORY_ENABLED`); users turn **auto-label** on or off in **Settings → Speakers**. Voiceprints are stored locally only after consent.
 
 ## Prerequisites
 
 1. **Diarization enabled** — `DIARIZATION_ENABLED=true` (see [diarization.md](diarization.md))
-2. **Speaker memory enabled** — in `.env` or **Settings → Speaker memory**
-3. **Consent** — required before saving any voiceprint
+2. **Speaker memory available on server** — `SPEAKER_MEMORY_ENABLED=true` in `.env`
+3. **Auto-label enabled in UI** — **Settings → Speakers → Auto-label speaker names** (consent required on first enable)
 4. **HF token** — same as diarization (`HF_TOKEN`)
 
 ## Setup
@@ -59,10 +59,10 @@ SPEAKER_MEMORY_MOCK=true
 
 ## User flow (UI)
 
-### Settings (required for voiceprints)
+### Settings → Speakers
 
-1. **Settings → Speaker memory** — enable speaker memory and accept consent
-2. Manage saved voice profiles from the same page
+1. **Auto-label speaker names** — toggle on; accept consent the first time to store voiceprints locally
+2. **Speaker list** — rename or delete saved profiles; link one as **You** under **Settings → You**
 
 ### Assigning speakers on a transcript
 
@@ -70,23 +70,25 @@ SPEAKER_MEMORY_MOCK=true
 2. Transcript shows `Speaker 1`, `Speaker 2`, or `Unknown Speaker` per turn
 3. **Click any speaker pill** on a turn to assign or update their name
 4. Choose an existing profile or enter a new name — saves immediately for all turns in that cluster
-5. If speaker memory is enabled **and** consent was given in Settings, the voiceprint is updated from **that turn’s audio**
+5. When auto-label is on and consent was given, the voiceprint is updated from **that turn’s audio**
 
 ### Future transcripts
 
-1. Keep speaker memory enabled in Settings
+1. Keep **auto-label** enabled in **Settings → Speakers**
 2. Transcribe new audio
 3. Matching runs automatically — known voices appear as saved names
 4. Unrecognized voices show as `Unknown Speaker` — click the pill to assign
 
 ## Settings UI
 
-**Settings → Speaker memory**
+| Section | Purpose |
+|---------|---------|
+| **You** | Your display name; map one saved speaker profile as yourself |
+| **Language** | App / AI content language (English or 中文) |
+| **AI summarization** | Summary style and format (for future Summary tab and AI actions) |
+| **Speakers** | Auto-label toggle; list of saved speakers (rename / delete) |
 
-- Enable / disable speaker memory
-- Consent status
-- Voice profile list with embedding description, voiceprint samples, and related transcripts
-- Delete individual profiles or **Delete all voiceprints**
+ASR, diarization, and LLM configuration are **backend-only** (`.env` and startup logs) — not on the settings page.
 
 ## Tuning
 
@@ -104,14 +106,15 @@ Higher threshold → stricter matching (more `Unknown Speaker`).
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/api/speaker-profiles` | List profiles |
-| GET | `/api/speaker-profiles/{id}` | Profile detail (embeddings, related transcripts) |
+| GET | `/api/speaker-profiles/{id}` | Profile detail |
 | POST | `/api/speaker-profiles` | Create profile manually |
 | PATCH | `/api/speaker-profiles/{id}` | Rename / edit notes |
-| DELETE | `/api/speaker-profiles/{id}` | Delete profile + embeddings |
+| DELETE | `/api/speaker-profiles/{id}` | Delete profile + embeddings (clears **You** link if matched) |
 | GET | `/api/speaker-memory/status` | Enabled, consent, profile count |
 | POST | `/api/speaker-memory/consent` | Record consent |
-| PATCH | `/api/speaker-memory/status` | Toggle enabled |
+| PATCH | `/api/speaker-memory/status` | Toggle auto-label (enabled) |
 | DELETE | `/api/speaker-memory/data` | Wipe all voiceprint data |
+| GET/PATCH | `/api/user-settings` | User name, language, summarization prefs, linked speaker profile |
 | PATCH | `/api/transcripts/{id}/speakers` | Rename/link speakers; `enroll: true` saves voiceprint from optional turn timestamps |
 
 Primary enrollment path: `PATCH /api/transcripts/{id}/speakers` with:
@@ -134,9 +137,10 @@ When `enrollStartSec` / `enrollEndSec` are omitted, enrollment uses the longest 
 ## Privacy
 
 - Voiceprints stored **locally** in SQLite (`SpeakerProfile`, `SpeakerEmbedding` tables)
+- User preferences stored locally in SQLite (`AppPreference`, key `user_settings`)
 - No audio or embeddings sent to external services
-- Consent required before first enrollment
-- Delete individual profiles or all data from Settings
+- Consent required before first enrollment via auto-label toggle
+- Delete individual profiles from **Settings → Speakers**
 - Auto-match only uses profiles you already enrolled
 
 ## Troubleshooting
@@ -144,10 +148,10 @@ When `enrollStartSec` / `enrollEndSec` are omitted, enrollment uses the longest 
 | Issue | Fix |
 |-------|-----|
 | Save does nothing | Speaker pills save immediately; use **Save** in the toolbar for title and full text only |
-| Still shows `Speaker 1` | Enable speaker memory in Settings; ensure consent given |
+| Still shows `Speaker 1` | Enable **auto-label** in Settings → Speakers; ensure consent given |
 | All speakers `Unknown Speaker` | Assign speakers via pills on a transcript; lower `SPEAKER_MATCH_THRESHOLD` slightly |
 | Wrong name matched | Raise threshold; re-assign via a cleaner turn’s speaker pill |
-| Consent required error | Accept consent in **Settings → Speaker memory** before voiceprints can be stored |
-| Not ready in health | Enable diarization first; check `HF_TOKEN` and pyannote install |
+| Consent required error | Turn on auto-label in Settings and accept consent before voiceprints can be stored |
+| Auto-label toggle disabled | Enable diarization and speaker memory in `.env`; check startup logs and `HF_TOKEN` |
 
 See also [diarization.md](diarization.md).

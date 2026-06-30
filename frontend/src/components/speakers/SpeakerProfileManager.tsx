@@ -1,158 +1,225 @@
-import { Link } from "@tanstack/react-router"
-import { useQuery } from "@tanstack/react-query"
-import { motion } from "motion/react"
+import { MoreHorizontal } from "lucide-react"
+import { useState } from "react"
 import { EmptyState } from "@/components/effects/EmptyState"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
-import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog"
-import { getSpeakerProfile } from "@/lib/api"
-import { listStagger } from "@/lib/motion"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import type { SpeakerProfileSummary } from "@/lib/types"
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleString()
-}
-
-function ProfileDetail({ profileId }: { profileId: string }) {
-  const { data, isLoading } = useQuery({
-    queryKey: ["speaker-profile", profileId],
-    queryFn: () => getSpeakerProfile(profileId),
-  })
-
-  if (isLoading) {
-    return <p className="text-xs text-muted-foreground">Loading profile details…</p>
-  }
-
-  if (!data) return null
-
-  return (
-    <div className="mt-3 space-y-3 border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground">
-      <p>{data.embeddingDescription}</p>
-
-      {data.embeddings.length > 0 ? (
-        <div className="space-y-2">
-          <p className="font-medium text-foreground">Voiceprint samples</p>
-          <ul className="space-y-2">
-            {data.embeddings.map((embedding) => (
-              <li key={embedding.id} className="rounded-md bg-muted/30 p-2">
-                <div>
-                  {embedding.dimensions} dimensions · {embedding.modelId}
-                </div>
-                {embedding.durationSec != null ? (
-                  <div>Sample length: {embedding.durationSec.toFixed(1)}s</div>
-                ) : null}
-                {embedding.sourceTranscriptId ? (
-                  <div>
-                    Source:{" "}
-                    <Link
-                      to="/files/$id"
-                      params={{ id: embedding.sourceTranscriptId }}
-                      className="text-foreground underline-offset-2 hover:underline"
-                    >
-                      transcript
-                    </Link>
-                    {embedding.sourceClusterId
-                      ? ` (${embedding.sourceClusterId})`
-                      : ""}
-                  </div>
-                ) : null}
-                <div>Recorded: {formatDate(embedding.createdAt)}</div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {data.relatedTranscripts.length > 0 ? (
-        <div className="space-y-2">
-          <p className="font-medium text-foreground">Related transcripts</p>
-          <ul className="space-y-1">
-            {data.relatedTranscripts.map((transcript) => (
-              <li key={transcript.id}>
-                <Link
-                  to="/files/$id"
-                  params={{ id: transcript.id }}
-                  className="text-foreground underline-offset-2 hover:underline"
-                >
-                  {transcript.title}
-                </Link>
-                {" · "}
-                {transcript.segmentCount} segment
-                {transcript.segmentCount === 1 ? "" : "s"} ·{" "}
-                {formatDate(transcript.updatedAt)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-    </div>
-  )
-}
 
 type SpeakerProfileManagerProps = {
   profiles: SpeakerProfileSummary[]
+  onRename: (profileId: string, displayName: string) => void | Promise<void>
   onDelete: (profileId: string, displayName: string) => void
+  isRenaming?: boolean
   isDeleting?: boolean
+  embedded?: boolean
+  userSpeakerProfileId?: string | null
+}
+
+function SpeakerRow({
+  profile,
+  onRename,
+  onDelete,
+  isRenaming,
+  isDeleting,
+  embedded,
+  isYou,
+}: {
+  profile: SpeakerProfileSummary
+  onRename: (profileId: string, displayName: string) => void | Promise<void>
+  onDelete: (profileId: string, displayName: string) => void
+  isRenaming?: boolean
+  isDeleting?: boolean
+  embedded?: boolean
+  isYou?: boolean
+}) {
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [displayName, setDisplayName] = useState(profile.displayName)
+  const busy = isRenaming || isDeleting
+
+  const openRename = () => {
+    setDisplayName(profile.displayName)
+    setRenameOpen(true)
+  }
+
+  const handleRename = async () => {
+    const trimmed = displayName.trim()
+    if (!trimmed) return
+    if (trimmed === profile.displayName) {
+      setRenameOpen(false)
+      return
+    }
+    await onRename(profile.id, trimmed)
+    setRenameOpen(false)
+  }
+
+  return (
+    <>
+      <div className={embedded ? "flex items-center justify-between gap-3 py-2" : "flex items-center justify-between gap-3 px-4 py-3"}>
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="min-w-0 truncate text-sm font-medium text-foreground">
+            {profile.displayName}
+          </p>
+          {isYou ? (
+            <Badge variant="secondary" className="shrink-0 text-[10px]">
+              You
+            </Badge>
+          ) : null}
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Actions for ${profile.displayName}`}
+                disabled={busy}
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={openRename}>Rename</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => setDeleteOpen(true)}
+            >
+              Delete voice profile
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename speaker</DialogTitle>
+            <DialogDescription>
+              Update the display name shown on transcripts.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="field-stack py-2">
+            <Label htmlFor={`rename-${profile.id}`}>Display name</Label>
+            <Input
+              id={`rename-${profile.id}`}
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void handleRename()
+              }}
+              disabled={isRenaming}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameOpen(false)} disabled={isRenaming}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void handleRename()}
+              disabled={isRenaming || !displayName.trim()}
+            >
+              {isRenaming ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete &quot;{profile.displayName}&quot;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the profile and all associated voiceprints. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={() => {
+                onDelete(profile.id, profile.displayName)
+                setDeleteOpen(false)
+              }}
+            >
+              {isDeleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
 }
 
 export function SpeakerProfileManager({
   profiles,
+  onRename,
   onDelete,
+  isRenaming,
   isDeleting,
+  embedded,
+  userSpeakerProfileId,
 }: SpeakerProfileManagerProps) {
   if (profiles.length === 0) {
     return (
       <EmptyState
-        title="No speaker profiles yet"
-        description="Open a transcript with speaker labels and click a speaker pill on any turn to assign a name. With speaker memory enabled in Settings, the voiceprint updates from that turn automatically."
+        title="No speakers yet"
+        description="Open a recording with speaker labels and click a speaker pill on any turn to assign a name."
         className="py-8"
       />
     )
   }
 
   return (
-    <ul className="space-y-3">
-      {profiles.map((profile, index) => (
-        <motion.li
+    <div
+      className={
+        embedded
+          ? "divide-y divide-border"
+          : "divide-y divide-border rounded-lg border border-border"
+      }
+    >
+      {profiles.map((profile) => (
+        <SpeakerRow
           key={profile.id}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={listStagger(index)}
-          className="rounded-xl border border-border bg-card/40 px-4 py-3 text-sm"
-        >
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="space-y-1">
-              <p className="font-medium text-foreground">{profile.displayName}</p>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">
-                  {profile.embeddingCount} voiceprint
-                  {profile.embeddingCount === 1 ? "" : "s"}
-                </Badge>
-                {(profile.relatedTranscriptCount ?? 0) > 0 ? (
-                  <Badge variant="outline">
-                    {profile.relatedTranscriptCount} transcript
-                    {profile.relatedTranscriptCount === 1 ? "" : "s"}
-                  </Badge>
-                ) : null}
-              </div>
-              {profile.notes ? (
-                <p className="text-xs text-muted-foreground">{profile.notes}</p>
-              ) : null}
-              <p className="text-xs text-muted-foreground">
-                Updated {formatDate(profile.updatedAt)}
-              </p>
-            </div>
-            <DeleteConfirmDialog
-              title={`Delete "${profile.displayName}"?`}
-              description="This removes the profile and all associated voiceprints. This cannot be undone."
-              triggerLabel="Delete"
-              onConfirm={() => onDelete(profile.id, profile.displayName)}
-              isPending={isDeleting}
-              variant="outline"
-            />
-          </div>
-          <ProfileDetail profileId={profile.id} />
-        </motion.li>
+          profile={profile}
+          onRename={onRename}
+          onDelete={onDelete}
+          isRenaming={isRenaming}
+          isDeleting={isDeleting}
+          embedded={embedded}
+          isYou={profile.id === userSpeakerProfileId}
+        />
       ))}
-    </ul>
+    </div>
   )
 }
