@@ -68,7 +68,7 @@ SPEAKER_MEMORY_MOCK=true
 
 1. Transcribe audio with diarization
 2. Transcript shows `Speaker 1`, `Speaker 2`, or `Unknown Speaker` per turn
-3. **Click any speaker pill** on a turn to assign or update their name
+3. **Click a speaker name** on a turn to assign or update their label
 4. Choose an existing profile or enter a new name — saves immediately for all turns in that cluster
 5. When auto-label is on and consent was given, the voiceprint is updated from **that turn’s audio**
 
@@ -147,10 +147,10 @@ When `enrollStartSec` / `enrollEndSec` are omitted, enrollment uses the longest 
 
 | Issue | Fix |
 |-------|-----|
-| Save does nothing | Speaker pills save immediately; use **Save** in the toolbar for title and full text only |
+| Save does nothing | Speaker names save immediately when you click a turn’s speaker label; transcript text is read-only on Source |
 | Still shows `Speaker 1` | Enable **auto-label** in Settings → Speakers; ensure consent given |
 | All speakers `Unknown Speaker` | Assign speakers via pills on a transcript; lower `SPEAKER_MATCH_THRESHOLD` slightly |
-| Wrong name matched | Raise threshold; re-assign via a cleaner turn’s speaker pill |
+| Wrong name matched | Raise threshold; re-assign via a cleaner turn’s speaker label |
 | Consent required error | Turn on auto-label in Settings and accept consent before voiceprints can be stored |
 | Auto-label toggle disabled | Enable diarization and speaker memory in `.env`; check startup logs and `HF_TOKEN` |
 

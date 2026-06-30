@@ -136,6 +136,15 @@ Documents store a `transcript_id` foreign key pointing at the parent recording.
 
 The file detail page routes by ID prefix (`transcript_` → recording detail, `doc_` → document editor). Lists show recordings only; documents appear on a recording’s **AI** tab.
 
+### Recording detail UI
+
+| Area | Behavior |
+|------|----------|
+| Topbar | Breadcrumbs; download (audio, transcript `.txt`, summary placeholder); actions (rename, delete) |
+| Source | Audio player; compact transcript with speaker, timestamp, and text per turn; auto-scroll to active turn; read-only text |
+| Summary | Placeholder (not implemented) |
+| AI | Templates, jobs, linked documents |
+
 ## API surface
 
 | Method | Path | Description |

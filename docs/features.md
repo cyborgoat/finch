@@ -28,8 +28,8 @@ What Finch does today and what is intentionally out of scope.
 
 - Local voiceprint storage with [pyannote/embedding](https://huggingface.co/pyannote/embedding)
 - Match unknown speakers to saved profiles or assign new names on a transcript
-- Clickable speaker pills on each turn to assign or update names
-- Voiceprint enrollment when you edit a speaker pill (when auto-label is on and consent given)
+- Clickable speaker names on each transcript turn to assign or update labels
+- Voiceprint enrollment when you edit a speaker (when auto-label is on and consent given)
 - Auto-match known speakers on future transcripts (when auto-label is enabled in Settings)
 - Profile management in **Settings → Speakers** (rename, delete, map **You**)
 - Consent-gated auto-label toggle — see [speaker-memory.md](speaker-memory.md)
@@ -38,15 +38,17 @@ What Finch does today and what is intentionally out of scope.
 
 - Unified **Files** browser at `/files` — voice recordings only; generated documents and artifacts belong to each recording
 - Home shows recent voice recordings sorted by last updated
+- Title search on the Files page (filters by recording name)
 - Recording detail at `/files/{id}` with three tabs:
-  - **Source** — toolbar, title, full transcript (plain text or all segments), audio player
+  - **Source** — audio player and compact scrollable transcript (speaker, timestamp, text per turn)
   - **Summary** — placeholder for a future LLM-generated overview
   - **AI** — action templates, job progress, and generated documents linked to the recording
 - Prefixed IDs in URLs (e.g. `/files/transcript_a1b2c3d4e5f67890`, `/files/doc_b2c3d4e5f6789012`)
-- Rename and delete from an ellipsis menu; list API includes audio duration (`durationSeconds`)
-- Search, edit, copy, export TXT/MD on the Source tab
-- Built-in audio player (seek, ±15s skip, playback speed), current turn synced to playback, prev/next turn navigation
-- Inline speaker pills on turns; click timestamps to jump in the audio
+- **Topbar** on recording detail: breadcrumb navigation, download menu (audio, transcript `.txt`, summary coming soon), and actions menu (rename, delete session)
+- Rename and delete from the topbar actions menu or the Files list ellipsis menu; list API includes audio duration (`durationSeconds`)
+- Built-in audio player (seek, ±15s skip, playback speed)
+- Transcript auto-scrolls to the active turn during playback; click timestamps to seek
+- Read-only transcript on Source (no manual text editing)
 - In-progress (`transcribing`) and failed states in the UI
 
 ### AI actions (optional)
@@ -63,24 +65,36 @@ What Finch does today and what is intentionally out of scope.
 
 ### User settings
 
-- **You:** display name and link to your speaker profile
-- **Language:** English or 中文 (Chinese)
-- **AI summarization:** style (concise / balanced / detailed) and format (paragraphs / bullets) — placeholders for Summary tab and AI actions
+- **You:** display name and link to your speaker profile (persisted; not yet used in LLM prompts)
+- **Language:** English or 中文 (Chinese) — persisted; UI localization not implemented yet
+- **AI summarization:** style (concise / balanced / detailed) and format (paragraphs / bullets) — persisted; not yet applied to Summary tab or AI actions
 - **Speakers:** auto-label toggle, saved speaker list (rename / delete)
 - Persisted via `GET/PATCH /api/user-settings` (stored in `AppPreference`)
 
 ### Operations
 
 - Startup configuration summary and dependency checks
-- `/api/health` capability flags (backend topbar; not on settings page)
+- `/api/health` capability flags (not shown on the settings page)
 - `scripts/validate_diarization.py` for pre-flight checks
+
+## Not implemented yet
+
+| Area | Notes |
+|------|--------|
+| **Summary tab** | Empty placeholder; no LLM-generated recording overview on the detail page |
+| **Summary download** | Topbar menu item shows “coming soon” |
+| **User prefs in AI** | Language, summary style/format, and display name are stored but not passed to prompts yet |
+| **UI localization** | Language setting does not translate the app |
+| **Transcript editing** | Source transcript is read-only (rename title via topbar only) |
+| **Full-text search** | Files search filters by title only |
+| **Rich exports** | PDF, DOCX, HTML, Obsidian, Notion (audio + transcript `.txt` and document `.md` exist today) |
 
 ## Planned (post-MVP)
 
 | Area | Examples |
 |------|----------|
-| Timestamps | Waveform and finer scrubbing beyond click-to-seek |
-| Summary tab | LLM-generated recording overview on the detail page |
+| Waveform | Visual waveform and finer scrubbing beyond click-to-seek |
+| Summary tab | LLM-generated recording overview wired to user summarization prefs |
 | Search | Full-text over transcripts and documents; later semantic search |
 | Export | PDF, DOCX, HTML, Obsidian vault, Notion Markdown |
 | Local LLM | Ollama, llama.cpp, LM Studio, vLLM for fully local summaries |
