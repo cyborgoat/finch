@@ -40,6 +40,7 @@ export function useUpdateTranscript(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transcripts"] })
       queryClient.invalidateQueries({ queryKey: ["transcripts", id] })
+      queryClient.invalidateQueries({ queryKey: ["files"] })
     },
   })
 }
@@ -52,6 +53,7 @@ export function useRenameTranscript() {
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["transcripts"] })
       queryClient.invalidateQueries({ queryKey: ["transcripts", id] })
+      queryClient.invalidateQueries({ queryKey: ["files"] })
     },
   })
 }
@@ -62,6 +64,8 @@ export function useDeleteTranscript() {
     mutationFn: deleteTranscript,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transcripts"] })
+      queryClient.invalidateQueries({ queryKey: ["files"] })
+      queryClient.invalidateQueries({ queryKey: ["documents"] })
     },
   })
 }
@@ -70,5 +74,6 @@ export function useInvalidateTranscripts() {
   const queryClient = useQueryClient()
   return () => {
     void queryClient.invalidateQueries({ queryKey: ["transcripts"] })
+    void queryClient.invalidateQueries({ queryKey: ["files"] })
   }
 }

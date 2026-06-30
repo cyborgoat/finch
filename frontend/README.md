@@ -49,23 +49,22 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 
 | Route | Purpose |
 |-------|---------|
-| `/` | Recent transcripts (updated recently), rename/delete actions |
+| `/` | Recent files (transcripts + documents), sorted by last updated |
+| `/files` | File browser — transcripts as folders with nested documents |
+| `/files/$id` | Transcript detail (player, edit, AI) or document editor |
 | `/upload` | Upload audio and transcribe |
 | `/record` | Browser recording with live waveform |
-| `/transcripts` | Transcript library table (search, sort, length, rename, delete) |
-| `/transcripts/$id` | Player, current turn, **Transcript** tab (edit) and **AI** tab (actions + documents) |
-| `/documents` | Document library table (search, sort, delete) |
-| `/documents/$id` | Markdown editor + preview + export |
+| `/transcripts`, `/documents` | Redirect to `/files` (legacy URLs) |
 | `/settings` | Health, diarization, speaker memory profiles, privacy |
 
 ## Key UI behavior
 
 - **Layout:** wide `max-w-6xl` pages with generous spacing; upload/record use a centered content column inside the wide shell; settings uses a two-column card grid on large screens
-- **Sidebar:** **New** dropdown (Record voice / Upload audio); Home, Transcripts, Documents, Settings
-- **Home:** recent transcripts only, sorted by last updated
-- **Library tables:** TanStack Table for transcripts and documents (title, date, type/length, ellipsis actions)
-- **Transcript lists:** row styling reflects status (transcribing / failed) without a status column
-- **List actions:** ellipsis menu on each row for rename/delete (transcripts) or delete (documents)
+- **Sidebar:** **New** dropdown (Record voice / Upload audio); Home, Files, Settings
+- **Home:** recent voice recordings, sorted by last updated
+- **Files browser:** voice recordings only; AI documents and artifacts live under each recording (see the AI tab on the detail page)
+- **File lists:** row styling reflects transcription status without a status column
+- **List actions:** ellipsis menu — rename and delete for recordings
 - **Transcribing:** list and detail pages poll while `status=transcribing`
 - **Failed jobs:** transcript stays visible with error message (not removed)
 - **Transcript tab:** toolbar, title, full transcript (text or segments toggle)

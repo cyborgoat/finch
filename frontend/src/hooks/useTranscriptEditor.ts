@@ -117,7 +117,7 @@ export function useTranscriptEditor(transcript: Transcript) {
     try {
       await deleteMutation.mutateAsync(transcript.id)
       toast.success("Transcript deleted")
-      void navigate({ to: "/transcripts" })
+      void navigate({ to: "/files" })
     } catch {
       toast.error("Failed to delete")
     }

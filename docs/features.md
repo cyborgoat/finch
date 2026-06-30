@@ -34,13 +34,13 @@ What Finch does today and what is intentionally out of scope.
 - Profile management in Settings (embeddings, related transcripts)
 - Consent-gated, deletable from Settings — see [speaker-memory.md](speaker-memory.md)
 
-### Transcript library
+### File library
 
-- Sortable table on `/transcripts` (title, created, length, language)
-- Home shows recent transcripts sorted by last updated
-- Rename and delete from an ellipsis menu on each row
-- List API includes audio duration (`durationSeconds`)
-- Search, edit, copy, export TXT/MD
+- Unified **Files** browser at `/files` — voice recordings only; generated documents and artifacts belong to each recording
+- Home shows recent voice recordings sorted by last updated; open a recording’s **AI tab** for related documents
+- Rename and delete from an ellipsis menu; list API includes audio duration (`durationSeconds`)
+- Legacy `/transcripts` and `/documents` URLs redirect to `/files`
+- Search, edit, copy, export TXT/MD on transcript files
 - Transcript detail: built-in audio player (seek, ±15s skip, playback speed), current turn synced to playback, prev/next turn navigation
 - **Transcript tab:** toolbar, title, full transcript (plain text or all segments)
 - **AI tab:** AI action templates, job progress, and generated documents only

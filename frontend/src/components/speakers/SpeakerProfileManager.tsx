@@ -44,7 +44,7 @@ function ProfileDetail({ profileId }: { profileId: string }) {
                   <div>
                     Source:{" "}
                     <Link
-                      to="/transcripts/$id"
+                      to="/files/$id"
                       params={{ id: embedding.sourceTranscriptId }}
                       className="text-foreground underline-offset-2 hover:underline"
                     >
@@ -69,7 +69,7 @@ function ProfileDetail({ profileId }: { profileId: string }) {
             {data.relatedTranscripts.map((transcript) => (
               <li key={transcript.id}>
                 <Link
-                  to="/transcripts/$id"
+                  to="/files/$id"
                   params={{ id: transcript.id }}
                   className="text-foreground underline-offset-2 hover:underline"
                 >

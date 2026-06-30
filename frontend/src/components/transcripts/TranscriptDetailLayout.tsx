@@ -62,8 +62,8 @@ export function TranscriptDetailLayout({
   onExportMd,
   onDelete,
 }: TranscriptDetailLayoutProps) {
-  const navigate = useNavigate({ from: "/transcripts/$id/" })
-  const { tab } = useSearch({ from: "/transcripts/$id/" })
+  const navigate = useNavigate({ from: "/files/$id/" })
+  const { tab } = useSearch({ from: "/files/$id/" })
   const activeTab = tab === "ai" ? "ai" : "transcript"
   const { data: audioAsset } = useAudioAsset(transcript.audioAssetId)
   const playback = useTranscriptPlayback(transcript.audioAssetId)
@@ -83,8 +83,8 @@ export function TranscriptDetailLayout({
   return (
     <div className="section-stack">
       <PageHeader
-        backHref="/transcripts"
-        backLabel="Transcripts"
+        backHref="/files"
+        backLabel="Files"
         title={title || "Untitled transcript"}
         description="Listen, edit, and review this transcript."
         badge={<Badge variant="secondary">Draft</Badge>}

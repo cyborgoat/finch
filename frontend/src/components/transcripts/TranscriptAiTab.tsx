@@ -53,6 +53,7 @@ export function TranscriptAiTab({
       setJobId(null)
       void queryClient.invalidateQueries({ queryKey: ["documents", transcriptId] })
       void queryClient.invalidateQueries({ queryKey: ["documents"] })
+      void queryClient.invalidateQueries({ queryKey: ["files"] })
       if (resultId) {
         setLastDocumentId(resultId)
         toast.success("Document generated")
@@ -149,7 +150,7 @@ export function TranscriptAiTab({
           <JobProgress job={job} error={error} />
           {lastDocumentId ? (
             <Link
-              to="/documents/$id"
+              to="/files/$id"
               params={{ id: lastDocumentId }}
               className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
             >

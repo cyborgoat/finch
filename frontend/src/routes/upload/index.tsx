@@ -35,7 +35,7 @@ function UploadPage() {
     (resultId: string | null | undefined) => {
       if (resultId) {
         toast.success("Transcription complete")
-        void navigate({ to: "/transcripts/$id", params: { id: resultId } })
+        void navigate({ to: "/files/$id", params: { id: resultId } })
       }
     },
     [navigate],
@@ -79,7 +79,7 @@ function UploadPage() {
       invalidateTranscripts()
       toast.message("Transcription started")
       void navigate({
-        to: "/transcripts/$id",
+        to: "/files/$id",
         params: { id: transcriptId },
       })
     } catch (err) {

@@ -31,6 +31,7 @@ export function useUpdateDocument(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] })
       queryClient.invalidateQueries({ queryKey: ["documents", id] })
+      queryClient.invalidateQueries({ queryKey: ["files"] })
     },
   })
 }
@@ -41,6 +42,7 @@ export function useDeleteDocument() {
     mutationFn: deleteDocument,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] })
+      queryClient.invalidateQueries({ queryKey: ["files"] })
     },
   })
 }

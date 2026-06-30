@@ -40,7 +40,7 @@ export function DocumentList({ items, onDelete }: DocumentListProps) {
               <div className="min-w-0 flex-1">
                 <CardTitle className="truncate text-base">
                   <Link
-                    to="/documents/$id"
+                    to="/files/$id"
                     params={{ id: item.id }}
                     className="hover:underline"
                   >
@@ -68,10 +68,6 @@ export function DocumentList({ items, onDelete }: DocumentListProps) {
       ))}
     </div>
   )
-}
-
-export function RecentDocumentList({ items }: { items: DocumentSummary[] }) {
-  return <DocumentList items={items.slice(0, 5)} />
 }
 
 export function LinkedDocumentList({ items }: { items: DocumentSummary[] }) {

@@ -28,27 +28,30 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import type { TranscriptSummary } from "@/lib/types"
+import type { FileSummary } from "@/lib/files"
 
-type TranscriptRowActionsProps = {
-  item: TranscriptSummary
-  onRename: (id: string, title: string) => void | Promise<void>
+type FileRowActionsProps = {
+  item: FileSummary
+  onRename?: (id: string, title: string) => void | Promise<void>
   onDelete: (id: string) => void
   isRenaming?: boolean
   isDeleting?: boolean
 }
 
-export function TranscriptRowActions({
+export function FileRowActions({
   item,
   onRename,
   onDelete,
   isRenaming,
   isDeleting,
-}: TranscriptRowActionsProps) {
+}: FileRowActionsProps) {
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [title, setTitle] = useState(item.title)
   const busy = isRenaming || isDeleting
+  const isTranscribing = item.status === "transcribing"
+
+  if (isTranscribing) return null
 
   const openRename = () => {
     setTitle(item.title)
@@ -57,7 +60,7 @@ export function TranscriptRowActions({
 
   const handleRename = async () => {
     const trimmed = title.trim()
-    if (!trimmed) return
+    if (!trimmed || !onRename) return
     if (trimmed === item.title) {
       setRenameOpen(false)
       return
@@ -74,7 +77,7 @@ export function TranscriptRowActions({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Transcript actions"
+              aria-label="File actions"
               disabled={busy}
             >
               <MoreHorizontal className="size-4" />
@@ -82,10 +85,12 @@ export function TranscriptRowActions({
           }
         />
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={openRename}>
-            Rename
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          {onRename ? (
+            <>
+              <DropdownMenuItem onClick={openRename}>Rename</DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          ) : null}
           <DropdownMenuItem
             variant="destructive"
             onClick={() => setDeleteOpen(true)}
@@ -95,51 +100,53 @@ export function TranscriptRowActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename transcript</DialogTitle>
-            <DialogDescription>
-              Update the title shown in your transcript library.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="field-stack py-2">
-            <Label htmlFor={`rename-${item.id}`}>Title</Label>
-            <Input
-              id={`rename-${item.id}`}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void handleRename()
-              }}
-              disabled={isRenaming}
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setRenameOpen(false)}
-              disabled={isRenaming}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => void handleRename()}
-              disabled={isRenaming || !title.trim()}
-            >
-              {isRenaming ? "Saving…" : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {onRename ? (
+        <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename file</DialogTitle>
+              <DialogDescription>
+                Update the title shown in your file library.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="field-stack py-2">
+              <Label htmlFor={`rename-${item.id}`}>Title</Label>
+              <Input
+                id={`rename-${item.id}`}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void handleRename()
+                }}
+                disabled={isRenaming}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setRenameOpen(false)}
+                disabled={isRenaming}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => void handleRename()}
+                disabled={isRenaming || !title.trim()}
+              >
+                {isRenaming ? "Saving…" : "Save"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete transcript?</AlertDialogTitle>
+            <AlertDialogTitle>Delete file?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the transcript and cannot be undone.
+              This permanently removes the transcript and its related documents.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
