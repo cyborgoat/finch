@@ -37,7 +37,7 @@ def _seed_transcript(db_session, client):
     ]
     db_session.add(
         Transcript(
-            id="a0a0a0a0a0a0a0a0",
+            id="transcript_speaker",
             audio_asset_id="audio_speaker",
             title="Meeting",
             raw_text="Speaker 1: Hello\n\nSpeaker 2: Hi",
@@ -86,7 +86,7 @@ def test_update_transcript_speakers(client, db_session):
     _seed_transcript(db_session, client)
 
     response = client.patch(
-        "/api/transcripts/a0a0a0a0a0a0a0a0/speakers",
+        "/api/transcripts/transcript_speaker/speakers",
         json={
             "mappings": [
                 {"clusterId": "SPEAKER_00", "displayName": "Robert", "enroll": False},
@@ -99,7 +99,7 @@ def test_update_transcript_speakers(client, db_session):
     assert body["rawText"].startswith("Robert: Hello")
     assert any(segment["speaker"] == "David" for segment in body["speakerSegments"])
 
-    transcript = client.get("/api/transcripts/a0a0a0a0a0a0a0a0")
+    transcript = client.get("/api/transcripts/transcript_speaker")
     assert transcript.status_code == 200
     assert "Robert: Hello" in transcript.json()["rawText"]
 

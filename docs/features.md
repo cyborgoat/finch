@@ -42,7 +42,7 @@ What Finch does today and what is intentionally out of scope.
   - **Source** — toolbar, title, full transcript (plain text or all segments), audio player
   - **Summary** — placeholder for a future LLM-generated overview
   - **AI** — action templates, job progress, and generated documents linked to the recording
-- Bare hex IDs in URLs (e.g. `/files/a1b2c3d4e5f67890`); no `transcript_` or `doc_` prefix
+- Prefixed IDs in URLs (e.g. `/files/transcript_a1b2c3d4e5f67890`, `/files/doc_b2c3d4e5f6789012`)
 - Rename and delete from an ellipsis menu; list API includes audio duration (`durationSeconds`)
 - Search, edit, copy, export TXT/MD on the Source tab
 - Built-in audio player (seek, ±15s skip, playback speed), current turn synced to playback, prev/next turn navigation

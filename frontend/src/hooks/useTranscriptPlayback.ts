@@ -1,22 +1,60 @@
-
 import { useCallback, useEffect, useRef, useState } from "react"
 import { getAudioStreamUrl, PLAYBACK_SKIP_SECONDS, type PlaybackRate } from "@/lib/audio"
 
-export function useTranscriptPlayback(audioAssetId: string) {
+function finiteDuration(value: number | undefined | null): number {
+  if (value == null || !Number.isFinite(value) || value <= 0) return 0
+  return value
+}
+
+export function useTranscriptPlayback(
+  audioAssetId: string,
+  knownDurationSeconds?: number | null,
+) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [isReady, setIsReady] = useState(false)
+  const [duration, setDuration] = useState(() =>
+    finiteDuration(knownDurationSeconds),
+  )
+  const [isReady, setIsReady] = useState(() =>
+    finiteDuration(knownDurationSeconds) > 0,
+  )
   const [playbackRate, setPlaybackRateState] = useState<PlaybackRate>(1)
 
-  const src = getAudioStreamUrl(audioAssetId)
+  const src = audioAssetId ? getAudioStreamUrl(audioAssetId) : ""
+
+  useEffect(() => {
+    setIsPlaying(false)
+    setCurrentTime(0)
+    const fallback = finiteDuration(knownDurationSeconds)
+    setDuration(fallback)
+    setIsReady(fallback > 0)
+  }, [src, knownDurationSeconds])
+
+  useEffect(() => {
+    const fallback = finiteDuration(knownDurationSeconds)
+    if (fallback > 0) {
+      setDuration((prev) => (prev > 0 ? prev : fallback))
+      setIsReady(true)
+    }
+  }, [knownDurationSeconds])
 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
     audio.playbackRate = playbackRate
-  }, [playbackRate])
+  }, [playbackRate, src])
+
+  const syncDurationFromElement = useCallback(() => {
+    const audio = audioRef.current
+    if (!audio) return 0
+    const fromElement = finiteDuration(audio.duration)
+    if (fromElement > 0) {
+      setDuration(fromElement)
+      setIsReady(true)
+    }
+    return fromElement
+  }, [])
 
   const setPlaybackRate = useCallback((rate: PlaybackRate) => {
     setPlaybackRateState(rate)
@@ -26,13 +64,24 @@ export function useTranscriptPlayback(audioAssetId: string) {
     }
   }, [])
 
-  const seek = useCallback((time: number) => {
+  const maxDuration = useCallback(() => {
     const audio = audioRef.current
-    if (!audio) return
-    const clamped = Math.max(0, Math.min(time, audio.duration || time))
-    audio.currentTime = clamped
-    setCurrentTime(clamped)
-  }, [])
+    const fromElement = finiteDuration(audio?.duration)
+    if (fromElement > 0) return fromElement
+    return finiteDuration(knownDurationSeconds) || duration
+  }, [duration, knownDurationSeconds])
+
+  const seek = useCallback(
+    (time: number) => {
+      const audio = audioRef.current
+      if (!audio) return
+      const max = maxDuration()
+      const clamped = Math.max(0, Math.min(time, max || time))
+      audio.currentTime = clamped
+      setCurrentTime(clamped)
+    },
+    [maxDuration],
+  )
 
   const seekAndPlay = useCallback(
     (time: number) => {
@@ -64,16 +113,27 @@ export function useTranscriptPlayback(audioAssetId: string) {
     setCurrentTime(audio.currentTime)
   }, [])
 
-  const handleLoadedMetadata = useCallback(() => {
-    const audio = audioRef.current
-    if (!audio) return
-    setDuration(audio.duration || 0)
+  const markReady = useCallback(() => {
+    syncDurationFromElement()
     setIsReady(true)
-  }, [])
+  }, [syncDurationFromElement])
+
+  const handleLoadedMetadata = useCallback(() => {
+    markReady()
+  }, [markReady])
+
+  const handleCanPlay = useCallback(() => {
+    markReady()
+  }, [markReady])
+
+  const handleDurationChange = useCallback(() => {
+    syncDurationFromElement()
+  }, [syncDurationFromElement])
 
   const handlePlay = useCallback(() => {
     setIsPlaying(true)
-  }, [])
+    markReady()
+  }, [markReady])
 
   const handlePause = useCallback(() => {
     setIsPlaying(false)
@@ -122,6 +182,8 @@ export function useTranscriptPlayback(audioAssetId: string) {
     seekAndPlay,
     handleTimeUpdate,
     handleLoadedMetadata,
+    handleCanPlay,
+    handleDurationChange,
     handlePlay,
     handlePause,
     handleEnded,

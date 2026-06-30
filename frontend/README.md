@@ -78,7 +78,7 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 
 ## IDs
 
-Transcript and document IDs are bare 16-character hex strings in URLs and API paths. Prefixed IDs (`audio_`, `job_`, `speaker_`, etc.) are used for other resource types only.
+Transcript and document IDs use type prefixes (`transcript_`, `doc_`) in URLs and API paths. Other resources use their own prefixes (`audio_`, `job_`, `speaker_`, etc.).
 
 ## Stack
 

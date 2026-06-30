@@ -59,7 +59,7 @@ Loads settings from `backend/.env` and repo root `.env`.
 | Module | Role |
 |--------|------|
 | `errors.py` | `AppError` + JSON error handler |
-| `ids.py` | ID generation: bare hex for transcripts/documents; prefixed for `audio_`, `job_`, `speaker_`, `semb_` |
+| `ids.py` | Prefixed IDs: `transcript_`, `doc_`, `audio_`, `job_`, `speaker_`, `semb_` |
 | `logging.py` | stdout logging setup |
 | `startup_diagnostics.py` | Startup config summary, dependency checks, error remediation hints |
 

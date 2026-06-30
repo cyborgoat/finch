@@ -2,6 +2,12 @@ import type { TranscriptSummary } from "@/lib/types"
 
 export type FileKind = "transcript" | "document"
 
+export function resolveFileKind(id: string): FileKind | null {
+  if (id.startsWith("transcript_")) return "transcript"
+  if (id.startsWith("doc_")) return "document"
+  return null
+}
+
 export type FileSummary = {
   id: string
   kind: FileKind

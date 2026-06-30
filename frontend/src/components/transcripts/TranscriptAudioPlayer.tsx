@@ -37,6 +37,8 @@ type TranscriptAudioPlayerProps = {
   onSeekInput: (value: number) => void
   onTimeUpdate: () => void
   onLoadedMetadata: () => void
+  onCanPlay?: () => void
+  onDurationChange?: () => void
   onPlay: () => void
   onPause: () => void
   onEnded: () => void
@@ -59,12 +61,15 @@ export function TranscriptAudioPlayer({
   onSeekInput,
   onTimeUpdate,
   onLoadedMetadata,
+  onCanPlay,
+  onDurationChange,
   onPlay,
   onPause,
   onEnded,
   className,
 }: TranscriptAudioPlayerProps) {
   const max = duration > 0 ? duration : 0
+  const canControl = Boolean(src) && (isReady || max > 0)
   const progress = max > 0 ? (currentTime / max) * 100 : 0
 
   return (
@@ -73,8 +78,11 @@ export function TranscriptAudioPlayer({
         ref={audioRef}
         src={src}
         preload="metadata"
+        crossOrigin="anonymous"
         onTimeUpdate={onTimeUpdate}
         onLoadedMetadata={onLoadedMetadata}
+        onCanPlay={onCanPlay}
+        onDurationChange={onDurationChange}
         onPlay={onPlay}
         onPause={onPause}
         onEnded={onEnded}
@@ -91,7 +99,7 @@ export function TranscriptAudioPlayer({
           max={max || 1}
           step={0.1}
           value={Math.min(currentTime, max || 0)}
-          disabled={!isReady || max <= 0}
+          disabled={!canControl || max <= 0}
           onChange={(event) => onSeekInput(Number(event.target.value))}
           className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-slider-thumb]:size-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
           aria-label="Seek"
@@ -115,7 +123,7 @@ export function TranscriptAudioPlayer({
                   variant="outline"
                   size="icon"
                   onClick={onSkipBackward}
-                  disabled={!isReady}
+                  disabled={!canControl}
                   aria-label={`Back ${PLAYBACK_SKIP_SECONDS} seconds`}
                 >
                   <RotateCcw className="size-4" />
@@ -138,7 +146,7 @@ export function TranscriptAudioPlayer({
                   size="icon-lg"
                   onClick={onTogglePlay}
                   aria-label={isPlaying ? "Pause" : "Play"}
-                  disabled={!isReady && !src}
+                  disabled={!src}
                   className="size-11 rounded-full"
                 >
                   {isPlaying ? <Pause className="size-5" /> : <Play className="size-5" />}
@@ -158,7 +166,7 @@ export function TranscriptAudioPlayer({
                   variant="outline"
                   size="icon"
                   onClick={onSkipForward}
-                  disabled={!isReady}
+                  disabled={!canControl}
                   aria-label={`Forward ${PLAYBACK_SKIP_SECONDS} seconds`}
                 >
                   <RotateCw className="size-4" />
@@ -183,7 +191,7 @@ export function TranscriptAudioPlayer({
                   variant="outline"
                   size="sm"
                   className="gap-1"
-                  disabled={!isReady}
+                  disabled={!canControl}
                   aria-label={`Playback speed, currently ${formatPlaybackRate(playbackRate)}`}
                 >
                   <span className="text-xs text-muted-foreground sm:hidden">Speed</span>

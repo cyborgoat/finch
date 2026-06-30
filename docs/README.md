@@ -36,7 +36,7 @@ The transcript is the durable artifact. AI-generated Markdown documents are opti
 | `/upload`, `/record` | Create new recordings |
 | `/settings` | Health, diarization, speaker memory |
 
-Recording and document IDs are bare 16-character hex strings (no type prefix). Audio, job, and speaker IDs keep short prefixes (`audio_`, `job_`, etc.).
+Recording and document IDs use type prefixes (`transcript_`, `doc_`) so routes can infer file kind from the URL. Other resources use their own prefixes (`audio_`, `job_`, etc.).
 
 ## Privacy
 

@@ -72,7 +72,10 @@ export function TranscriptDetailLayout({
   const { tab } = useSearch({ from: "/files/$id/" })
   const activeTab = parseFileDetailTab(tab)
   const { data: audioAsset } = useAudioAsset(transcript.audioAssetId)
-  const playback = useTranscriptPlayback(transcript.audioAssetId)
+  const playback = useTranscriptPlayback(
+    transcript.audioAssetId,
+    audioAsset?.durationSeconds,
+  )
 
   const setTab = useCallback(
     (value: string) => {
@@ -118,6 +121,8 @@ export function TranscriptDetailLayout({
         onSeekInput={playback.handleSeekInput}
         onTimeUpdate={playback.handleTimeUpdate}
         onLoadedMetadata={playback.handleLoadedMetadata}
+        onCanPlay={playback.handleCanPlay}
+        onDurationChange={playback.handleDurationChange}
         onPlay={playback.handlePlay}
         onPause={playback.handlePause}
         onEnded={playback.handleEnded}

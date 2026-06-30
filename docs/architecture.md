@@ -116,8 +116,8 @@ Config loads from `backend/.env` and repo root `.env`.
 
 | Resource | ID format | Example |
 |----------|-----------|---------|
-| Transcript | 16-char hex | `a1b2c3d4e5f67890` |
-| Document | 16-char hex | `b2c3d4e5f6789012` |
+| Transcript | `transcript_` + hex | `transcript_a1b2c3d4e5f67890` |
+| Document | `doc_` + hex | `doc_b2c3d4e5f6789012` |
 | Audio asset | `audio_` + hex | `audio_a1b2c3d4e5f67890` |
 | Job | `job_` + hex | `job_c3d4e5f678901234` |
 | Speaker profile | `speaker_` + hex | `speaker_d4e5f67890123456` |
@@ -134,7 +134,7 @@ Documents store a `transcript_id` foreign key pointing at the parent recording.
 | `/upload`, `/record` | Ingest new audio |
 | `/settings` | Capabilities, speaker memory, privacy |
 
-The file detail page resolves `{id}` by probing the transcript and document APIs. Lists show recordings only; documents appear on a recording’s **AI** tab.
+The file detail page routes by ID prefix (`transcript_` → recording detail, `doc_` → document editor). Lists show recordings only; documents appear on a recording’s **AI** tab.
 
 ## API surface
 

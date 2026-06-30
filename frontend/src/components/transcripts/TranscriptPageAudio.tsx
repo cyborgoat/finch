@@ -10,7 +10,10 @@ type TranscriptPageAudioProps = {
 
 export function TranscriptPageAudio({ audioAssetId, className }: TranscriptPageAudioProps) {
   const { data: audioAsset } = useAudioAsset(audioAssetId)
-  const playback = useTranscriptPlayback(audioAssetId)
+  const playback = useTranscriptPlayback(
+    audioAssetId,
+    audioAsset?.durationSeconds,
+  )
 
   return (
     <TranscriptAudioPlayer
@@ -30,6 +33,8 @@ export function TranscriptPageAudio({ audioAssetId, className }: TranscriptPageA
       onSeekInput={playback.handleSeekInput}
       onTimeUpdate={playback.handleTimeUpdate}
       onLoadedMetadata={playback.handleLoadedMetadata}
+      onCanPlay={playback.handleCanPlay}
+      onDurationChange={playback.handleDurationChange}
       onPlay={playback.handlePlay}
       onPause={playback.handlePause}
       onEnded={playback.handleEnded}

@@ -23,10 +23,10 @@ import {
 import { useTranscript } from "@/hooks/useTranscripts"
 import { useTranscriptEditor } from "@/hooks/useTranscriptEditor"
 import { parseFileDetailTab, type FileDetailTab } from "@/lib/fileDetailTabs"
+import { resolveFileKind } from "@/lib/files"
 import { exportDocumentMd } from "@/lib/export"
 import { documentQuery, documentsQuery } from "@/lib/queries/documents"
 import { healthQuery } from "@/lib/queries/health"
-import { resolveFileKind } from "@/lib/queries/files"
 import { transcriptQuery } from "@/lib/queries/transcripts"
 import type { Document, Transcript } from "@/lib/types"
 
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/files/$id/")({
     return tab === "source" ? {} : { tab }
   },
   loader: async ({ context, params }) => {
-    const kind = await resolveFileKind(context.queryClient, params.id)
+    const kind = resolveFileKind(params.id)
     if (kind === "document") {
       await context.queryClient.ensureQueryData(documentQuery(params.id))
     } else if (kind === "transcript") {

@@ -42,7 +42,7 @@ def test_sqlite_migration_adds_speaker_segments_column(tmp_path, monkeypatch):
             INSERT INTO transcript (
                 id, audio_asset_id, title, raw_text, status, created_at, updated_at
             ) VALUES (
-                'b1b1b1b1b1b1b1b1', 'audio_test', 'Sample', 'Hello', 'draft',
+                'transcript_test', 'audio_test', 'Sample', 'Hello', 'draft',
                 '2026-01-01T00:00:00', '2026-01-01T00:00:00'
             );
             """
@@ -60,7 +60,7 @@ def test_sqlite_migration_adds_speaker_segments_column(tmp_path, monkeypatch):
 
     with Session(get_engine()) as session:
         transcript = session.exec(
-            select(Transcript).where(Transcript.id == "b1b1b1b1b1b1b1b1")
+            select(Transcript).where(Transcript.id == "transcript_test")
         ).one()
         assert transcript.raw_text == "Hello"
         assert transcript.speaker_segments is None
