@@ -1,0 +1,78 @@
+# Features & Roadmap
+
+What Finch does today and what is intentionally out of scope.
+
+## Implemented
+
+### Audio input
+
+- Upload `.wav`, `.mp3`, `.m4a`, `.webm`, `.ogg`, `.flac`
+- Browser recording with live waveform
+- ffmpeg normalization to 16 kHz mono WAV
+
+### Transcription
+
+- Local ASR with [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) (or `ASR_MOCK` for dev)
+- Background jobs with progress stages in the UI
+- Long audio chunked automatically (~45s segments)
+- Failed jobs kept visible with `errorMessage` (not deleted)
+
+### Speaker diarization (optional)
+
+- [pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1)
+- Per-speaker ASR → labeled output (`Speaker 1: …`, `Speaker 2: …`)
+- Falls back to full-file ASR if diarization is unavailable
+- Tunable segment merge and audio source — see [diarization.md](diarization.md)
+
+### Transcript library
+
+- List, search, edit, copy, export TXT/MD
+- In-progress (`transcribing`) and failed states in the UI
+- Speaker segment badges when diarization ran
+
+### AI actions (optional)
+
+- OpenRouter integration (`LLM_MOCK` for dev)
+- Templates: Markdown summary, action items, meeting notes, clean transcript, study notes
+- Custom prompt support
+- Generated documents linked to source transcript
+
+### Documents
+
+- Markdown library with editor, preview, and export
+- Created manually or via AI actions from a transcript
+
+### Operations
+
+- Startup configuration summary and dependency checks
+- `/api/health` capability flags
+- Settings page shows ASR/diarization/LLM status
+- `scripts/validate_diarization.py` for pre-flight checks
+
+## Planned (post-MVP)
+
+| Area | Examples |
+|------|----------|
+| Timestamps | Segment-level timestamps, click-to-play audio |
+| Search | Full-text over transcripts and documents; later semantic search |
+| Export | PDF, DOCX, HTML, Obsidian vault, Notion Markdown |
+| Local LLM | Ollama, llama.cpp, LM Studio, vLLM for fully local summaries |
+| Real-time ASR | Streaming microphone → partial transcript updates |
+| Production | Auth, deployment, observability, cloud sync |
+| Mobile / plugins | Mobile app, Obsidian plugin |
+
+## Out of scope
+
+- Team accounts, collaboration, payments
+- Sending audio to external services (ASR and diarization are local-only)
+
+## Technology stack
+
+| Layer | Stack |
+|-------|-------|
+| Backend | FastAPI, uv, SQLModel, SQLite |
+| ASR | `qwen-asr`, PyTorch, Qwen3-ASR-1.7B |
+| Diarization | `pyannote-audio`, pyannote community-1 |
+| Audio | ffmpeg, librosa |
+| Frontend | Next.js 16, Tailwind v4, shadcn/ui, TanStack Query |
+| LLM | OpenRouter |

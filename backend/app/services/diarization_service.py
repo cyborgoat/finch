@@ -13,7 +13,7 @@ from app.storage.file_store import safe_join
 
 logger = logging.getLogger(__name__)
 
-MIN_SEGMENT_SECONDS = 0.3
+DEFAULT_MIN_SEGMENT_SECONDS = 0.3
 
 PYANOTE_COMMUNITY_MODEL = "pyannote/speaker-diarization-community-1"
 PYANOTE_COMMUNITY_MODEL_URL = f"https://huggingface.co/{PYANOTE_COMMUNITY_MODEL}"
@@ -171,7 +171,8 @@ class DiarizationService:
             pass
 
     def _mock_turns(self, duration_seconds: float) -> list[DiarizationTurn]:
-        midpoint = max(duration_seconds / 2, MIN_SEGMENT_SECONDS)
+        min_segment = self.settings.diarization_min_segment_seconds
+        midpoint = max(duration_seconds / 2, min_segment)
         return [
             DiarizationTurn("Speaker 1", 0.0, midpoint),
             DiarizationTurn("Speaker 2", midpoint, max(duration_seconds, midpoint + 0.5)),
@@ -228,14 +229,21 @@ class DiarizationService:
             ) from exc
 
 
-def merge_adjacent_turns(turns: list[DiarizationTurn]) -> list[DiarizationTurn]:
+def merge_adjacent_turns(
+    turns: list[DiarizationTurn],
+    *,
+    min_segment_seconds: float = DEFAULT_MIN_SEGMENT_SECONDS,
+    merge_gap_seconds: float = 0.0,
+    max_segments: int = 0,
+) -> list[DiarizationTurn]:
     if not turns:
         return []
 
     merged: list[DiarizationTurn] = [turns[0]]
     for turn in turns[1:]:
         previous = merged[-1]
-        if turn.speaker == previous.speaker:
+        gap = max(turn.start_sec - previous.end_sec, 0.0)
+        if turn.speaker == previous.speaker and gap <= merge_gap_seconds:
             merged[-1] = DiarizationTurn(
                 previous.speaker,
                 previous.start_sec,
@@ -244,11 +252,21 @@ def merge_adjacent_turns(turns: list[DiarizationTurn]) -> list[DiarizationTurn]:
         else:
             merged.append(turn)
 
-    return [
+    filtered = [
         turn
         for turn in merged
-        if turn.end_sec - turn.start_sec >= MIN_SEGMENT_SECONDS
+        if turn.end_sec - turn.start_sec >= min_segment_seconds
     ]
+
+    if max_segments > 0 and len(filtered) > max_segments:
+        logger.warning(
+            "Diarization produced %d segments; capping at DIARIZATION_MAX_SEGMENTS=%d",
+            len(filtered),
+            max_segments,
+        )
+        return filtered[:max_segments]
+
+    return filtered
 
 
 def extract_audio_slice(
@@ -258,7 +276,7 @@ def extract_audio_slice(
     output_dir: str,
     segment_id: str,
 ) -> str:
-    duration = max(end_sec - start_sec, MIN_SEGMENT_SECONDS)
+    duration = max(end_sec - start_sec, DEFAULT_MIN_SEGMENT_SECONDS)
     output_path = safe_join(output_dir, f"{segment_id}.wav")
 
     try:

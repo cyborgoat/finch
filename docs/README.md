@@ -1,20 +1,30 @@
 # Finch Documentation
 
-Finch is a local ASR transcription app with optional LLM-powered Markdown generation and speaker diarization.
-
-## Status
-
-**Milestones 1–11 complete.** See [TASK_TRACK.md](TASK_TRACK.md).
+Finch is a local-first voice transcription app. Audio is transcribed on your machine; optional LLM features run on transcript text only via OpenRouter.
 
 ## Guides
 
-- **[Quickstart](quickstart.md)** — Install dependencies, configure `.env`, run backend + frontend, transcribe audio
-- **[Architecture](architecture.md)** — High-level design, data model, request flows
-- **[Modules](modules.md)** — Backend package layout and responsibilities
+| Doc | Description |
+|-----|-------------|
+| [Quickstart](quickstart.md) | Install, configure, run, and transcribe |
+| [Diarization](diarization.md) | Speaker labels: setup, validation, tuning |
+| [Architecture](architecture.md) | System design, data model, request flows |
+| [Features & roadmap](features.md) | What's built and what's planned |
+| [Backend modules](modules.md) | `backend/app/` package reference |
 
-## Reference
+## Package READMEs
 
-- **[TASK_TRACK.md](TASK_TRACK.md)** — Milestone checklist aligned with [finch_sdd_spec.md](../finch_sdd_spec.md)
-- **[finch_sdd_spec.md](../finch_sdd_spec.md)** — Full software design document (source of truth)
-- **[backend/README.md](../backend/README.md)** — Backend-specific API and setup notes
-- **[frontend/README.md](../frontend/README.md)** — Frontend dev setup (Next.js app)
+- [backend/README.md](../backend/README.md) — API, env vars, tests
+- [frontend/README.md](../frontend/README.md) — Next.js dev setup
+
+## Core model
+
+```txt
+AudioAsset → Transcript → Document(s)
+```
+
+The transcript is the durable artifact. AI-generated Markdown documents are optional derivatives.
+
+## Privacy
+
+Audio stays on your machine for ASR and diarization. LLM actions send **transcript text** to OpenRouter only when you explicitly run them — never audio.

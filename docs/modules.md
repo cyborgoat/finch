@@ -29,6 +29,10 @@ Loads settings from `backend/.env` and repo root `.env`.
 | `asr_model_id` | `Qwen/Qwen3-ASR-1.7B` | HF repo or local path |
 | `diarization_enabled` | `false` | Speaker labels via pyannote |
 | `diarization_mock` | `true` | Fake two-speaker segments for CI |
+| `diarization_use_exclusive` | `true` | pyannote exclusive diarization (recommended) |
+| `diarization_min_segment_seconds` | `0.3` | Drop merged segments shorter than this |
+| `diarization_merge_gap_seconds` | `0.5` | Merge same-speaker turns within this gap |
+| `diarization_max_segments` | `0` | Cap segments (`0` = unlimited) |
 | `hf_token` | — | Hugging Face token for gated pyannote models |
 | `llm_mock` | `true` | Mock AI action output |
 | `openrouter_api_key` | — | Required when `LLM_MOCK=false` |
@@ -91,10 +95,11 @@ Failed transcription jobs keep the transcript with `status=failed` and `errorMes
 
 ## `tests/`
 
-24 tests covering health, upload, transcripts (including diarization mock/fallback), AI actions, diarization helpers, DB migration, and startup diagnostics.
+27 tests covering health, upload, transcripts (including diarization mock/fallback), AI actions, diarization helpers, DB migration, and startup diagnostics.
 
 ## `scripts/`
 
 | Script | Purpose |
 |--------|---------|
 | `transcribe_file.py` | CLI: upload → job → poll → print + save `.txt` |
+| `validate_diarization.py` | Pre-flight diarization checks; optional `--audio` probe |

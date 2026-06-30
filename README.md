@@ -2,34 +2,29 @@
 
 Finch is a local-first voice transcription app. Audio is transcribed on your machine; optional LLM features run on transcript text only via OpenRouter.
 
-**Current status:** Milestones 1–11 complete (see [docs/TASK_TRACK.md](docs/TASK_TRACK.md)).
-
-## Features (implemented)
+## Features
 
 - Upload audio files (`.wav`, `.mp3`, `.m4a`, `.webm`, `.ogg`, `.flac`)
 - Browser recording with live waveform visualization
 - Local ASR with [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) (or mock mode)
-- Optional speaker diarization via [pyannote-audio](https://github.com/pyannote/pyannote-audio) (`DIARIZATION_ENABLED`)
+- Optional speaker diarization via [pyannote-audio](https://github.com/pyannote/pyannote-audio)
 - Background transcription jobs with in-progress status in the UI
 - Transcript library: edit, copy, export TXT/MD
 - AI actions (summaries, action items, meeting notes) via OpenRouter (`LLM_MOCK` for dev)
 - Document library: Markdown editor + preview + export
 
-## Planned (post-MVP)
-
-- Production deployment, auth, cloud sync
-- PDF/DOCX export, mobile app
-
-Full product spec: [finch_sdd_spec.md](finch_sdd_spec.md)
+See [docs/features.md](docs/features.md) for the full feature list and roadmap.
 
 ## Documentation
 
 | Doc | Description |
 |-----|-------------|
+| [docs/README.md](docs/README.md) | Documentation index |
 | [docs/quickstart.md](docs/quickstart.md) | Install, configure, run, transcribe |
+| [docs/diarization.md](docs/diarization.md) | Speaker labels: setup, validation, tuning |
 | [docs/architecture.md](docs/architecture.md) | System design and data flow |
 | [docs/modules.md](docs/modules.md) | Backend module reference |
-| [docs/TASK_TRACK.md](docs/TASK_TRACK.md) | Milestone progress tracker |
+| [docs/features.md](docs/features.md) | Implemented features and planned work |
 
 ## Quick start
 
@@ -44,13 +39,13 @@ Full product spec: [finch_sdd_spec.md](finch_sdd_spec.md)
 Copy [`.env.example`](.env.example) to **repo root `.env`** or `backend/.env` (both are loaded):
 
 ```bash
-cp .env.example .env          # repo root (recommended)
+cp .env.example .env
 cd backend
 uv sync
 uv run uvicorn app.main:app --reload
 ```
 
-Watch the uvicorn terminal on startup for the configuration summary (ASR/diarization/LLM status and dependency checks).
+Watch the uvicorn terminal on startup for the configuration summary.
 
 ### Frontend
 
@@ -67,6 +62,12 @@ App: http://localhost:3000
 
 ```bash
 cd backend && uv run pytest
+```
+
+### Diarization validation
+
+```bash
+cd backend && uv run python scripts/validate_diarization.py
 ```
 
 ## Environment highlights
@@ -92,7 +93,7 @@ Audio stays on your machine for ASR and diarization. LLM actions send transcript
 finch/
   backend/     # FastAPI app
   frontend/    # Next.js app
-  docs/        # Architecture, modules, task track
+  docs/        # Official documentation
 ```
 
 ## License

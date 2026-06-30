@@ -2,7 +2,7 @@
 
 Local ASR transcription API for Finch — optional speaker diarization and OpenRouter AI actions.
 
-**Project docs:** [../docs/README.md](../docs/README.md) · **Task track:** [../docs/TASK_TRACK.md](../docs/TASK_TRACK.md)
+**Project docs:** [../docs/README.md](../docs/README.md) · **Diarization:** [../docs/diarization.md](../docs/diarization.md)
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ API docs: http://localhost:8000/docs
 uv run pytest
 ```
 
-24 tests; mock `ffmpeg`, `ASR_MOCK`, and `DIARIZATION_MOCK` by default in the test suite.
+27 tests; mock `ffmpeg`, `ASR_MOCK`, and `DIARIZATION_MOCK` by default in the test suite.
 
 ## Environment
 
@@ -47,6 +47,9 @@ uv run pytest
 | `DIARIZATION_MOCK` | Mock diarization segments (no pyannote download) |
 | `DIARIZATION_USE_ORIGINAL_AUDIO` | Diarize original upload instead of normalized WAV |
 | `DIARIZATION_USE_EXCLUSIVE` | Use pyannote exclusive diarization (recommended for ASR) |
+| `DIARIZATION_MIN_SEGMENT_SECONDS` | Drop segments shorter than this after merge (default `0.3`) |
+| `DIARIZATION_MERGE_GAP_SECONDS` | Merge same-speaker turns within this gap (default `0.5`) |
+| `DIARIZATION_MAX_SEGMENTS` | Cap segment count (`0` = unlimited) |
 | `HF_TOKEN` | Hugging Face token for pyannote gated models (or use `huggingface-cli login`) |
 | `DATABASE_URL` | SQLite connection string |
 | `MAX_UPLOAD_MB` | Maximum upload size in megabytes |
@@ -72,7 +75,14 @@ The model is loaded lazily on the first transcription request.
 
 ## Speaker diarization
 
-Requires `DIARIZATION_ENABLED=true`, `uv add pyannote-audio`, and Hugging Face access to [pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1) (accept model terms, then set `HF_TOKEN`). See [../docs/quickstart.md](../docs/quickstart.md).
+Requires `DIARIZATION_ENABLED=true`, `uv add pyannote-audio`, and Hugging Face access to [pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1). See [../docs/diarization.md](../docs/diarization.md).
+
+Validate setup:
+
+```bash
+uv run python scripts/validate_diarization.py
+uv run python scripts/validate_diarization.py --audio path/to/sample.wav
+```
 
 If diarization is unavailable, the worker falls back to full-file ASR and stores a `processingNote` on the transcript.
 

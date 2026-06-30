@@ -2,7 +2,7 @@
 
 Next.js app for Finch (milestones 4–11): upload, record, transcripts, speaker labels, AI actions, and documents.
 
-**Project docs:** [../docs/README.md](../docs/README.md) · **Task track:** [../docs/TASK_TRACK.md](../docs/TASK_TRACK.md)
+**Project docs:** [../docs/README.md](../docs/README.md)
 
 ## Prerequisites
 

@@ -32,6 +32,40 @@ def test_merge_adjacent_turns():
     assert turns[0].end_sec == 4.0
 
 
+def test_merge_adjacent_turns_with_gap_tolerance():
+    turns = merge_adjacent_turns(
+        [
+            DiarizationTurn("Speaker 1", 0.0, 2.0),
+            DiarizationTurn("Speaker 1", 2.4, 4.0),
+            DiarizationTurn("Speaker 2", 4.0, 6.0),
+        ],
+        merge_gap_seconds=0.5,
+    )
+    assert len(turns) == 2
+    assert turns[0].end_sec == 4.0
+
+
+def test_merge_adjacent_turns_respects_max_segments():
+    turns = merge_adjacent_turns(
+        [
+            DiarizationTurn("Speaker 1", 0.0, 1.0),
+            DiarizationTurn("Speaker 2", 1.0, 2.0),
+            DiarizationTurn("Speaker 1", 2.0, 3.0),
+            DiarizationTurn("Speaker 2", 3.0, 4.0),
+        ],
+        max_segments=2,
+    )
+    assert len(turns) == 2
+
+
+def test_merge_adjacent_turns_filters_short_segments():
+    turns = merge_adjacent_turns(
+        [DiarizationTurn("Speaker 1", 0.0, 0.1)],
+        min_segment_seconds=0.3,
+    )
+    assert turns == []
+
+
 def test_build_labeled_transcript():
     text = build_labeled_transcript(
         [

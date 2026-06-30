@@ -8,33 +8,25 @@ Get the Finch backend running and transcribe your first audio file.
 |------|---------|
 | [uv](https://docs.astral.sh/uv/) | Python package manager |
 | [ffmpeg](https://ffmpeg.org/) | Audio normalization (16 kHz mono WAV) |
+| [Node.js](https://nodejs.org/) 20+ | Frontend (optional) |
 
-For real ASR (not mock mode), you also need enough disk space and RAM for [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) (~2B parameters).
+For real ASR (not mock mode), allow disk space and RAM for [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B).
 
 ## 1. Clone and configure
 
+Copy [`.env.example`](../.env.example) to **repo root `.env`** or `backend/.env` (both are loaded):
+
 ```bash
-cd finch/backend
 cp .env.example .env
+cd backend
+uv sync
 ```
 
-Edit `backend/.env`:
+Default dev config uses mock ASR and mock diarization — no model downloads required.
 
-```env
-# Development with mock transcripts (no GPU/model download)
-ASR_MOCK=true
-
-# Real local transcription
-ASR_MOCK=false
-ASR_MODEL_ID=Qwen/Qwen3-ASR-1.7B
-ASR_DEVICE=auto
-HF_HOME=./data/hf_cache
-```
-
-## 2. Install and run
+## 2. Run the backend
 
 ```bash
-uv sync
 uv run uvicorn app.main:app --reload
 ```
 
@@ -42,12 +34,11 @@ Verify:
 
 ```bash
 curl http://localhost:8000/api/health
-# {"status":"ok","app":"Finch","capabilities":{...}}
 ```
 
-On startup, the backend prints a **configuration summary** to the terminal: loaded `.env` files, ASR/diarization/LLM mode, dependency checks (ffmpeg, torch, pyannote-audio), and suggested fixes when something is missing. Watch the uvicorn terminal after `uv run uvicorn app.main:app --reload`.
+On startup, the terminal prints a **configuration summary**: loaded `.env` files, ASR/diarization/LLM mode, dependency checks, and fix hints.
 
-Interactive API docs: http://localhost:8000/docs
+API docs: http://localhost:8000/docs
 
 ## 3. Transcribe via API
 
@@ -58,8 +49,6 @@ curl -F "file=@../data/your-audio.mp3" -F "source=upload" \
   http://localhost:8000/api/audio/upload
 ```
 
-Response includes `id` (e.g. `audio_abc123`).
-
 ### Start transcription job
 
 ```bash
@@ -68,70 +57,27 @@ curl -X POST http://localhost:8000/api/transcripts \
   -d '{"audioAssetId": "audio_abc123", "language": "auto"}'
 ```
 
-Returns `jobId` and `transcriptId`. A placeholder transcript with `status: "transcribing"` is created immediately and appears in `GET /api/transcripts` while the job runs.
+Returns `jobId` and `transcriptId`. A placeholder with `status: "transcribing"` appears immediately.
 
-### Poll job status
+### Poll and read
 
 ```bash
 curl http://localhost:8000/api/jobs/job_abc123
-```
-
-Wait until `"status": "completed"` and note `resultId` (transcript id).
-
-### Read transcript
-
-```bash
 curl http://localhost:8000/api/transcripts/transcript_abc123
 ```
 
-## 4. Transcribe via CLI script
+## 4. CLI script
 
-With the server running in another terminal:
+With the server running:
 
 ```bash
 cd backend
 uv run python scripts/transcribe_file.py ../data/your-audio.mp3
 ```
 
-The script uploads, starts a job, polls until complete, prints the full transcript, and saves `your-audio.txt` next to the source file.
+Uploads, polls, prints the transcript, and saves `your-audio.txt` next to the source file.
 
-For long audio (>60s), the server prints each chunk as it completes:
-
-```txt
-[ASR chunk 12/101] 495.0s - 540.0s
-Language: English
-<chunk transcript text>
-```
-
-Watch the **uvicorn terminal** for chunk output.
-
-## 5. Real ASR setup
-
-```bash
-cd backend
-uv add torch qwen-asr   # already in pyproject.toml after uv sync
-```
-
-Set in `.env`:
-
-```env
-ASR_MOCK=false
-HF_HOME=./data/hf_cache
-```
-
-First run downloads the model from Hugging Face. On Apple Silicon, `ASR_DEVICE=auto` selects MPS when available.
-
-Optional pre-download:
-
-```bash
-uv run huggingface-cli download Qwen/Qwen3-ASR-1.7B --local-dir ./data/models/Qwen3-ASR-1.7B
-```
-
-Then set `ASR_MODEL_ID=./data/models/Qwen3-ASR-1.7B`.
-
-## 6. Run the frontend
-
-With the backend running on port 8000:
+## 5. Run the frontend
 
 ```bash
 cd frontend
@@ -140,15 +86,27 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Use **Upload** or **Record** to transcribe; run **AI Actions** from a transcript; view documents under **Documents**.
+Open http://localhost:3000 — **Upload**, **Record**, **Transcripts**, **Documents**, **Settings**.
 
-Optional speaker diarization labels each turn as `Speaker 1: …`, `Speaker 2: …` in the transcript:
+## 6. Real ASR
 
-1. **Log in** to [Hugging Face](https://huggingface.co/login)
-2. Open [pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1) and click **Agree and access repository** (required — a 403 error means this step was skipped)
-3. Create a **read** token at [hf.co/settings/tokens](https://huggingface.co/settings/tokens) for the **same account**
-4. Install: `cd backend && uv add pyannote-audio`
-5. Set in repo root `.env` or `backend/.env`:
+```bash
+cd backend
+uv add torch qwen-asr
+```
+
+In `.env`:
+
+```env
+ASR_MOCK=false
+HF_HOME=./data/hf_cache
+```
+
+First run downloads the model from Hugging Face. On Apple Silicon, `ASR_DEVICE=auto` selects MPS when available.
+
+## 7. Speaker diarization
+
+See **[diarization.md](diarization.md)** for full setup. Summary:
 
 ```env
 DIARIZATION_ENABLED=true
@@ -156,26 +114,38 @@ DIARIZATION_MOCK=false
 HF_TOKEN=hf_...
 ```
 
-For development without the model, use `DIARIZATION_MOCK=true` (returns two mock speakers in tests).
+Validate before transcribing:
 
-If diarization quality is poor on normalized mono audio, try `DIARIZATION_USE_ORIGINAL_AUDIO=true`.
+```bash
+cd backend
+uv add pyannote-audio
+uv run python scripts/validate_diarization.py
+```
 
-## 7. Run tests
+## 8. AI actions
+
+```env
+LLM_MOCK=false
+OPENROUTER_API_KEY=sk-or-...
+```
+
+Run actions from a transcript detail page in the UI, or via `POST /api/ai-actions`.
+
+## 9. Tests
 
 ```bash
 cd backend
 uv run pytest
 ```
 
-Tests use `ASR_MOCK=true` and mock ffmpeg; no model download required.
+Tests mock ffmpeg and use `ASR_MOCK` / `DIARIZATION_MOCK` — no model download required.
 
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
-| `403` / `gated repo` / `not in the authorized list` | Log into Hugging Face, open [pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1), click **Agree and access repository**, then use an `HF_TOKEN` from that same account |
-| `ffmpeg is not installed` | Install ffmpeg (`brew install ffmpeg` on macOS) |
-| Hugging Face permission error | Set `HF_HOME=./data/hf_cache` inside `backend/` |
-| `Invalid buffer size` on long audio | Long files are chunked automatically (45s segments) |
-| `Unsupported audio type: audio/webm;codecs=opus` | Fixed server-side; restart backend if you see this on recordings |
-| Slow transcription | Expected for long files on CPU/MPS; ~100 chunks for 75 min audio |
+| `403` / `gated repo` (diarization) | Accept [pyannote model terms](https://huggingface.co/pyannote/speaker-diarization-community-1); same HF account as `HF_TOKEN` |
+| `ffmpeg is not installed` | `brew install ffmpeg` (macOS) |
+| No speaker labels | Run `uv run python scripts/validate_diarization.py` |
+| Slow long audio | Expected on CPU/MPS; ASR chunks ~45s segments |
+| Failed transcript visible | By design — check `errorMessage`, fix issue, re-transcribe |

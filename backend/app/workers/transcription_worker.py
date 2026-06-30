@@ -9,7 +9,6 @@ from app.core.errors import AppError
 from app.services.asr_service import AsrService
 from app.services.audio_service import AudioService
 from app.services.diarization_service import (
-    MIN_SEGMENT_SECONDS,
     DiarizationService,
     DiarizationTurn,
     SpeakerSegment,
@@ -108,10 +107,18 @@ def _transcribe_with_diarization(
     duration = audio_service.get_duration(diarization_path)
     job_service.update_job(job, progress=0.25, stage="running_diarization")
     turns = diarization_service.diarize(diarization_path, duration)
-    merged_turns = merge_adjacent_turns(turns)
+    merged_turns = merge_adjacent_turns(
+        turns,
+        min_segment_seconds=settings.diarization_min_segment_seconds,
+        merge_gap_seconds=settings.diarization_merge_gap_seconds,
+        max_segments=settings.diarization_max_segments,
+    )
 
+    min_segment = settings.diarization_min_segment_seconds
     if not merged_turns:
-        merged_turns = [DiarizationTurn("Speaker 1", 0.0, max(duration, MIN_SEGMENT_SECONDS))]
+        merged_turns = [
+            DiarizationTurn("Speaker 1", 0.0, max(duration or min_segment, min_segment))
+        ]
 
     diarization_service.unload_pipeline()
     job_service.update_job(job, progress=0.28, stage="loading_model")

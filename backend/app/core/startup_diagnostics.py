@@ -181,6 +181,15 @@ def log_startup_summary(settings: Settings | None = None) -> None:
             "Segment mode: "
             + ("exclusive (recommended for ASR)" if settings.diarization_use_exclusive else "standard")
         )
+        _log_bullet(
+            f"Tuning: min_segment={settings.diarization_min_segment_seconds}s, "
+            f"merge_gap={settings.diarization_merge_gap_seconds}s"
+            + (
+                f", max_segments={settings.diarization_max_segments}"
+                if settings.diarization_max_segments > 0
+                else ""
+            )
+        )
         if capabilities.diarization_ready:
             _log_bullet("Status: READY — speaker labels will be applied during transcription.")
         else:
@@ -216,11 +225,15 @@ def log_startup_summary(settings: Settings | None = None) -> None:
     _log_section("Documentation")
     repo_root = Path(__file__).resolve().parents[3]
     quickstart = repo_root / "docs" / "quickstart.md"
+    diarization_doc = repo_root / "docs" / "diarization.md"
     env_example = repo_root / ".env.example"
     if quickstart.is_file():
         _log_bullet(f"Quickstart: {quickstart}")
+    if diarization_doc.is_file():
+        _log_bullet(f"Diarization guide: {diarization_doc}")
     if env_example.is_file():
         _log_bullet(f"Environment reference: {env_example}")
+    _log_bullet("Validate diarization: cd backend && uv run python scripts/validate_diarization.py")
     _log_bullet("Settings page in the frontend shows live diarization/ASR status from /api/health.")
 
     logger.info(BANNER)

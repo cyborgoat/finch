@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     diarization_pipeline_id: str = "pyannote/speaker-diarization-community-1"
     diarization_use_original_audio: bool = False
     diarization_use_exclusive: bool = True
+    diarization_min_segment_seconds: float = 0.3
+    diarization_merge_gap_seconds: float = 0.5
+    diarization_max_segments: int = 0
     hf_token: str | None = None
 
     max_upload_mb: int = 500
