@@ -152,6 +152,8 @@ def update_transcript_speakers(
             "display_name": item.display_name,
             "profile_id": item.profile_id,
             "enroll": item.enroll,
+            "enroll_start_sec": item.enroll_start_sec,
+            "enroll_end_sec": item.enroll_end_sec,
         }
         for item in payload.mappings
     ]

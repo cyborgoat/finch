@@ -9,6 +9,8 @@ class SpeakerMappingItem(CamelModel):
     display_name: str
     profile_id: str | None = None
     enroll: bool = False
+    enroll_start_sec: float | None = None
+    enroll_end_sec: float | None = None
 
 
 class UpdateTranscriptSpeakersRequest(CamelModel):

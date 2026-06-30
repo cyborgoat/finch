@@ -6,7 +6,12 @@ import { toast } from "sonner"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { DocumentToolbar } from "@/components/documents/DocumentToolbar"
 import { MarkdownPreview } from "@/components/documents/MarkdownPreview"
+import { PageContainer } from "@/components/layout/PageContainer"
+import { PageHeader } from "@/components/layout/PageHeader"
+import { Section } from "@/components/layout/Section"
+import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useDeleteDocument, useDocument, useUpdateDocument } from "@/hooks/useDocuments"
 import { exportDocumentMd } from "@/lib/export"
 import type { Document } from "@/lib/types"
@@ -34,7 +39,6 @@ function DocumentDetailEditor({ document }: { document: Document }) {
   }
 
   const handleDelete = async () => {
-    if (!confirm("Delete this document?")) return
     try {
       await deleteMutation.mutateAsync(document.id)
       toast.success("Document deleted")
@@ -45,16 +49,25 @@ function DocumentDetailEditor({ document }: { document: Document }) {
   }
 
   return (
-    <div className="space-y-6">
+    <BlurFade className="section-stack">
+      <PageHeader
+        backHref="/documents"
+        backLabel="Documents"
+        title={title || "Untitled document"}
+        description="Edit Markdown or preview the rendered output."
+        meta={`Updated ${new Date(document.updatedAt).toLocaleString()}`}
+      />
+
       <DocumentToolbar
         onSave={() => void handleSave()}
         onCopy={() => void handleCopy()}
         onExport={() => exportDocumentMd(title, markdown)}
         onDelete={() => void handleDelete()}
         isSaving={updateMutation.isPending}
+        isDeleting={deleteMutation.isPending}
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="hidden gap-6 lg:grid lg:grid-cols-2">
         <DocumentEditor
           title={title}
           markdown={markdown}
@@ -62,12 +75,34 @@ function DocumentDetailEditor({ document }: { document: Document }) {
           onMarkdownChange={setMarkdown}
           disabled={updateMutation.isPending}
         />
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Preview</p>
+        <Section title="Preview">
           <MarkdownPreview markdown={markdown} />
-        </div>
+        </Section>
       </div>
-    </div>
+
+      <Tabs defaultValue="edit" className="lg:hidden">
+        <TabsList variant="line" className="w-full justify-start border-b border-border pb-0">
+          <TabsTrigger value="edit" className="px-4 pb-3">
+            Edit
+          </TabsTrigger>
+          <TabsTrigger value="preview" className="px-4 pb-3">
+            Preview
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="edit" className="mt-4">
+          <DocumentEditor
+            title={title}
+            markdown={markdown}
+            onTitleChange={setTitle}
+            onMarkdownChange={setMarkdown}
+            disabled={updateMutation.isPending}
+          />
+        </TabsContent>
+        <TabsContent value="preview" className="mt-4">
+          <MarkdownPreview markdown={markdown} />
+        </TabsContent>
+      </Tabs>
+    </BlurFade>
   )
 }
 
@@ -81,21 +116,27 @@ export default function DocumentDetailPage({
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <PageContainer size="detail">
         <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-96 w-full" />
-      </div>
+        <Skeleton className="mt-8 h-96 w-full" />
+      </PageContainer>
     )
   }
 
   if (!document) {
-    return <p className="text-muted-foreground">Document not found.</p>
+    return (
+      <PageContainer size="detail">
+        <p className="text-muted-foreground">Document not found.</p>
+      </PageContainer>
+    )
   }
 
   return (
-    <DocumentDetailEditor
-      key={`${document.id}-${document.updatedAt}`}
-      document={document}
-    />
+    <PageContainer size="detail">
+      <DocumentDetailEditor
+        key={`${document.id}-${document.updatedAt}`}
+        document={document}
+      />
+    </PageContainer>
   )
 }

@@ -44,10 +44,16 @@ class SpeakerTranscriptService:
                 if not mapping.get("display_name", "").strip():
                     mapping["display_name"] = profile.display_name
             if mapping.get("enroll"):
+                if not self.preference_service.is_speaker_memory_enabled():
+                    raise AppError(
+                        "SPEAKER_MEMORY_DISABLED",
+                        "Speaker memory is disabled. Enable it in Settings.",
+                        400,
+                    )
                 if not self.preference_service.has_speaker_memory_consent():
                     raise AppError(
                         "SPEAKER_MEMORY_CONSENT_REQUIRED",
-                        "Speaker memory consent is required before saving voiceprints.",
+                        "Speaker memory consent is required. Enable speaker memory in Settings.",
                         400,
                     )
                 profile = self.profile_service.enroll_from_transcript(
@@ -55,6 +61,8 @@ class SpeakerTranscriptService:
                     cluster_id=mapping["cluster_id"],
                     display_name=mapping["display_name"],
                     profile_id=mapping.get("profile_id"),
+                    start_sec=mapping.get("enroll_start_sec"),
+                    end_sec=mapping.get("enroll_end_sec"),
                 )
                 mapping["profile_id"] = profile.id
 

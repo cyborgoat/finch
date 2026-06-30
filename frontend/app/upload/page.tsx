@@ -10,6 +10,9 @@ import {
 } from "@/components/audio/AudioUploader"
 import { JobProgress } from "@/components/jobs/JobProgress"
 import { PipelineStepper } from "@/components/jobs/PipelineStepper"
+import { PageContainer } from "@/components/layout/PageContainer"
+import { PageHeader } from "@/components/layout/PageHeader"
+import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAudioUpload } from "@/hooks/useAudioUpload"
@@ -88,58 +91,58 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Upload audio</h1>
-        <p className="text-sm text-muted-foreground">
-          Upload an existing file and transcribe it locally.
-        </p>
-      </div>
+    <PageContainer size="list">
+      <BlurFade className="section-stack max-w-2xl">
+        <PageHeader
+          title="Upload audio"
+          description="Upload an existing file and transcribe it locally."
+        />
 
-      <PipelineStepper current={displayStep} />
+        <PipelineStepper current={displayStep} />
 
-      <AudioUploader
-        onFileSelected={(file) => void handleFileSelected(file)}
-        disabled={isUploading || isTranscribing || !!jobId}
-        error={error}
-      />
+        <AudioUploader
+          onFileSelected={(file) => void handleFileSelected(file)}
+          disabled={isUploading || isTranscribing || !!jobId}
+          error={error}
+        />
 
-      {asset && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">File preview</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1 text-sm">
-            <p>
-              <span className="text-muted-foreground">Name:</span> {asset.filename}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Size:</span>{" "}
-              {formatBytes(asset.sizeBytes)}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Duration:</span>{" "}
-              {formatDuration(asset.durationSeconds)}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+        {asset ? (
+          <Card className="rounded-xl border bg-card/50">
+            <CardHeader>
+              <CardTitle className="text-base">File preview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-sm">
+              <p>
+                <span className="text-muted-foreground">Name:</span> {asset.filename}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Size:</span>{" "}
+                {formatBytes(asset.sizeBytes)}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Duration:</span>{" "}
+                {formatDuration(asset.durationSeconds)}
+              </p>
+            </CardContent>
+          </Card>
+        ) : null}
 
-      <JobProgress job={job} error={pollError} />
+        <JobProgress job={job} error={pollError} />
 
-      <div className="flex gap-2">
-        <Button
-          onClick={() => void handleTranscribe()}
-          disabled={!asset || isTranscribing || !!jobId}
-        >
-          {isTranscribing ? "Starting…" : "Transcribe"}
-        </Button>
-        {asset && (
-          <Button variant="outline" onClick={handleReset}>
-            Reset
+        <div className="flex gap-2">
+          <Button
+            onClick={() => void handleTranscribe()}
+            disabled={!asset || isTranscribing || !!jobId}
+          >
+            {isTranscribing ? "Starting…" : "Transcribe"}
           </Button>
-        )}
-      </div>
-    </div>
+          {asset ? (
+            <Button variant="outline" onClick={handleReset}>
+              Reset
+            </Button>
+          ) : null}
+        </div>
+      </BlurFade>
+    </PageContainer>
   )
 }

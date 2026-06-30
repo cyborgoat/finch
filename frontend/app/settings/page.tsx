@@ -5,9 +5,14 @@ import { useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { SpeakerConsentDialog } from "@/components/speakers/SpeakerConsentDialog"
 import { SpeakerProfileManager } from "@/components/speakers/SpeakerProfileManager"
+import { PageContainer } from "@/components/layout/PageContainer"
+import { PageHeader } from "@/components/layout/PageHeader"
+import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { getHealth } from "@/lib/api"
 import {
   useDeleteSpeakerMemoryData,
@@ -56,15 +61,14 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Settings</h1>
-        <p className="text-sm text-muted-foreground">
-          Local configuration and privacy information.
-        </p>
-      </div>
+    <PageContainer size="list">
+      <BlurFade className="section-stack max-w-2xl">
+        <PageHeader
+          title="Settings"
+          description="Local configuration and privacy information."
+        />
 
-      <Card>
+      <Card className="rounded-xl border bg-card/50">
         <CardHeader>
           <CardTitle className="text-base">Backend status</CardTitle>
         </CardHeader>
@@ -82,7 +86,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-xl border bg-card/50">
         <CardHeader>
           <CardTitle className="text-base">ASR model</CardTitle>
         </CardHeader>
@@ -102,7 +106,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-xl border bg-card/50">
         <CardHeader>
           <CardTitle className="text-base">Speaker diarization</CardTitle>
         </CardHeader>
@@ -138,7 +142,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-xl border bg-card/50">
         <CardHeader>
           <CardTitle className="text-base">Speaker memory</CardTitle>
         </CardHeader>
@@ -163,7 +167,8 @@ export default function SettingsPage() {
           )}
           <p>
             Remember speaker names across transcripts using local voice embeddings.
-            Requires diarization. Voiceprints stay on your machine only.
+            Enable here, then click speaker labels on any transcript turn to assign names
+            and update voiceprints. Requires diarization.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -174,45 +179,37 @@ export default function SettingsPage() {
             >
               {memoryStatus?.enabled ? "Disable speaker memory" : "Enable speaker memory"}
             </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={deleteAllData.isPending}
-              onClick={() => {
-                if (
-                  !confirm(
-                    "Delete all speaker profiles and voiceprints? This cannot be undone.",
-                  )
-                ) {
-                  return
-                }
+            <DeleteConfirmDialog
+              title="Delete all voiceprints?"
+              description="Delete all speaker profiles and voiceprints? This cannot be undone."
+              triggerLabel="Delete all voiceprints"
+              confirmLabel="Delete all"
+              onConfirm={() => {
                 void deleteAllData.mutateAsync().then(() => {
                   toast.success("All speaker memory data deleted")
                 })
               }}
-            >
-              Delete all voiceprints
-            </Button>
+              isPending={deleteAllData.isPending}
+            />
           </div>
           <div className="space-y-2">
             <p className="font-medium text-foreground">Voice profiles</p>
-            <SpeakerProfileManager
-              profiles={profilesData?.items ?? []}
-              isDeleting={deleteProfile.isPending}
-              onDelete={(profileId, displayName) => {
-                if (!confirm(`Delete profile "${displayName}" and all voiceprints?`)) {
-                  return
-                }
-                void deleteProfile.mutateAsync(profileId).then(() => {
-                  toast.success(`Deleted ${displayName}`)
-                })
-              }}
-            />
+            <ScrollArea className="max-h-[420px] pr-3">
+              <SpeakerProfileManager
+                profiles={profilesData?.items ?? []}
+                isDeleting={deleteProfile.isPending}
+                onDelete={(profileId, displayName) => {
+                  void deleteProfile.mutateAsync(profileId).then(() => {
+                    toast.success(`Deleted ${displayName}`)
+                  })
+                }}
+              />
+            </ScrollArea>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-xl border bg-card/50">
         <CardHeader>
           <CardTitle className="text-base">OpenRouter / LLM</CardTitle>
         </CardHeader>
@@ -244,7 +241,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-xl border bg-card/50">
         <CardHeader>
           <CardTitle className="text-base">Privacy</CardTitle>
         </CardHeader>
@@ -261,6 +258,7 @@ export default function SettingsPage() {
         onConfirm={() => void handleConsent()}
         isPending={consentMutation.isPending || toggleMemory.isPending}
       />
-    </div>
+      </BlurFade>
+    </PageContainer>
   )
 }

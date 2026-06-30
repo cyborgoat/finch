@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { DocumentList } from "@/components/documents/DocumentList"
+import { PageContainer } from "@/components/layout/PageContainer"
+import { PageHeader } from "@/components/layout/PageHeader"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDeleteDocument, useDocuments } from "@/hooks/useDocuments"
@@ -20,7 +22,6 @@ export default function DocumentsPage() {
   }, [data?.items, query])
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this document?")) return
     try {
       await deleteMutation.mutateAsync(id)
       toast.success("Document deleted")
@@ -30,18 +31,18 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Documents</h1>
-        <p className="text-sm text-muted-foreground">
-          AI-generated Markdown from your transcripts.
-        </p>
-      </div>
-
-      <Input
-        placeholder="Search by title…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
+    <PageContainer size="list">
+      <PageHeader
+        title="Documents"
+        description="AI-generated Markdown from your transcripts."
+        actions={
+          <Input
+            placeholder="Search by title…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full min-w-[200px] max-w-xs"
+          />
+        }
       />
 
       {isLoading ? (
@@ -52,6 +53,6 @@ export default function DocumentsPage() {
       ) : (
         <DocumentList items={items} onDelete={(id) => void handleDelete(id)} />
       )}
-    </div>
+    </PageContainer>
   )
 }

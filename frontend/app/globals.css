@@ -128,3 +128,36 @@
     @apply font-sans;
   }
 }
+
+@layer components {
+  .page-title {
+    @apply text-2xl font-semibold tracking-tight text-foreground;
+  }
+  .section-label {
+    @apply text-sm font-medium text-foreground;
+  }
+  .section-hint {
+    @apply text-sm leading-relaxed text-muted-foreground;
+  }
+  .page-stack {
+    @apply space-y-8;
+  }
+  .section-stack {
+    @apply space-y-6;
+  }
+  .field-stack {
+    @apply space-y-3;
+  }
+  .surface-card {
+    @apply rounded-xl border border-border bg-card/50 p-6;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}

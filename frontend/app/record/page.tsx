@@ -6,6 +6,9 @@ import { toast } from "sonner"
 import { AudioRecorder } from "@/components/audio/AudioRecorder"
 import { JobProgress } from "@/components/jobs/JobProgress"
 import { PipelineStepper } from "@/components/jobs/PipelineStepper"
+import { PageContainer } from "@/components/layout/PageContainer"
+import { PageHeader } from "@/components/layout/PageHeader"
+import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { Button } from "@/components/ui/button"
 import { useAudioRecorder } from "@/hooks/useAudioRecorder"
 import { useAudioUpload } from "@/hooks/useAudioUpload"
@@ -76,44 +79,44 @@ export default function RecordPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Record voice</h1>
-        <p className="text-sm text-muted-foreground">
-          Record in the browser, then transcribe locally.
-        </p>
-      </div>
+    <PageContainer size="list">
+      <BlurFade className="section-stack max-w-2xl">
+        <PageHeader
+          title="Record voice"
+          description="Record in the browser, then transcribe locally."
+        />
 
-      <PipelineStepper current={displayStep} />
+        <PipelineStepper current={displayStep} />
 
-      <AudioRecorder
-        state={recorder.state}
-        durationSeconds={recorder.durationSeconds}
-        audioUrl={recorder.audioUrl}
-        audioBlob={recorder.audioBlob}
-        mediaStream={recorder.mediaStream}
-        error={recorder.error}
-        onStart={() => void recorder.start()}
-        onPause={recorder.pause}
-        onResume={recorder.resume}
-        onStop={recorder.stop}
-        onReset={() => {
-          recorder.reset()
-          setJobId(null)
-          setUploadedAssetId(null)
-        }}
-      />
+        <AudioRecorder
+          state={recorder.state}
+          durationSeconds={recorder.durationSeconds}
+          audioUrl={recorder.audioUrl}
+          audioBlob={recorder.audioBlob}
+          mediaStream={recorder.mediaStream}
+          error={recorder.error}
+          onStart={() => void recorder.start()}
+          onPause={recorder.pause}
+          onResume={recorder.resume}
+          onStop={recorder.stop}
+          onReset={() => {
+            recorder.reset()
+            setJobId(null)
+            setUploadedAssetId(null)
+          }}
+        />
 
-      <JobProgress job={job} error={pollError} />
+        <JobProgress job={job} error={pollError} />
 
-      {recorder.audioBlob && recorder.state === "stopped" && (
-        <Button
-          onClick={() => void handleTranscribe()}
-          disabled={isUploading || isTranscribing || !!jobId}
-        >
-          {isUploading || isTranscribing ? "Processing…" : "Transcribe recording"}
-        </Button>
-      )}
-    </div>
+        {recorder.audioBlob && recorder.state === "stopped" ? (
+          <Button
+            onClick={() => void handleTranscribe()}
+            disabled={isUploading || isTranscribing || !!jobId}
+          >
+            {isUploading || isTranscribing ? "Processing…" : "Transcribe recording"}
+          </Button>
+        ) : null}
+      </BlurFade>
+    </PageContainer>
   )
 }

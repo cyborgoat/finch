@@ -145,6 +145,9 @@ class SpeakerProfileService:
         cluster_id: str,
         display_name: str,
         profile_id: str | None = None,
+        *,
+        start_sec: float | None = None,
+        end_sec: float | None = None,
     ) -> SpeakerProfile:
         from app.services.transcript_service import TranscriptService
 
@@ -188,15 +191,22 @@ class SpeakerProfileService:
                 404,
             )
 
-        longest = max(
-            cluster_segments,
-            key=lambda segment: segment.end_sec - segment.start_sec,
-        )
-        duration = longest.end_sec - longest.start_sec
+        if start_sec is not None and end_sec is not None and end_sec > start_sec:
+            sample_start = start_sec
+            sample_end = end_sec
+        else:
+            longest = max(
+                cluster_segments,
+                key=lambda segment: segment.end_sec - segment.start_sec,
+            )
+            sample_start = longest.start_sec
+            sample_end = longest.end_sec
+
+        duration = sample_end - sample_start
         vector = self.embedding_service.extract_embedding(
             audio_path,
-            longest.start_sec,
-            longest.end_sec,
+            sample_start,
+            sample_end,
         )
 
         if profile_id:
@@ -271,7 +281,8 @@ class SpeakerProfileService:
         else:
             embedding_description = (
                 "No voiceprints enrolled yet. Assign this profile on a transcript "
-                "and check “Remember this voice” to store an embedding."
+                "by clicking a speaker pill; with speaker memory enabled in Settings, "
+                "the voiceprint is stored from that turn."
             )
 
         return {

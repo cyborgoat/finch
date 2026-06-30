@@ -28,7 +28,8 @@ What Finch does today and what is intentionally out of scope.
 
 - Local voiceprint storage with [pyannote/embedding](https://huggingface.co/pyannote/embedding)
 - Match unknown speakers to saved profiles or assign new names on a transcript
-- “Remember this voice” enrollment with consent
+- Clickable speaker pills on each turn to assign or update names
+- Voiceprint enrollment from Settings (consent-gated); updates when you edit a speaker pill
 - Auto-match known speakers on future transcripts
 - Profile management in Settings (embeddings, related transcripts)
 - Consent-gated, deletable from Settings — see [speaker-memory.md](speaker-memory.md)

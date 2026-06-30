@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
+import { PageContainer } from "@/components/layout/PageContainer"
+import { PageHeader } from "@/components/layout/PageHeader"
 import { TranscriptList } from "@/components/transcripts/TranscriptList"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -20,7 +22,6 @@ export default function TranscriptsPage() {
   }, [data?.items, query])
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this transcript?")) return
     try {
       await deleteMutation.mutateAsync(id)
       toast.success("Transcript deleted")
@@ -30,18 +31,18 @@ export default function TranscriptsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Transcripts</h1>
-        <p className="text-sm text-muted-foreground">
-          Browse and manage your transcribed audio.
-        </p>
-      </div>
-
-      <Input
-        placeholder="Search by title…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
+    <PageContainer size="list">
+      <PageHeader
+        title="Transcripts"
+        description="Browse and manage your transcribed audio."
+        actions={
+          <Input
+            placeholder="Search by title…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full min-w-[200px] max-w-xs"
+          />
+        }
       />
 
       {isLoading ? (
@@ -55,6 +56,6 @@ export default function TranscriptsPage() {
           onDelete={(id) => void handleDelete(id)}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }

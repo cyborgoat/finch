@@ -186,9 +186,14 @@ def _transcribe_with_diarization(
                 detected_language = result.language
             cluster_id = turn.cluster_id or turn.speaker
             resolution = cluster_resolutions.get(cluster_id)
+            speaker_label = (
+                resolution.display_name
+                if resolution is not None
+                else turn.speaker
+            )
             segments.append(
                 SpeakerSegment(
-                    speaker=turn.speaker,
+                    speaker=speaker_label,
                     start_sec=turn.start_sec,
                     end_sec=turn.end_sec,
                     text=result.text.strip(),

@@ -59,22 +59,25 @@ SPEAKER_MEMORY_MOCK=true
 
 ## User flow (UI)
 
-### First transcript
+### Settings (required for voiceprints)
+
+1. **Settings → Speaker memory** — enable speaker memory and accept consent
+2. Manage saved voice profiles from the same page
+
+### Assigning speakers on a transcript
 
 1. Transcribe audio with diarization
-2. Transcript shows `Speaker 1`, `Speaker 2`, or `Unknown Speaker`
-3. Open transcript → **Speaker names** panel
-4. Match to a saved profile from the dropdown **or** type a new name
-5. Optionally check **Remember this voice from this recording**
-6. Click the main **Save** button (toolbar)
-7. Accept consent dialog if enrolling a voiceprint for the first time
+2. Transcript shows `Speaker 1`, `Speaker 2`, or `Unknown Speaker` per turn
+3. **Click any speaker pill** on a turn to assign or update their name
+4. Choose an existing profile or enter a new name — saves immediately for all turns in that cluster
+5. If speaker memory is enabled **and** consent was given in Settings, the voiceprint is updated from **that turn’s audio**
 
 ### Future transcripts
 
-1. Enable speaker memory in Settings (with consent)
+1. Keep speaker memory enabled in Settings
 2. Transcribe new audio
 3. Matching runs automatically — known voices appear as saved names
-4. Unrecognized voices show as `Unknown Speaker` — assign from the profile dropdown
+4. Unrecognized voices show as `Unknown Speaker` — click the pill to assign
 
 ## Settings UI
 
@@ -125,11 +128,11 @@ Primary enrollment path: `PATCH /api/transcripts/{id}/speakers` with `{ mappings
 
 | Issue | Fix |
 |-------|-----|
-| Save does nothing | Use the main **Save** button in the toolbar (persists speakers + text together) |
+| Save does nothing | Speaker pills save immediately; use **Save** in the toolbar for title and full text only |
 | Still shows `Speaker 1` | Enable speaker memory in Settings; ensure consent given |
-| All speakers `Unknown Speaker` | Enroll voices from a transcript; lower `SPEAKER_MATCH_THRESHOLD` slightly |
-| Wrong name matched | Raise threshold; re-enroll with cleaner speech segment |
-| Consent required error | Accept consent in dialog or Settings before enrolling |
+| All speakers `Unknown Speaker` | Assign speakers via pills on a transcript; lower `SPEAKER_MATCH_THRESHOLD` slightly |
+| Wrong name matched | Raise threshold; re-assign via a cleaner turn’s speaker pill |
+| Consent required error | Accept consent in **Settings → Speaker memory** before voiceprints can be stored |
 | Not ready in health | Enable diarization first; check `HF_TOKEN` and pyannote install |
 
 See also [diarization.md](diarization.md).

@@ -167,6 +167,8 @@ export async function updateTranscriptSpeakers(
     displayName: string
     profileId?: string | null
     enroll?: boolean
+    enrollStartSec?: number
+    enrollEndSec?: number
   }>,
 ): Promise<{
   id: string
