@@ -15,10 +15,8 @@ from app.schemas.speaker import (
     RelatedTranscriptSummary,
     UpdateSpeakerProfileRequest,
 )
-from app.schemas.transcript import SpeakerSegmentSchema
 from app.services.app_preference_service import AppPreferenceService
 from app.services.speaker_profile_service import SpeakerProfileService
-from app.services.speaker_transcript_service import SpeakerTranscriptService
 from app.storage.database import get_session
 
 router = APIRouter(tags=["speaker-profiles"])

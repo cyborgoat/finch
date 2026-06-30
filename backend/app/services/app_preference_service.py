@@ -1,7 +1,6 @@
-import json
 from datetime import UTC, datetime
 
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.config import Settings, get_settings
 from app.models.app_preference import AppPreference

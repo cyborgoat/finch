@@ -98,7 +98,6 @@ class SpeakerEmbeddingService:
         return _normalize_vector(vector)
 
     def extract_embedding(self, audio_path: str, start_sec: float, end_sec: float) -> np.ndarray:
-        duration = max(end_sec - start_sec, self.settings.speaker_min_enroll_seconds)
         if self.settings.speaker_memory_mock:
             return self._mock_embedding(f"{audio_path}:{start_sec}:{end_sec}")
 
