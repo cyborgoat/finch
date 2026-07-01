@@ -1,10 +1,10 @@
 import { useNavigate, useSearch } from "@tanstack/react-router"
-import { useCallback, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { useRegisterTopbarActions } from "@/components/layout/TopbarActionsContext"
-import { TranscriptSummaryTab } from "@/components/transcripts/TranscriptSummaryTab"
+import { TranscriptNotesTab } from "@/components/transcripts/TranscriptNotesTab"
 import { TranscriptAudioPlayer } from "@/components/transcripts/TranscriptAudioPlayer"
 import { FullTranscriptPanel } from "@/components/transcripts/FullTranscriptPanel"
 import { useAudioAsset } from "@/hooks/useAudioAsset"
@@ -56,7 +56,7 @@ export function TranscriptDetailLayout({
   onSegmentSpeakerSave,
 }: TranscriptDetailLayoutProps) {
   const navigate = useNavigate({ from: "/files/$id/" })
-  const { tab } = useSearch({ from: "/files/$id/" })
+  const { tab, noteId } = useSearch({ from: "/files/$id/" })
   const activeTab = parseFileDetailTab(tab)
   const { data: audioAsset } = useAudioAsset(transcript.audioAssetId)
   const playback = useTranscriptPlayback(
@@ -64,25 +64,93 @@ export function TranscriptDetailLayout({
     audioAsset?.durationSeconds,
   )
 
-  const summaryDocumentSummary = useMemo(
+  const [pendingNoteId, setPendingNoteId] = useState<string | null>(null)
+  const pendingSelectionRef = useRef<string | null>(null)
+
+  const notes = useMemo(
     () =>
-      documents
-        .filter((document) => document.type === "markdown_summary")
-        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null,
+      [...documents].sort((left, right) =>
+        right.updatedAt.localeCompare(left.updatedAt),
+      ),
     [documents],
   )
 
-  const { data: summaryDocument } = useDocument(summaryDocumentSummary?.id ?? "")
+  const activeNoteId = useMemo(() => {
+    if (pendingNoteId && notes.some((note) => note.id === pendingNoteId)) {
+      return pendingNoteId
+    }
+    if (noteId && notes.some((note) => note.id === noteId)) {
+      return noteId
+    }
+    return notes[0]?.id ?? null
+  }, [noteId, notes, pendingNoteId])
+
+  useEffect(() => {
+    if (noteId && pendingSelectionRef.current === noteId) {
+      pendingSelectionRef.current = null
+      setPendingNoteId(null)
+    }
+  }, [noteId])
+
+  useEffect(() => {
+    if (
+      activeTab === "notes" &&
+      activeNoteId &&
+      !noteId &&
+      !pendingNoteId
+    ) {
+      void navigate({
+        search: fileDetailTabSearch("notes", activeNoteId),
+        replace: true,
+      })
+    }
+  }, [activeNoteId, activeTab, navigate, noteId, pendingNoteId])
 
   const setTab = useCallback(
     (value: string) => {
+      const nextTab = value as FileDetailTab
+      if (nextTab === "notes" && activeNoteId) {
+        void navigate({
+          search: fileDetailTabSearch("notes", activeNoteId),
+          replace: true,
+        })
+        return
+      }
       void navigate({
-        search: fileDetailTabSearch(value as FileDetailTab),
+        search: fileDetailTabSearch(nextTab),
+        replace: true,
+      })
+    },
+    [activeNoteId, navigate],
+  )
+
+  const setSelectedNoteId = useCallback(
+    (nextNoteId: string | null) => {
+      if (nextNoteId) {
+        pendingSelectionRef.current = nextNoteId
+        setPendingNoteId(nextNoteId)
+      } else {
+        pendingSelectionRef.current = null
+        setPendingNoteId(null)
+      }
+      void navigate({
+        search: fileDetailTabSearch("notes", nextNoteId),
         replace: true,
       })
     },
     [navigate],
   )
+
+  const {
+    data: activeNoteDocument,
+    isLoading: activeNoteLoading,
+    isFetching: activeNoteFetching,
+  } = useDocument(activeNoteId ?? "")
+
+  const activeNote =
+    activeNoteDocument?.id === activeNoteId ? activeNoteDocument : undefined
+  const activeNoteLoadingState =
+    !!activeNoteId && (activeNoteLoading || activeNoteFetching) && !activeNote
 
   const topbarActions = useMemo(
     () => ({
@@ -90,7 +158,8 @@ export function TranscriptDetailLayout({
       audioFilename: audioAsset?.filename,
       title,
       transcriptText: text,
-      summaryMarkdown: summaryDocument?.markdown ?? null,
+      activeNoteMarkdown: activeNoteDocument?.markdown ?? null,
+      activeNoteTitle: activeNoteDocument?.title ?? null,
       onRename,
       onDelete,
       isRenaming: renamePending,
@@ -101,7 +170,8 @@ export function TranscriptDetailLayout({
       audioAsset?.filename,
       title,
       text,
-      summaryDocument?.markdown,
+      activeNoteDocument?.markdown,
+      activeNoteDocument?.title,
       onRename,
       onDelete,
       renamePending,
@@ -111,7 +181,7 @@ export function TranscriptDetailLayout({
 
   useRegisterTopbarActions(topbarActions, [topbarActions])
 
-  const hasSummary = !!summaryDocumentSummary
+  const noteCount = notes.length
 
   return (
     <div className="section-stack">
@@ -120,11 +190,11 @@ export function TranscriptDetailLayout({
           <TabsTrigger value="source" className="px-4 pb-3">
             Source
           </TabsTrigger>
-          <TabsTrigger value="summary" className="px-4 pb-3">
-            Summary
-            {hasSummary ? (
+          <TabsTrigger value="notes" className="px-4 pb-3">
+            Notes
+            {noteCount > 0 ? (
               <Badge variant="outline" className="ml-1.5 h-5 px-1.5 text-xs">
-                Ready
+                {noteCount}
               </Badge>
             ) : null}
           </TabsTrigger>
@@ -168,11 +238,15 @@ export function TranscriptDetailLayout({
           </BlurFade>
         </TabsContent>
 
-        <TabsContent value="summary" className="mt-0 pt-6">
-          <TranscriptSummaryTab
+        <TabsContent value="notes" className="mt-0 pt-6">
+          <TranscriptNotesTab
             transcriptId={transcript.id}
             documents={documents}
             llmReady={llmReady}
+            activeNoteId={activeNoteId}
+            activeNote={activeNote}
+            noteLoading={activeNoteLoadingState}
+            onNoteIdChange={setSelectedNoteId}
           />
         </TabsContent>
       </Tabs>

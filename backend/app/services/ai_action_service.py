@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlmodel import Session
@@ -6,16 +7,12 @@ from app.config import Settings, get_settings
 from app.core.errors import AppError
 from app.models.transcript import Transcript
 from app.schemas.user_settings import UserSettingsResponse
+from app.services.ai_action_presets import get_preset, resolve_action_id
 from app.services.llm_service import LlmService
 from app.services.prompt_context import apply_user_context, build_user_context
 from app.services.user_settings_service import UserSettingsService
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
-
-SUMMARY_ACTION = "markdown_summary"
-SUMMARY_PROMPT_FILE = "summarize_markdown.md"
-SUMMARY_DOC_TYPE = "markdown_summary"
-SUMMARY_TITLE_PREFIX = "Summary"
 
 
 class AiActionService:
@@ -24,12 +21,12 @@ class AiActionService:
         self.session = session
         self.llm_service = LlmService(session)
 
-    def _load_prompt(self, transcript_text: str) -> str:
-        path = PROMPTS_DIR / SUMMARY_PROMPT_FILE
+    def _load_prompt(self, prompt_file: str, transcript_text: str) -> str:
+        path = PROMPTS_DIR / prompt_file
         if not path.exists():
             raise AppError(
                 "AI_ACTION_INVALID",
-                f"Prompt template missing: {SUMMARY_PROMPT_FILE}",
+                f"Prompt template missing: {prompt_file}",
                 500,
             )
         template = path.read_text(encoding="utf-8")
@@ -45,40 +42,20 @@ class AiActionService:
     def _compose_prompt(
         self,
         *,
+        prompt_file: str,
         transcript_text: str,
         user_settings: UserSettingsResponse,
+        uses_user_summary_prefs: bool,
     ) -> str:
-        prompt = self._load_prompt(transcript_text)
+        prompt = self._load_prompt(prompt_file, transcript_text)
+        if not uses_user_summary_prefs:
+            return prompt
         context = build_user_context(user_settings)
         return apply_user_context(prompt, context)
 
-    def run_summary(
-        self,
-        transcript: Transcript,
-        *,
-        source: str = "editedText",
-        model: str | None = None,
-        session: Session | None = None,
-        user_settings: UserSettingsResponse | None = None,
-    ) -> tuple[str, str, str]:
-        transcript_text = self.resolve_transcript_text(transcript, source)
-        if not transcript_text:
-            raise AppError("AI_ACTION_INVALID", "Transcript text is empty.", 400)
-
-        if user_settings is None:
-            if session is None:
-                user_settings = UserSettingsResponse()
-            else:
-                user_settings = UserSettingsService(session).get_settings()
-
-        prompt = self._compose_prompt(
-            transcript_text=transcript_text,
-            user_settings=user_settings,
-        )
-        messages = [{"role": "user", "content": prompt}]
-        markdown = self.llm_service.chat_completion(messages, model=model)
-        title = f"{SUMMARY_TITLE_PREFIX}: {transcript.title}"
-        return title, SUMMARY_DOC_TYPE, markdown
+    def _build_title(self, title_prefix: str, transcript: Transcript) -> str:
+        date_label = datetime.now(UTC).strftime("%b %d, %Y")
+        return f"{title_prefix} · {date_label}"
 
     def run_action(
         self,
@@ -90,16 +67,32 @@ class AiActionService:
         session: Session | None = None,
         user_settings: UserSettingsResponse | None = None,
     ) -> tuple[str, str, str]:
-        if action != SUMMARY_ACTION:
+        resolved_action = resolve_action_id(action)
+        preset = get_preset(resolved_action)
+        if preset is None:
             raise AppError(
                 "AI_ACTION_INVALID",
-                f"Unknown action: {action}. Only {SUMMARY_ACTION} is supported.",
+                f"Unknown action: {action}.",
                 400,
             )
-        return self.run_summary(
-            transcript,
-            source=source,
-            model=model,
-            session=session,
+
+        transcript_text = self.resolve_transcript_text(transcript, source)
+        if not transcript_text:
+            raise AppError("AI_ACTION_INVALID", "Transcript text is empty.", 400)
+
+        if user_settings is None:
+            if session is None:
+                user_settings = UserSettingsResponse()
+            else:
+                user_settings = UserSettingsService(session).get_settings()
+
+        prompt = self._compose_prompt(
+            prompt_file=preset.prompt_file,
+            transcript_text=transcript_text,
             user_settings=user_settings,
+            uses_user_summary_prefs=preset.uses_user_summary_prefs,
         )
+        messages = [{"role": "user", "content": prompt}]
+        markdown = self.llm_service.chat_completion(messages, model=model)
+        title = self._build_title(preset.title_prefix, transcript)
+        return title, preset.doc_type, markdown

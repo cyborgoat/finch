@@ -1,4 +1,5 @@
 
+import type { ReactNode } from "react"
 import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
 import { fadeUp, MOTION_DURATION, MOTION_EASE } from "@/lib/motion"
@@ -6,10 +7,11 @@ import { fadeUp, MOTION_DURATION, MOTION_EASE } from "@/lib/motion"
 type EmptyStateProps = {
   title: string
   description?: string
+  action?: ReactNode
   className?: string
 }
 
-export function EmptyState({ title, description, className }: EmptyStateProps) {
+export function EmptyState({ title, description, action, className }: EmptyStateProps) {
   return (
     <motion.div
       initial={fadeUp.initial}
@@ -31,6 +33,7 @@ export function EmptyState({ title, description, className }: EmptyStateProps) {
           {description}
         </p>
       ) : null}
+      {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </motion.div>
   )
 }

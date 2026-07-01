@@ -1,13 +1,33 @@
 from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlmodel import Session
 
-from app.schemas.ai_action import CreateAiActionRequest, CreateAiActionResponse
+from app.schemas.ai_action import (
+    AiActionTemplate,
+    AiActionTemplateListResponse,
+    CreateAiActionRequest,
+    CreateAiActionResponse,
+)
+from app.services.ai_action_presets import list_presets
 from app.services.job_service import JobService
 from app.services.transcript_service import TranscriptService
 from app.storage.database import get_session
 from app.workers.ai_action_worker import run_ai_action_job
 
 router = APIRouter(prefix="/ai-actions", tags=["ai-actions"])
+
+
+@router.get("/templates", response_model=AiActionTemplateListResponse)
+def list_ai_action_templates() -> AiActionTemplateListResponse:
+    items = [
+        AiActionTemplate(
+            id=preset.id,
+            title=preset.title,
+            description=preset.description,
+            doc_type=preset.doc_type,
+        )
+        for preset in list_presets()
+    ]
+    return AiActionTemplateListResponse(items=items)
 
 
 @router.post("", response_model=CreateAiActionResponse)

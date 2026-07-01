@@ -10,6 +10,7 @@ export type UserPreferences = {
   summaryFormat: SummaryFormat
   userName: string
   userSpeakerProfileId: string | null
+  notesAutoSave: boolean
 }
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
@@ -18,4 +19,5 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   summaryFormat: "paragraphs",
   userName: "",
   userSpeakerProfileId: null,
+  notesAutoSave: true,
 }

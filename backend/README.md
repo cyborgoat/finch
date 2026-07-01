@@ -98,8 +98,9 @@ If diarization or speaker matching is unavailable, the worker falls back gracefu
 - `GET/PATCH/DELETE /api/transcripts/{id}`
 - `PATCH /api/transcripts/{id}/speakers` — rename/link speakers on a transcript
 - `GET /api/jobs/{id}`
-- `POST /api/ai-actions` — generate transcript summary (`action: markdown_summary`)
-- `GET/PATCH/DELETE /api/documents/{id}` · `GET /api/documents`
+- `POST /api/ai-actions` — generate AI note (`action`: `meeting_summary`, `action_items`, `key_decisions`, `follow_up_email`; legacy alias `markdown_summary`)
+- `GET /api/ai-actions/templates` — list AI note templates
+- `GET/POST/PATCH/DELETE /api/documents` — document CRUD (POST creates blank manual notes)
 - `GET/POST/PATCH/DELETE /api/speaker-profiles` · `GET /api/speaker-profiles/{id}`
 - `GET/PATCH/DELETE /api/speaker-memory/status` · `POST /api/speaker-memory/consent` · `DELETE /api/speaker-memory/data`
 - `GET/PATCH /api/user-settings` — user name, language, summarization prefs, linked speaker profile

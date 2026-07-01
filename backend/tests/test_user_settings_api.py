@@ -7,6 +7,7 @@ def test_user_settings_defaults(client):
     assert body["summaryFormat"] == "paragraphs"
     assert body["userName"] == ""
     assert body["userSpeakerProfileId"] is None
+    assert body["notesAutoSave"] is True
 
 
 def test_user_settings_update_and_partial_patch(client):

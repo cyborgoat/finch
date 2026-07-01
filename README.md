@@ -10,9 +10,9 @@ Finch is a local-first voice transcription app. Audio is transcribed on your mac
 - Optional speaker diarization via [pyannote-audio](https://github.com/pyannote/pyannote-audio)
 - Optional speaker memory — persistent names via local voiceprints
 - Background transcription jobs with in-progress status in the UI
-- Transcript library: **Files** at `/files` (voice recordings); detail page with **Source** and **Summary** tabs; topbar download/actions
-- AI actions (summaries, action items, meeting notes) via configurable LLM providers
-- Document library: Markdown editor + preview + export
+- Transcript library: **Files** at `/files` (voice recordings); detail page with **Source** and **Notes** tabs; topbar download/actions
+- AI note templates (meeting summary, action items, key decisions, follow-up email) and blank notes via configurable LLM providers
+- Markdown notes with MDXEditor; auto-save or manual save
 
 See [docs/features.md](docs/features.md) for the full feature list and roadmap.
 

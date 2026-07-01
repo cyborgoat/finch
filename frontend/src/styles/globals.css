@@ -156,6 +156,103 @@
   .surface-card {
     @apply rounded-xl border border-border bg-card/50 p-6;
   }
+
+  .mdx-note-editor .mdx-note-mdxeditor {
+    @apply rounded-lg bg-background text-foreground;
+    --basePageBg: var(--background);
+    --baseBg: var(--muted);
+    --baseBgSubtle: var(--muted);
+    --baseBgHover: color-mix(in oklch, var(--muted), var(--foreground) 4%);
+    --baseBgActive: color-mix(in oklch, var(--muted), var(--foreground) 8%);
+    --baseLine: var(--border);
+    --baseBorder: var(--border);
+    --baseBorderHover: color-mix(in oklch, var(--border), var(--foreground) 12%);
+    --baseText: var(--foreground);
+    --baseTextContrast: var(--foreground);
+    --accentSolid: var(--primary);
+    --accentSolidHover: color-mix(in oklch, var(--primary), var(--foreground) 10%);
+    --accentText: var(--primary-foreground);
+    --accentTextContrast: var(--primary-foreground);
+    --accentBorder: var(--border);
+    --accentBg: var(--muted);
+    --accentBgHover: color-mix(in oklch, var(--muted), var(--foreground) 6%);
+    --font-mono: var(--font-mono);
+  }
+
+  .mdx-note-editor .mdxeditor-toolbar,
+  .mdx-note-editor .mdx-note-toolbar {
+    @apply flex flex-wrap items-center gap-1 border-b border-border bg-muted/30 px-2 py-1.5;
+  }
+
+  .mdx-note-editor .mdxeditor-root-contenteditable,
+  .mdx-note-editor .mdx-note-content {
+    @apply text-foreground;
+  }
+
+  .mdx-note-editor .mdx-note-content h1 {
+    @apply mb-3 mt-1 text-2xl font-semibold;
+  }
+
+  .mdx-note-editor .mdx-note-content h2 {
+    @apply mb-2 mt-4 text-lg font-medium;
+  }
+
+  .mdx-note-editor .mdx-note-content h3 {
+    @apply mb-2 mt-3 text-base font-medium;
+  }
+
+  .mdx-note-editor .mdx-note-content p {
+    @apply my-2 leading-relaxed;
+  }
+
+  .mdx-note-editor .mdx-note-content ul {
+    @apply my-2 list-disc pl-6;
+  }
+
+  .mdx-note-editor .mdx-note-content ol {
+    @apply my-2 list-decimal pl-6;
+  }
+
+  .mdx-note-editor .mdx-note-content blockquote {
+    @apply my-3 border-l-4 border-border pl-4 text-muted-foreground italic;
+  }
+
+  .mdx-note-editor .mdx-note-content code {
+    @apply rounded bg-muted px-1 py-0.5 font-mono text-[0.9em];
+  }
+
+  .mdx-note-editor .mdx-note-content pre {
+    @apply my-3 overflow-x-auto rounded-lg border border-border bg-muted/40 p-3 font-mono text-sm;
+  }
+
+  .mdx-note-editor .mdx-note-content hr {
+    @apply my-4 border-border;
+  }
+
+  .mdx-note-editor .mdx-note-content a {
+    @apply text-primary underline underline-offset-2;
+  }
+
+  .mdx-note-editor .mdx-note-content img {
+    @apply my-3 max-w-full rounded-lg border border-border;
+  }
+
+  .mdx-note-editor .mdx-note-content table {
+    @apply my-3 w-full border-collapse text-sm;
+  }
+
+  .mdx-note-editor .mdx-note-content th,
+  .mdx-note-editor .mdx-note-content td {
+    @apply border border-border px-3 py-2 align-top;
+  }
+
+  .mdx-note-editor .mdx-note-content th {
+    @apply bg-muted/50 font-medium;
+  }
+
+  .mdx-note-editor .mdxeditor-popup-container {
+    z-index: 50;
+  }
 }
 
 @keyframes shimmer {

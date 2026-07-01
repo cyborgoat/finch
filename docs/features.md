@@ -41,33 +41,35 @@ What Finch does today and what is intentionally out of scope.
 - Title search on the Files page (filters by recording name)
 - Recording detail at `/files/{id}` with two tabs:
   - **Source** — audio player and compact scrollable transcript (speaker, timestamp, text per turn)
-  - **Summary** — LLM-generated overview from the transcript (uses Settings preferences)
+  - **Notes** — multiple markdown notes per recording (AI templates or blank), editable with MDXEditor
 - Prefixed IDs in URLs (e.g. `/files/transcript_a1b2c3d4e5f67890`, `/files/doc_b2c3d4e5f6789012`)
-- **Topbar** on recording detail: breadcrumb navigation, download menu (audio, transcript `.txt`, summary `.md`), and actions menu (rename, delete session)
+- **Topbar** on recording detail: breadcrumb navigation, download menu (audio, transcript `.txt`, active note `.md`), and actions menu (rename, delete session)
 - Rename and delete from the topbar actions menu or the Files list ellipsis menu; list API includes audio duration (`durationSeconds`)
 - Built-in audio player (seek, ±15s skip, playback speed)
 - Transcript auto-scrolls to the active turn during playback; click timestamps to seek
 - Read-only transcript on Source (no manual text editing)
 - In-progress (`transcribing`) and failed states in the UI
 
-### Transcript summarization (optional)
+### Notes (optional)
 
 - Configurable LLM providers: OpenRouter (default), OpenAI, Anthropic, custom OpenAI-compatible (Ollama, LM Studio, vLLM)
-- Provider selection and API keys in **Settings → LLM provider** (stored locally in SQLite) or `.env`
-- **Summary** tab on each recording: generate or regenerate a Markdown summary from the transcript
-- User language, summary style/format, and display name applied to prompts
-- Summary stored as a linked document (`markdown_summary`)
+- Provider selection and API keys in **Settings → LLM provider** (stored locally in SQLite)
+- **Notes** tab on each recording: create multiple markdown notes via AI templates or blank note
+- AI templates: meeting summary, action items, key decisions, follow-up email
+- MDXEditor for in-app editing notes; auto-save toggle (default on) or manual Save
+- User language, summary style/format, and display name applied to meeting summary prompts
+- Notes stored as linked documents per transcript (`meeting_summary`, `action_items`, `note`, etc.)
 
 ### Documents
 
-- Markdown summaries linked to source transcripts
-- Document detail editor at `/files/doc_*` with preview and export
+- Markdown notes linked to source transcripts
+- Document detail editor at `/files/doc_*` with MDXEditor and export
 
 ### User settings
 
-- **You:** display name and link to your speaker profile (applied to summary prompts when set)
-- **Language:** English or 中文 (Chinese) — applied to summary output language
-- **AI summarization:** style (concise / balanced / detailed) and format (paragraphs / bullets) — applied when generating summaries
+- **You:** display name and link to your speaker profile (applied to meeting summary prompts when set)
+- **Language:** English or 中文 (Chinese) — applied to AI note output language
+- **AI notes:** style (concise / balanced / detailed) and format (paragraphs / bullets) — applied when generating meeting summaries; auto-save toggle for note editing
 - **Speakers:** auto-label toggle, saved speaker list (rename / delete)
 - Persisted via `GET/PATCH /api/user-settings` (stored in `AppPreference`)
 
@@ -84,7 +86,7 @@ What Finch does today and what is intentionally out of scope.
 | **UI localization** | Language setting does not translate the app |
 | **Transcript editing** | Source transcript is read-only (rename title via topbar only) |
 | **Full-text search** | Files search filters by title only |
-| **Rich exports** | PDF, DOCX, HTML, Obsidian, Notion (audio + transcript `.txt` and summary `.md` exist today) |
+| **Rich exports** | PDF, DOCX, HTML, Obsidian, Notion (audio + transcript `.txt` and note `.md` exist today) |
 
 ## Planned (post-MVP)
 

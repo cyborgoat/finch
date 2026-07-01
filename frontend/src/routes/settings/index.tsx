@@ -150,12 +150,12 @@ function SettingsPage() {
         </SettingsSection>
 
         <SettingsSection
-          title="AI summarization"
-          description="How Finch summarizes recordings on the Summary tab."
+          title="AI notes"
+          description="How Finch generates meeting summaries and other AI notes."
         >
           <SettingsRow
             label="Summary style"
-            description="Applied when generating a transcript summary."
+            description="Applied when generating a meeting summary note."
           >
             <Select
               value={preferences.summaryStyle}
@@ -207,6 +207,18 @@ function SettingsPage() {
                 <SelectItem value="bullets">Bullet points</SelectItem>
               </SelectContent>
             </Select>
+          </SettingsRow>
+          <SettingsRow
+            label="Auto-save notes"
+            description="When enabled, note edits save automatically while you type."
+          >
+            <Switch
+              checked={preferences.notesAutoSave}
+              onCheckedChange={(checked) => {
+                void savePreference({ notesAutoSave: checked })
+              }}
+              disabled={settingsBusy}
+            />
           </SettingsRow>
         </SettingsSection>
 

@@ -77,7 +77,7 @@ cd backend && uv add pyannote-audio
 |---------|---------|
 | **You** | Your display name; map one saved speaker profile as yourself |
 | **Language** | App / AI content language (English or 中文) |
-| **AI summarization** | Summary style and format on the Summary tab |
+| **AI notes** | Summary style and format for meeting summary notes |
 | **Speakers** | Auto-label toggle; list of saved speakers (rename / delete) |
 
 ASR and diarization configuration are **backend-only** (`.env` and startup logs). LLM provider settings can be configured in **Settings → LLM provider** or via `.env`.

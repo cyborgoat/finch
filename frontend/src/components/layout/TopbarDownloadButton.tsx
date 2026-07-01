@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { AudioLines, FileText, Sparkles, Download } from "lucide-react"
+import { AudioLines, FileText, Notebook, Download } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,7 +18,8 @@ export function TopbarDownloadButton() {
   if (!actions) return null
 
   const busy = actions.isRenaming || actions.isDeleting
-  const hasSummary = !!actions.summaryMarkdown?.trim()
+  const noteMarkdown = actions.activeNoteMarkdown?.trim()
+  const hasNote = !!noteMarkdown
 
   const handleDownloadAudio = () => {
     void downloadAudioAsset(actions.audioAssetId, actions.audioFilename).catch(() => {
@@ -30,9 +31,10 @@ export function TopbarDownloadButton() {
     exportTranscriptTxt(actions.title, actions.transcriptText)
   }
 
-  const handleDownloadSummary = () => {
-    if (!actions.summaryMarkdown?.trim()) return
-    exportDocumentMd(`${actions.title} summary`, actions.summaryMarkdown)
+  const handleDownloadNote = () => {
+    if (!noteMarkdown) return
+    const label = actions.activeNoteTitle?.trim() || "note"
+    exportDocumentMd(`${actions.title} ${label}`, noteMarkdown)
   }
 
   return (
@@ -61,9 +63,9 @@ export function TopbarDownloadButton() {
           <FileText />
           Transcript
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleDownloadSummary} disabled={busy || !hasSummary}>
-          <Sparkles />
-          Summary
+        <DropdownMenuItem onClick={handleDownloadNote} disabled={busy || !hasNote}>
+          <Notebook />
+          Active note
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

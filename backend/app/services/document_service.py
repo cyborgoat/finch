@@ -40,6 +40,28 @@ class DocumentService:
         self.session.refresh(document)
         return document
 
+    def create_manual_document(
+        self,
+        *,
+        transcript_id: str,
+        title: str | None = None,
+        markdown: str = "",
+        doc_type: str = "note",
+    ) -> Document:
+        resolved_title = title.strip() if title and title.strip() else self._default_manual_title()
+        return self.create_document(
+            transcript_id=transcript_id,
+            title=resolved_title,
+            doc_type=doc_type,
+            markdown=markdown,
+            model="manual",
+        )
+
+    @staticmethod
+    def _default_manual_title() -> str:
+        date_label = datetime.now(UTC).strftime("%b %d, %Y")
+        return f"Note · {date_label}"
+
     def list_documents(self, transcript_id: str | None = None) -> list[Document]:
         statement = select(Document).order_by(Document.created_at.desc())
         if transcript_id:

@@ -68,3 +68,43 @@ def test_list_documents_filters_by_transcript_id(client, sample_wav_bytes):
 
     all_docs = client.get("/api/documents").json()
     assert len(all_docs["items"]) == 2
+
+
+def test_create_manual_note_and_delete_one_of_many(client, sample_wav_bytes):
+    transcript_id = _create_transcript(client, sample_wav_bytes)
+
+    create_a = client.post(
+        "/api/documents",
+        json={"transcriptId": transcript_id, "title": "My note", "markdown": "# Hello"},
+    )
+    assert create_a.status_code == 200
+    doc_a = create_a.json()["id"]
+    assert create_a.json()["type"] == "note"
+    assert create_a.json()["model"] == "manual"
+
+    create_b = client.post(
+        "/api/documents",
+        json={"transcriptId": transcript_id},
+    )
+    assert create_b.status_code == 200
+    doc_b = create_b.json()["id"]
+    assert doc_b != doc_a
+
+    listed = client.get(f"/api/documents?transcriptId={transcript_id}").json()
+    assert len(listed["items"]) == 2
+
+    delete_response = client.delete(f"/api/documents/{doc_a}")
+    assert delete_response.status_code == 200
+
+    remaining = client.get(f"/api/documents?transcriptId={transcript_id}").json()
+    assert len(remaining["items"]) == 1
+    assert remaining["items"][0]["id"] == doc_b
+
+
+def test_list_ai_action_templates(client):
+    response = client.get("/api/ai-actions/templates")
+    assert response.status_code == 200
+    items = response.json()["items"]
+    assert len(items) == 4
+    ids = {item["id"] for item in items}
+    assert ids == {"meeting_summary", "action_items", "key_decisions", "follow_up_email"}

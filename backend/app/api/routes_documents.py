@@ -4,6 +4,7 @@ from sqlmodel import Session
 from app.models.document import Document
 from app.schemas.audio import OkResponse
 from app.schemas.document import (
+    CreateDocumentRequest,
     DocumentListResponse,
     DocumentResponse,
     DocumentSummary,
@@ -11,6 +12,7 @@ from app.schemas.document import (
     UpdateDocumentResponse,
 )
 from app.services.document_service import DocumentService
+from app.services.transcript_service import TranscriptService
 from app.storage.database import get_session
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -32,6 +34,24 @@ def list_documents(
     service = DocumentService(session)
     items = [_to_summary(document) for document in service.list_documents(transcript_id)]
     return DocumentListResponse(items=items)
+
+
+@router.post("", response_model=DocumentResponse)
+def create_document(
+    payload: CreateDocumentRequest,
+    session: Session = Depends(get_session),
+) -> DocumentResponse:
+    transcript_service = TranscriptService(session)
+    transcript_service.get_transcript(payload.transcript_id)
+
+    service = DocumentService(session)
+    document = service.create_manual_document(
+        transcript_id=payload.transcript_id,
+        title=payload.title,
+        markdown=payload.markdown,
+        doc_type=payload.type,
+    )
+    return _to_response(document)
 
 
 @router.get("/{document_id}", response_model=DocumentResponse)

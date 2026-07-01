@@ -5,7 +5,7 @@ import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog"
 import { StickyActionBar } from "@/components/layout/StickyActionBar"
 
 type DocumentToolbarProps = {
-  onSave: () => void
+  onSave?: () => void
   onCopy: () => void
   onExport: () => void
   onDelete: () => void
@@ -24,9 +24,11 @@ export function DocumentToolbar({
   return (
     <StickyActionBar>
       <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={onSave} disabled={isSaving} size="sm">
-          {isSaving ? "Saving…" : "Save"}
-        </Button>
+        {onSave ? (
+          <Button onClick={onSave} disabled={isSaving} size="sm">
+            {isSaving ? "Saving…" : "Save"}
+          </Button>
+        ) : null}
         <Button variant="outline" size="sm" onClick={onCopy}>
           <Copy className="size-4" />
           Copy

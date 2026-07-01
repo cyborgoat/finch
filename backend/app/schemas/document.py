@@ -39,3 +39,10 @@ class UpdateDocumentResponse(CamelModel):
     title: str
     markdown: str
     updated_at: datetime
+
+
+class CreateDocumentRequest(CamelModel):
+    transcript_id: str
+    title: str | None = None
+    markdown: str = ""
+    type: str = "note"

@@ -92,13 +92,13 @@ If diarization is enabled but unavailable (missing HF access, etc.), the worker 
 
 Segment tuning (`DIARIZATION_MIN_SEGMENT_SECONDS`, `DIARIZATION_MERGE_GAP_SECONDS`, `DIARIZATION_MAX_SEGMENTS`) is applied after pyannote. See [diarization.md](diarization.md).
 
-### Summary job
+### Notes job
 
 ```txt
-POST /api/ai-actions { transcriptId, action: "markdown_summary" }
+POST /api/ai-actions { transcriptId, action: "meeting_summary" | "action_items" | ... }
   → Job (ai_action)
   → ai_action_worker → LlmService (configured provider)
-  → create Document (markdown_summary)
+  → create Document (typed note)
 ```
 
 ## Storage
@@ -130,20 +130,19 @@ Documents store a `transcript_id` foreign key pointing at the parent recording.
 |-------|---------|
 | `/` | Recent voice recordings |
 | `/files` | Recordings library |
-| `/files/{id}` | Recording detail (Source / Summary tabs) or document editor |
+| `/files/{id}` | Recording detail (Source / Notes tabs) or document editor |
 | `/upload`, `/record` | Ingest new audio |
 | `/settings` | User profile, language, AI prefs, speakers |
 
-The file detail page routes by ID prefix (`transcript_` → recording detail, `doc_` → document editor). Lists show recordings only; documents appear on a recording’s **AI** tab.
+The file detail page routes by ID prefix (`transcript_` → recording detail, `doc_` → document editor). Lists show recordings only; notes appear on a recording’s **Notes** tab.
 
 ### Recording detail UI
 
 | Area | Behavior |
 |------|----------|
-| Topbar | Breadcrumbs; download (audio, transcript `.txt`, summary `.md` when generated); actions (rename, delete) |
+| Topbar | Breadcrumbs; download (audio, transcript `.txt`, active note `.md`); actions (rename, delete) |
 | Source | Audio player; compact transcript with speaker, timestamp, and text per turn; auto-scroll to active turn; read-only text |
-| Summary | Placeholder (not implemented) |
-| AI | Templates, jobs, linked documents |
+| Notes | Multiple markdown notes per recording (AI templates + blank); dropdown to switch notes; rename/delete via actions menu; MDXEditor with auto-save |
 
 ## API surface
 
@@ -156,8 +155,9 @@ The file detail page routes by ID prefix (`transcript_` → recording detail, `d
 | POST | `/api/transcripts` | Start transcription job |
 | GET/PATCH/DELETE | `/api/transcripts/{id}` | Transcript CRUD |
 | GET | `/api/jobs/{id}` | Job status and progress |
-| POST | `/api/ai-actions` | Generate transcript summary |
-| GET/PATCH/DELETE | `/api/documents/{id}` | Document CRUD |
+| POST | `/api/ai-actions` | Generate an AI note from a template |
+| GET | `/api/ai-actions/templates` | List AI note templates |
+| GET/POST/PATCH/DELETE | `/api/documents` | Document CRUD (includes manual blank notes via POST) |
 | GET/POST/PATCH/DELETE | `/api/speaker-profiles/...` | Speaker profile CRUD + detail |
 | GET/POST/PATCH/DELETE | `/api/speaker-memory/...` | Consent, auto-label toggle, wipe voiceprint data |
 | GET/PATCH | `/api/user-settings` | User name, language, summarization prefs, linked speaker profile |

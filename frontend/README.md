@@ -1,6 +1,6 @@
 # Finch Frontend
 
-TanStack Start app for Finch: upload, record, transcripts, speaker labels, speaker memory, summarization, and documents.
+TanStack Start app for Finch: upload, record, transcripts, speaker labels, speaker memory, AI notes, and documents.
 
 **Project docs:** [../docs/README.md](../docs/README.md)
 
@@ -51,10 +51,10 @@ Backend config (ASR, diarization, speaker memory) lives in repo root `.env` or `
 |-------|---------|
 | `/` | Recent voice recordings, sorted by last updated |
 | `/files` | Voice recordings library |
-| `/files/$id` | Recording detail (Source, Summary tabs) or document editor |
+| `/files/$id` | Recording detail (Source, Notes tabs) or standalone document editor |
 | `/upload` | Upload audio and transcribe |
 | `/record` | Browser recording with live waveform |
-| `/settings` | User profile, language, AI summarization prefs, speakers |
+| `/settings` | User profile, language, AI note prefs, speakers, LLM provider |
 
 ## Layout and navigation
 
@@ -67,33 +67,37 @@ Backend config (ASR, diarization, speaker memory) lives in repo root `.env` or `
 ### Files and home
 
 - **Home:** recent voice recordings, sorted by last updated
-- **Files browser:** voice recordings only; summaries live under each recording’s **Summary** tab
+- **Files browser:** voice recordings only; notes live under each recording’s **Notes** tab
 - **Search:** filters recordings by title (client-side)
 - **List actions:** ellipsis menu — rename and delete
 - **Transcribing / failed:** list and detail pages poll while `status=transcribing`; failed jobs stay visible with `errorMessage`
 
 ### Recording detail (`/files/transcript_*`)
 
-- **Topbar download menu:** audio file, transcript `.txt`, summary `.md` (when generated)
+- **Topbar download menu:** audio file, transcript `.txt`, active note `.md`
 - **Topbar actions menu:** rename recording, delete session
 - **Source tab:** audio player, then compact scrollable transcript
-  - Each turn: speaker name, timestamp range, text (typography distinguishes the three)
+  - Each turn: speaker name, timestamp range, text
   - Active turn highlighted; list auto-scrolls during playback
   - Click timestamp to seek; click speaker name to assign/rename (when diarization data exists)
   - Transcript text is read-only
-- **Summary tab:** generate or regenerate an LLM summary; uses language and summarization prefs from Settings
+- **Notes tab:** multiple markdown notes per recording
+  - Dropdown to switch notes; **+** to create; **⋯** menu for rename/delete
+  - AI templates: meeting summary, action items, key decisions, follow-up email; or blank note
+  - MDXEditor with auto-save toggle (default on) or manual Save
+  - Meeting summary prompts use language and summarization prefs from Settings
 
 ### Document detail (`/files/doc_*`)
 
-- Markdown editor, preview, toolbar (save, copy, export `.md`, delete)
+- MDXEditor with title field, auto-save, copy, export `.md`, delete
 
 ### Settings
 
 - **You:** display name and linked speaker profile (`GET/PATCH /api/user-settings`)
-- **Language / AI summarization:** preferences persisted on the backend and applied to summary prompts
+- **Language / AI notes:** preferences persisted on the backend and applied to meeting summary prompts
 - **Speakers:** auto-label toggle (consent on first enable), rename/delete profiles
+- **LLM provider:** configurable provider credentials (stored locally in SQLite)
 - **Backend capabilities** (ASR, diarization): configured in `.env` — startup logs and `/api/health`
-- **LLM provider**: configurable in **Settings → LLM provider** or `.env`
 
 ## IDs
 
@@ -101,4 +105,8 @@ Transcript and document IDs use type prefixes (`transcript_`, `doc_`) in URLs an
 
 ## Stack
 
-TanStack Start (Router + SSR), Vite, Tailwind v4, shadcn/ui, TanStack Query, TanStack Table, motion, Web Audio API (recording waveform).
+TanStack Start (Router + SSR), Vite, Tailwind v4, shadcn/ui, TanStack Query, MDXEditor, motion, Web Audio API (recording waveform).
+
+## Source layout
+
+Active application code lives under `frontend/src/` (`@/*` path alias). The TanStack Start entrypoint, routes, components, hooks, and lib modules are all in `src/`.

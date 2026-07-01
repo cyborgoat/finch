@@ -47,8 +47,8 @@ LLM provider settings (API keys, base URL, model) are stored in SQLite via **Set
 | `routes_audio.py` | `POST /api/audio/upload`, `GET /api/audio/{id}/stream`, `GET/DELETE /api/audio/{id}` |
 | `routes_transcripts.py` | CRUD + `POST /api/transcripts` + `PATCH /api/transcripts/{id}/speakers` |
 | `routes_jobs.py` | `GET /api/jobs/{id}` |
-| `routes_ai_actions.py` | `POST /api/ai-actions` (transcript summary) |
-| `routes_documents.py` | Document CRUD |
+| `routes_ai_actions.py` | `POST /api/ai-actions`, `GET /api/ai-actions/templates` |
+| `routes_documents.py` | `GET/POST/PATCH/DELETE /api/documents` |
 | `routes_speaker_profiles.py` | Speaker profiles + speaker memory status/consent |
 | `routes_user_settings.py` | `GET/PATCH /api/user-settings` |
 | `routes_llm_settings.py` | `GET/PATCH /api/llm-settings` (local SQLite storage) |
@@ -93,7 +93,8 @@ LLM provider settings (API keys, base URL, model) are stored in SQLite via **Set
 | `llm/` | Provider adapters: OpenAI-compatible, Anthropic, factory, presets |
 | `llm_settings_service.py` | LLM provider settings in SQLite (`AppPreference`) |
 | `prompt_context.py` | User preference block injected into summary prompts |
-| `ai_action_service.py` | Transcript summary prompt + LLM call |
+| `ai_action_presets.py` | AI note template registry (meeting summary, action items, etc.) |
+| `ai_action_service.py` | AI note prompts + LLM dispatch |
 | `job_service.py` | Job lifecycle |
 
 ## `workers/`
@@ -112,7 +113,7 @@ Failed transcription jobs keep the transcript with `status=failed` and `errorMes
 
 ## `tests/`
 
-57 tests covering health, upload, transcripts, diarization, speaker memory, user settings, AI actions, LLM providers, DB migration, and startup diagnostics. Tests patch external services (ffmpeg, ASR, diarization, LLM) at test time.
+61 tests covering health, upload, transcripts, diarization, speaker memory, user settings, AI actions, documents, LLM providers, DB migration, and startup diagnostics. Tests patch external services (ffmpeg, ASR, diarization, LLM) at test time.
 
 ## `scripts/`
 

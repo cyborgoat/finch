@@ -65,11 +65,8 @@ function buildCrumbs(
       { label: "Files", to: "/files" },
       { label: recordTitle || "Untitled", to: "/files/$id", params: { id } },
     ]
-    if (tab === "summary") {
-      crumbs.push({ label: "Summary" })
-    }
-    if (tab === "ai") {
-      crumbs.push({ label: "AI" })
+    if (tab === "notes") {
+      crumbs.push({ label: "Notes" })
     }
     return crumbs
   }

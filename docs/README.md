@@ -1,6 +1,6 @@
 # Finch Documentation
 
-Finch is a local-first voice transcription app. Audio is transcribed on your machine; optional LLM summarization runs on transcript text only via a provider you configure in Settings.
+Finch is a local-first voice transcription app. Audio is transcribed on your machine; optional LLM note generation runs on transcript text only via a provider you configure in Settings.
 
 ## Guides
 
@@ -21,10 +21,10 @@ Finch is a local-first voice transcription app. Audio is transcribed on your mac
 ## Core model
 
 ```txt
-AudioAsset → Transcript (recording) → Summary document (optional)
+AudioAsset → Transcript (recording) → Document(s) / notes (optional)
 ```
 
-The transcript is the durable artifact. LLM-generated Markdown summaries are optional derivatives stored as documents linked to the source recording.
+The transcript is the durable artifact. LLM-generated and manual Markdown notes are optional derivatives stored as documents linked to the source recording.
 
 ## Frontend routes
 
@@ -32,11 +32,11 @@ The transcript is the durable artifact. LLM-generated Markdown summaries are opt
 |-------|---------|
 | `/` | Recent voice recordings |
 | `/files` | Full recordings library (title search) |
-| `/files/{id}` | Recording detail (Source / Summary) or document editor |
+| `/files/{id}` | Recording detail (Source / Notes) or standalone document editor |
 | `/upload`, `/record` | Create new recordings |
-| `/settings` | User profile, language, summarization prefs, LLM provider, speakers |
+| `/settings` | User profile, language, AI note prefs, LLM provider, speakers |
 
-Recording detail uses a **topbar** with breadcrumbs, a download menu (audio, transcript, summary `.md` when generated), and actions (rename, delete). The **Source** tab shows the audio player and a compact auto-scrolling transcript. The **Summary** tab generates an LLM overview using your Settings preferences.
+Recording detail uses a **topbar** with breadcrumbs, a download menu (audio, transcript `.txt`, active note `.md`), and actions (rename, delete). The **Source** tab shows the audio player and a compact auto-scrolling transcript. The **Notes** tab supports multiple markdown notes per recording (AI templates or blank), with a dropdown to switch notes, rename/delete actions, and MDXEditor.
 
 LLM provider credentials are configured in **Settings → LLM provider** and stored locally in SQLite — not in `.env`.
 
@@ -44,4 +44,4 @@ Recording and document IDs use type prefixes (`transcript_`, `doc_`) so routes c
 
 ## Privacy
 
-Audio stays on your machine for ASR and diarization. Summarization sends **transcript text** to your configured provider only when you explicitly generate a summary — never audio.
+Audio stays on your machine for ASR and diarization. Note generation sends **transcript text** to your configured provider only when you explicitly create or generate a note — never audio.

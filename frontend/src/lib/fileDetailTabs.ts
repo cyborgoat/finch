@@ -1,12 +1,15 @@
-export type FileDetailTab = "source" | "summary"
+export type FileDetailTab = "source" | "notes"
 
 export function parseFileDetailTab(value: unknown): FileDetailTab {
-  if (value === "summary" || value === "ai") return "summary"
+  if (value === "notes" || value === "summary" || value === "ai") return "notes"
   return "source"
 }
 
 export function fileDetailTabSearch(
   tab: FileDetailTab,
-): { tab: FileDetailTab } | Record<string, never> {
-  return tab === "source" ? {} : { tab }
+  noteId?: string | null,
+): { tab: FileDetailTab; noteId?: string } | Record<string, never> {
+  if (tab === "source") return {}
+  if (noteId) return { tab, noteId }
+  return { tab }
 }

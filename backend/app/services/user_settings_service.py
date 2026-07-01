@@ -16,6 +16,7 @@ DEFAULT_USER_SETTINGS: dict[str, Any] = {
     "summary_format": "paragraphs",
     "user_name": "",
     "user_speaker_profile_id": None,
+    "notes_auto_save": True,
 }
 
 

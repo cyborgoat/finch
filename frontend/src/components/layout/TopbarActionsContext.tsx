@@ -11,7 +11,8 @@ export type TopbarActions = {
   audioFilename?: string
   title: string
   transcriptText: string
-  summaryMarkdown?: string | null
+  activeNoteMarkdown?: string | null
+  activeNoteTitle?: string | null
   onRename: (title: string) => void | Promise<void>
   onDelete: () => void
   isRenaming?: boolean

@@ -73,6 +73,23 @@ export type UserSettings = {
   summaryFormat: "paragraphs" | "bullets"
   userName: string
   userSpeakerProfileId: string | null
+  notesAutoSave: boolean
+}
+
+export type NoteType =
+  | "note"
+  | "meeting_summary"
+  | "markdown_summary"
+  | "action_items"
+  | "key_decisions"
+  | "follow_up_email"
+  | string
+
+export type AiActionTemplate = {
+  id: string
+  title: string
+  description: string
+  docType: string
 }
 
 export type LlmProviderId = "openrouter" | "openai" | "anthropic" | "custom"
@@ -143,7 +160,7 @@ export type Document = {
   id: string
   transcriptId: string
   title: string
-  type: "markdown_summary" | string
+  type: NoteType
   markdown: string
   model: string
   promptVersion: string

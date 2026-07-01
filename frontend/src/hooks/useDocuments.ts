@@ -1,6 +1,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
+  createDocument,
   deleteDocument,
   getDocument,
   listDocuments,
@@ -31,6 +32,17 @@ export function useUpdateDocument(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] })
       queryClient.invalidateQueries({ queryKey: ["documents", "detail", id] })
+      queryClient.invalidateQueries({ queryKey: ["files"] })
+    },
+  })
+}
+
+export function useCreateDocument() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createDocument,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] })
       queryClient.invalidateQueries({ queryKey: ["files"] })
     },
   })

@@ -46,7 +46,7 @@ def test_ai_action_flow(mock_run, client, sample_wav_bytes):
     document_id = ai_job["resultId"]
 
     document = client.get(f"/api/documents/{document_id}").json()
-    assert document["type"] == "markdown_summary"
+    assert document["type"] == "meeting_summary"
     assert "Summary" in document["markdown"]
 
     patch_response = client.patch(

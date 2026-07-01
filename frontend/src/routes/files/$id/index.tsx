@@ -1,23 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Suspense, useState } from "react"
+import { Suspense } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { DocumentEditor } from "@/components/documents/DocumentEditor"
+import { MdxNoteEditor } from "@/components/documents/MdxNoteEditor"
 import { DocumentToolbar } from "@/components/documents/DocumentToolbar"
-import { MarkdownPreview } from "@/components/documents/MarkdownPreview"
 import { PageContainer } from "@/components/layout/PageContainer"
-import { Section } from "@/components/layout/Section"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { TextShimmer } from "@/components/motion-primitives/text-shimmer"
 import { TranscriptDetailLayout } from "@/components/transcripts/TranscriptDetailLayout"
 import { TranscriptPageAudio } from "@/components/transcripts/TranscriptPageAudio"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   useDeleteDocument,
   useDocument,
   useDocuments,
-  useUpdateDocument,
 } from "@/hooks/useDocuments"
 import { useTranscript } from "@/hooks/useTranscripts"
 import { useTranscriptEditor } from "@/hooks/useTranscriptEditor"
@@ -31,12 +27,22 @@ import type { Document, Transcript } from "@/lib/types"
 
 type FileSearch = {
   tab?: FileDetailTab
+  noteId?: string
 }
 
 export const Route = createFileRoute("/files/$id/")({
   validateSearch: (search: Record<string, unknown>): FileSearch => {
     const tab = parseFileDetailTab(search.tab)
-    return tab === "source" ? {} : { tab }
+    const noteId =
+      typeof search.noteId === "string" && search.noteId.trim()
+        ? search.noteId.trim()
+        : undefined
+
+    if (tab === "source") {
+      return noteId ? { noteId } : {}
+    }
+
+    return noteId ? { tab, noteId } : { tab }
   },
   loader: async ({ context, params }) => {
     const kind = resolveFileKind(params.id)
@@ -82,23 +88,10 @@ function TranscriptDetailEditor({ transcript }: { transcript: Transcript }) {
 
 function DocumentDetailEditor({ document }: { document: Document }) {
   const navigate = useNavigate()
-  const updateMutation = useUpdateDocument(document.id)
   const deleteMutation = useDeleteDocument()
 
-  const [title, setTitle] = useState(document.title)
-  const [markdown, setMarkdown] = useState(document.markdown)
-
-  const handleSave = async () => {
-    try {
-      await updateMutation.mutateAsync({ title, markdown })
-      toast.success("Document saved")
-    } catch {
-      toast.error("Failed to save")
-    }
-  }
-
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(markdown)
+    await navigator.clipboard.writeText(document.markdown)
     toast.success("Copied to clipboard")
   }
 
@@ -115,49 +108,12 @@ function DocumentDetailEditor({ document }: { document: Document }) {
   return (
     <BlurFade className="section-stack">
       <DocumentToolbar
-        onSave={() => void handleSave()}
         onCopy={() => void handleCopy()}
-        onExport={() => exportDocumentMd(title, markdown)}
+        onExport={() => exportDocumentMd(document.title, document.markdown)}
         onDelete={() => void handleDelete()}
-        isSaving={updateMutation.isPending}
         isDeleting={deleteMutation.isPending}
       />
-
-      <div className="hidden gap-6 lg:grid lg:grid-cols-2">
-        <DocumentEditor
-          title={title}
-          markdown={markdown}
-          onTitleChange={setTitle}
-          onMarkdownChange={setMarkdown}
-          disabled={updateMutation.isPending}
-        />
-        <Section title="Preview">
-          <MarkdownPreview markdown={markdown} />
-        </Section>
-      </div>
-
-      <Tabs defaultValue="edit" className="lg:hidden">
-        <TabsList variant="line" className="w-full justify-start border-b border-border pb-0">
-          <TabsTrigger value="edit" className="px-4 pb-3">
-            Edit
-          </TabsTrigger>
-          <TabsTrigger value="preview" className="px-4 pb-3">
-            Preview
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="edit" className="mt-4">
-          <DocumentEditor
-            title={title}
-            markdown={markdown}
-            onTitleChange={setTitle}
-            onMarkdownChange={setMarkdown}
-            disabled={updateMutation.isPending}
-          />
-        </TabsContent>
-        <TabsContent value="preview" className="mt-4">
-          <MarkdownPreview markdown={markdown} />
-        </TabsContent>
-      </Tabs>
+      <MdxNoteEditor document={document} />
     </BlurFade>
   )
 }

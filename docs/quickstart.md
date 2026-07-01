@@ -90,7 +90,7 @@ npm run dev
 Open http://localhost:3000 — **New** (Record / Upload), **Files**, **Settings**.
 
 - **Home** and **Files** list voice recordings only.
-- Open a recording for the **Source** (transcript), **Summary** (coming soon), and **AI** (actions + documents) tabs.
+- Open a recording for the **Source** (transcript) and **Notes** (AI templates + blank notes) tabs.
 - URLs use prefixed IDs: `/files/transcript_…` for recordings, `/files/doc_…` for documents.
 
 If you have an old local database from before the ID format change, delete `backend/finch.db` and restart the backend.
@@ -134,7 +134,7 @@ In the UI: **Settings → Speakers → Auto-label speaker names** (consent on fi
 
 See **[speaker-memory.md](speaker-memory.md)** for full setup.
 
-## 9. Transcript summarization
+## 9. AI notes
 
 Configure your LLM provider in the frontend: **Settings → LLM provider**.
 
@@ -147,7 +147,13 @@ Supported providers:
 
 Credentials are stored locally in the Finch SQLite database. The API never returns saved API keys — only an `apiKeyConfigured` flag.
 
-Run summarization from the **Summary** tab on a recording detail page (`/files/{id}?tab=summary`), or via `POST /api/ai-actions` with `"action": "markdown_summary"`. User language and summarization preferences from **Settings** are applied to prompts automatically.
+Create notes from the **Notes** tab on a recording detail page (`/files/{id}?tab=notes`), or via the API:
+
+- `GET /api/ai-actions/templates` — list AI note templates
+- `POST /api/ai-actions` — generate a note (`action`: `meeting_summary`, `action_items`, `key_decisions`, `follow_up_email`; legacy alias `markdown_summary` → `meeting_summary`)
+- `POST /api/documents` — create a blank manual note
+
+User language and summarization preferences from **Settings** are applied to meeting summary prompts automatically.
 
 ## 10. Tests
 

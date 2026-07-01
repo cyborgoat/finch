@@ -1,4 +1,5 @@
 import type {
+  AiActionTemplate,
   ApiError,
   AudioAsset,
   Document,
@@ -123,15 +124,46 @@ export async function createTranscriptSummary(input: {
   source?: "rawText" | "editedText"
   model?: string
 }): Promise<{ jobId: string; status: string }> {
+  return createAiAction({
+    transcriptId: input.transcriptId,
+    action: "meeting_summary",
+    source: input.source,
+    model: input.model,
+  })
+}
+
+export async function createAiAction(input: {
+  transcriptId: string
+  action: string
+  source?: "rawText" | "editedText"
+  model?: string
+}): Promise<{ jobId: string; status: string }> {
   return request("/api/ai-actions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       transcriptId: input.transcriptId,
-      action: "markdown_summary",
+      action: input.action,
       source: input.source ?? "editedText",
       model: input.model,
     }),
+  })
+}
+
+export async function listAiActionTemplates(): Promise<{ items: AiActionTemplate[] }> {
+  return request("/api/ai-actions/templates")
+}
+
+export async function createDocument(input: {
+  transcriptId: string
+  title?: string
+  markdown?: string
+  type?: string
+}): Promise<Document> {
+  return request("/api/documents", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
   })
 }
 
