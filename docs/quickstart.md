@@ -23,7 +23,7 @@ uv sync
 uv add torch qwen-asr
 ```
 
-Diarization and voiceprint profiles are off by default. Enable toggles in **Settings → Transcription** after starting the frontend, or set `DIARIZATION_ENABLED` / `SPEAKER_MEMORY_ENABLED` in `.env` as fallbacks. Set `HF_TOKEN` in `.env` when using diarization or voiceprints.
+Diarization and voiceprint profiles are off by default. Enable toggles in **Settings → Transcription** after starting the frontend, or set `DIARIZATION_ENABLED` / `VOICEPRINT_PROFILES_ENABLED` in `.env` as fallbacks. Set `HF_TOKEN` in `.env` when using diarization or voiceprints.
 
 ## 2. Run the backend
 

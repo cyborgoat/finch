@@ -124,17 +124,17 @@ export type TranscriptionSettings = {
   diarizationEnabled: boolean
   diarizationReady: boolean
   diarizationReason?: string | null
-  speakerMemoryEnabled: boolean
-  speakerMemoryReady: boolean
-  speakerMemoryReason?: string | null
-  speakerAutoLabelEnabled: boolean
+  voiceprintProfilesEnabled: boolean
+  voiceprintProfilesReady: boolean
+  voiceprintProfilesReason?: string | null
+  voiceprintAutoLabelEnabled: boolean
   source: "stored" | "unset"
 }
 
 export type UpdateTranscriptionSettings = {
   diarizationEnabled?: boolean
-  speakerMemoryEnabled?: boolean
-  speakerAutoLabelEnabled?: boolean
+  voiceprintProfilesEnabled?: boolean
+  voiceprintAutoLabelEnabled?: boolean
 }
 
 export type Recording = {

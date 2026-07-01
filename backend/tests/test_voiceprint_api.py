@@ -158,7 +158,7 @@ def test_update_recording_speakers_enroll_without_auto_label(
     client.post("/api/voiceprint-profiles/consent")
     client.patch(
         "/api/transcription-settings",
-        json={"speakerMemoryEnabled": True},
+        json={"voiceprintProfilesEnabled": True},
     )
 
     created_profile = VoiceprintProfile(id="profile_enroll", display_name="Robert")
@@ -189,19 +189,19 @@ def test_transcription_settings_stored_in_preferences(client, db_session):
     initial = client.get("/api/transcription-settings")
     assert initial.status_code == 200
     assert initial.json()["diarizationEnabled"] is False
-    assert initial.json()["speakerMemoryEnabled"] is False
+    assert initial.json()["voiceprintProfilesEnabled"] is False
 
     updated = client.patch(
         "/api/transcription-settings",
         json={
             "diarizationEnabled": True,
-            "speakerMemoryEnabled": True,
+            "voiceprintProfilesEnabled": True,
         },
     )
     assert updated.status_code == 200
     body = updated.json()
     assert body["diarizationEnabled"] is True
-    assert body["speakerMemoryEnabled"] is True
+    assert body["voiceprintProfilesEnabled"] is True
     assert body["source"] == "stored"
 
 
@@ -209,10 +209,10 @@ def test_enroll_voiceprint_profile_from_audio_sample(client, db_session, sample_
     from app.services.app_preference_service import AppPreferenceService
     from app.services.voiceprint_embedding_service import VoiceprintEmbeddingService
 
-    AppPreferenceService(db_session).record_speaker_memory_consent()
+    AppPreferenceService(db_session).record_voiceprint_profiles_consent()
     client.patch(
         "/api/transcription-settings",
-        json={"speakerMemoryEnabled": True},
+        json={"voiceprintProfilesEnabled": True},
     )
 
     with patch("app.services.audio_service.subprocess.run") as mock_run:
@@ -274,9 +274,9 @@ def test_get_voiceprint_profile_detail(client, db_session):
     assert body["relatedRecordings"] == []
 
 
-def test_health_includes_speaker_memory_flags(client):
+def test_health_includes_voiceprint_profiles_flags(client):
     response = client.get("/api/health")
     assert response.status_code == 200
     capabilities = response.json()["capabilities"]
-    assert "speakerMemoryEnabled" in capabilities
-    assert "speakerMemoryConsentGiven" in capabilities
+    assert "voiceprintProfilesEnabled" in capabilities
+    assert "voiceprintProfilesConsentGiven" in capabilities

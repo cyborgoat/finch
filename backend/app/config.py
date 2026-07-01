@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -43,7 +44,13 @@ class Settings(BaseSettings):
     diarization_max_segments: int = 0
     hf_token: str | None = None
 
-    speaker_memory_enabled: bool = False
+    voiceprint_profiles_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "VOICEPRINT_PROFILES_ENABLED",
+            "SPEAKER_MEMORY_ENABLED",
+        ),
+    )
     speaker_embedding_model_id: str = "pyannote/embedding"
     speaker_match_threshold: float = 0.65
     speaker_min_enroll_seconds: float = 2.0

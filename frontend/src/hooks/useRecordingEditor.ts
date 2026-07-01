@@ -26,7 +26,7 @@ export function useRecordingEditor(recording: Recording) {
   const queryClient = useQueryClient()
   const updateMutation = useUpdateRecording(recording.id)
   const deleteMutation = useDeleteRecording()
-  const { data: memoryStatus } = useVoiceprintProfilesStatus()
+  const { data: voiceprintProfilesStatus } = useVoiceprintProfilesStatus()
   const { data: profilesData } = useVoiceprintProfiles()
   const profiles = useMemo(
     () => profilesData?.items ?? [],
@@ -135,7 +135,7 @@ export function useRecordingEditor(recording: Recording) {
     text,
     segments,
     profiles,
-    memoryStatus,
+    voiceprintProfilesStatus,
     speakerSavePending,
     renamePending: updateMutation.isPending,
     deletePending: deleteMutation.isPending,

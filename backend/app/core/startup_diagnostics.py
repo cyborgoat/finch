@@ -33,14 +33,14 @@ class CapabilityStatus:
     llm_provider: str
     llm_configured: bool
     openrouter_configured: bool
-    speaker_memory_enabled: bool
-    speaker_memory_ready: bool
-    speaker_memory_reason: str | None
-    speaker_memory_consent_given: bool
+    voiceprint_profiles_enabled: bool
+    voiceprint_profiles_ready: bool
+    voiceprint_profiles_reason: str | None
+    voiceprint_profiles_consent_given: bool
 
 
 @dataclass(frozen=True)
-class SpeakerMemoryStatus:
+class VoiceprintProfilesStatus:
     ready: bool
     reason: str | None
 
@@ -72,7 +72,7 @@ def check_dependencies() -> list[DependencyStatus]:
         DependencyStatus(
             name="pyannote-audio",
             installed=_dependency_installed("pyannote.audio"),
-            required_for="speaker diarization and speaker memory",
+            required_for="speaker diarization and voiceprint profiles",
             install_hint="cd backend && uv add pyannote-audio",
         ),
         DependencyStatus(
@@ -147,18 +147,18 @@ def get_diarization_status(
     return diarization_ready, diarization_reason
 
 
-def get_speaker_memory_status_for_preferences(
+def get_voiceprint_profiles_status_for_preferences(
     *,
     diarization_enabled: bool,
-    speaker_memory_enabled: bool,
+    voiceprint_profiles_enabled: bool,
     hf_token: str | None,
     settings: Settings | None = None,
-) -> SpeakerMemoryStatus:
+) -> VoiceprintProfilesStatus:
     settings = settings or get_settings()
     pyannote_installed = _dependency_installed("pyannote.audio")
     reason: str | None = None
 
-    if not speaker_memory_enabled:
+    if not voiceprint_profiles_enabled:
         reason = "Voiceprint profiles are disabled in Settings."
     elif not diarization_enabled:
         reason = "Voiceprint profiles require speaker diarization to be enabled in Settings."
@@ -172,7 +172,7 @@ def get_speaker_memory_status_for_preferences(
         reason = "speechbrain is not installed (required for speaker embeddings)."
 
     ready = reason is None
-    return SpeakerMemoryStatus(ready=ready, reason=reason)
+    return VoiceprintProfilesStatus(ready=ready, reason=reason)
 
 
 def get_capability_status(
@@ -182,17 +182,17 @@ def get_capability_status(
     settings = settings or get_settings()
 
     diarization_enabled = settings.diarization_enabled
-    speaker_memory_enabled = settings.speaker_memory_enabled
+    voiceprint_profiles_enabled = settings.voiceprint_profiles_enabled
     hf_token = resolve_hf_token(settings)
-    speaker_auto_label = False
+    voiceprint_auto_label = False
 
     if session is not None:
         from app.services.transcription_settings_service import TranscriptionSettingsService
 
         transcription_settings = TranscriptionSettingsService(session, settings)
         diarization_enabled = transcription_settings.is_diarization_enabled()
-        speaker_memory_enabled = transcription_settings.is_speaker_memory_enabled()
-        speaker_auto_label = transcription_settings.is_speaker_auto_label_enabled()
+        voiceprint_profiles_enabled = transcription_settings.is_voiceprint_profiles_enabled()
+        voiceprint_auto_label = transcription_settings.is_voiceprint_auto_label_enabled()
         hf_token = transcription_settings.get_hf_token() or hf_token
 
     diarization_ready, diarization_reason = get_diarization_status(
@@ -200,9 +200,9 @@ def get_capability_status(
         hf_token=hf_token,
         settings=settings,
     )
-    memory_status = get_speaker_memory_status_for_preferences(
+    profiles_status = get_voiceprint_profiles_status_for_preferences(
         diarization_enabled=diarization_enabled,
-        speaker_memory_enabled=speaker_memory_enabled,
+        voiceprint_profiles_enabled=voiceprint_profiles_enabled,
         hf_token=hf_token,
         settings=settings,
     )
@@ -212,7 +212,7 @@ def get_capability_status(
     if session is not None:
         from app.services.app_preference_service import AppPreferenceService
 
-        consent_given = AppPreferenceService(session, settings).has_speaker_memory_consent()
+        consent_given = AppPreferenceService(session, settings).has_voiceprint_profiles_consent()
 
     return CapabilityStatus(
         diarization_enabled=diarization_enabled,
@@ -221,20 +221,20 @@ def get_capability_status(
         llm_provider=llm_provider,
         llm_configured=llm_configured,
         openrouter_configured=llm_configured and llm_provider == "openrouter",
-        speaker_memory_enabled=speaker_auto_label,
-        speaker_memory_ready=memory_status.ready and speaker_memory_enabled,
-        speaker_memory_reason=memory_status.reason,
-        speaker_memory_consent_given=consent_given,
+        voiceprint_profiles_enabled=voiceprint_auto_label,
+        voiceprint_profiles_ready=profiles_status.ready and voiceprint_profiles_enabled,
+        voiceprint_profiles_reason=profiles_status.reason,
+        voiceprint_profiles_consent_given=consent_given,
     )
 
 
-def get_speaker_memory_status(
+def get_voiceprint_profiles_status(
     session=None,
     settings: Settings | None = None,
-) -> SpeakerMemoryStatus:
+) -> VoiceprintProfilesStatus:
     settings = settings or get_settings()
     diarization_enabled = settings.diarization_enabled
-    speaker_memory_enabled = settings.speaker_memory_enabled
+    voiceprint_profiles_enabled = settings.voiceprint_profiles_enabled
     hf_token = resolve_hf_token(settings)
 
     if session is not None:
@@ -242,12 +242,12 @@ def get_speaker_memory_status(
 
         transcription_settings = TranscriptionSettingsService(session, settings)
         diarization_enabled = transcription_settings.is_diarization_enabled()
-        speaker_memory_enabled = transcription_settings.is_speaker_memory_enabled()
+        voiceprint_profiles_enabled = transcription_settings.is_voiceprint_profiles_enabled()
         hf_token = transcription_settings.get_hf_token() or hf_token
 
-    return get_speaker_memory_status_for_preferences(
+    return get_voiceprint_profiles_status_for_preferences(
         diarization_enabled=diarization_enabled,
-        speaker_memory_enabled=speaker_memory_enabled,
+        voiceprint_profiles_enabled=voiceprint_profiles_enabled,
         hf_token=hf_token,
         settings=settings,
     )
@@ -355,19 +355,19 @@ def log_startup_summary(settings: Settings | None = None) -> None:
                 _log_action("Install dependency: cd backend && uv add pyannote-audio")
 
         _log_section("Voiceprint profiles")
-        if not settings.speaker_memory_enabled:
+        if not settings.voiceprint_profiles_enabled:
             _log_bullet("Disabled — configure in Settings → Transcription in the app.")
             _log_action("Enable voiceprint profiles in Settings → Transcription.")
         else:
             _log_bullet(f"Enabled — embedding model: {settings.speaker_embedding_model_id}")
             _log_bullet(f"Match threshold: {settings.speaker_match_threshold}")
-            memory_status = get_speaker_memory_status(settings=settings)
-            if memory_status.ready:
+            profiles_status = get_voiceprint_profiles_status(settings=settings)
+            if profiles_status.ready:
                 _log_bullet("Status: READY — auto-match uses enrolled voiceprints when consent is given.")
             else:
                 _log_bullet("Status: NOT READY")
-                if memory_status.reason:
-                    _log_bullet(f"Reason: {memory_status.reason}")
+                if profiles_status.reason:
+                    _log_bullet(f"Reason: {profiles_status.reason}")
 
         _log_section("Transcript summarization (LLM)")
         provider = capabilities.llm_provider

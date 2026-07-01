@@ -12,6 +12,6 @@ def test_voiceprint_profile_requires_consent_for_enroll(db_session, test_setting
             display_name="Alex",
         )
     except AppError as exc:
-        assert exc.code == "SPEAKER_MEMORY_CONSENT_REQUIRED"
+        assert exc.code == "VOICEPRINT_PROFILES_CONSENT_REQUIRED"
     else:
         raise AssertionError("Expected consent error")

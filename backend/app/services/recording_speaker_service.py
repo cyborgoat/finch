@@ -47,15 +47,15 @@ class RecordingSpeakerService:
                 if not mapping.get("display_name", "").strip():
                     mapping["display_name"] = profile.display_name
             if mapping.get("enroll"):
-                if not self.transcription_settings.is_speaker_memory_enabled():
+                if not self.transcription_settings.is_voiceprint_profiles_enabled():
                     raise AppError(
-                        "SPEAKER_MEMORY_DISABLED",
+                        "VOICEPRINT_PROFILES_DISABLED",
                         "Voiceprint profiles are disabled. Enable them in Settings → Transcription.",
                         400,
                     )
-                if not self.preference_service.has_speaker_memory_consent():
+                if not self.preference_service.has_voiceprint_profiles_consent():
                     raise AppError(
-                        "SPEAKER_MEMORY_CONSENT_REQUIRED",
+                        "VOICEPRINT_PROFILES_CONSENT_REQUIRED",
                         "Voiceprint profile consent is required before saving voiceprint samples.",
                         400,
                     )

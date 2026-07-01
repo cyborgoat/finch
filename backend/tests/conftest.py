@@ -54,7 +54,7 @@ def test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
         normalized_audio_dir=str(normalized_dir),
         export_dir=str(export_dir),
         diarization_enabled=False,
-        speaker_memory_enabled=False,
+        voiceprint_profiles_enabled=False,
     )
 
     monkeypatch.setenv("DATABASE_URL", settings.database_url)
@@ -63,7 +63,7 @@ def test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.setenv("NORMALIZED_AUDIO_DIR", settings.normalized_audio_dir)
     monkeypatch.setenv("EXPORT_DIR", settings.export_dir)
     monkeypatch.setenv("DIARIZATION_ENABLED", "false")
-    monkeypatch.setenv("SPEAKER_MEMORY_ENABLED", "false")
+    monkeypatch.setenv("VOICEPRINT_PROFILES_ENABLED", "false")
     get_settings.cache_clear()
     database.reset_engine(settings.database_url)
     return settings

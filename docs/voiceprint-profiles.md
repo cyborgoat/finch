@@ -25,7 +25,7 @@ Voiceprint profiles are **optional**. Enable diarization and voiceprint storage 
 ## Prerequisites
 
 1. **Diarization enabled** — **Settings → Transcription** (or `DIARIZATION_ENABLED=true` in `.env` as fallback; see [diarization.md](diarization.md))
-2. **Voiceprint profiles enabled** — **Settings → Transcription** (or `SPEAKER_MEMORY_ENABLED=true` in `.env` as fallback)
+2. **Voiceprint profiles enabled** — **Settings → Transcription** (or `VOICEPRINT_PROFILES_ENABLED=true` in `.env` as fallback; legacy alias `SPEAKER_MEMORY_ENABLED`)
 3. **Auto-label enabled in UI** — **Settings → Voiceprint profiles → Auto-label speaker names** (consent required on first enable)
 4. **HF token** — `HF_TOKEN` in backend `.env` (required when diarization or voiceprints are enabled)
 
@@ -37,7 +37,7 @@ Voiceprint profiles are **optional**. Enable diarization and voiceprint storage 
 ```env
 HF_TOKEN=hf_...
 DIARIZATION_ENABLED=true
-SPEAKER_MEMORY_ENABLED=true
+VOICEPRINT_PROFILES_ENABLED=true
 ```
 
 3. Enable **Speaker diarization** and **Voiceprint profiles** in **Settings → Transcription** (toggles auto-save immediately).
@@ -160,7 +160,7 @@ When `enrollStartSec` / `enrollEndSec` are omitted, enrollment uses the longest 
 
 ## Debugging voiceprint matching
 
-1. Set `DEBUG_MODE=true` in `.env` or run `uv run dev-debug` from `backend/`.
+1. Set `DEBUG_MODE=true` in `.env` or run `DEBUG_MODE=true uv run uvicorn app.main:app --reload` from `backend/`.
 2. Transcribe a recording and watch backend logs for per-cluster scores and the auto-label gate flags.
 3. Check the recording API response for `matchConfidence` and `matchStatus` on each speaker segment.
 4. If all clusters show `Unknown Speaker`, inspect logged scores against `SPEAKER_MATCH_THRESHOLD` (default `0.65`).

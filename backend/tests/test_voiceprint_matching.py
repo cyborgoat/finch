@@ -91,10 +91,10 @@ def test_match_embedding_returns_none_without_profiles(db_session, test_settings
 
 
 def test_voiceprint_auto_label_gate_requires_all_flags():
-    speaker_memory_enabled = True
+    voiceprint_profiles_enabled = True
     auto_label_enabled = False
     consent_given = True
-    assert not (speaker_memory_enabled and auto_label_enabled and consent_given)
+    assert not (voiceprint_profiles_enabled and auto_label_enabled and consent_given)
 
     auto_label_enabled = True
-    assert speaker_memory_enabled and auto_label_enabled and consent_given
+    assert voiceprint_profiles_enabled and auto_label_enabled and consent_given

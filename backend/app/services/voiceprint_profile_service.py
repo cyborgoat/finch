@@ -103,7 +103,7 @@ class VoiceprintProfileService:
         for profile in self.session.exec(select(VoiceprintProfile)).all():
             self.session.delete(profile)
         self.session.commit()
-        AppPreferenceService(self.session, self.settings).clear_speaker_memory_preferences()
+        AppPreferenceService(self.session, self.settings).clear_voiceprint_profiles_preferences()
 
     def list_embeddings(self, profile_id: str | None = None) -> list[VoiceprintEmbedding]:
         statement = select(VoiceprintEmbedding)
@@ -161,9 +161,9 @@ class VoiceprintProfileService:
         from app.services.recording_service import RecordingService
 
         preference_service = AppPreferenceService(self.session, self.settings)
-        if not preference_service.has_speaker_memory_consent():
+        if not preference_service.has_voiceprint_profiles_consent():
             raise AppError(
-                "SPEAKER_MEMORY_CONSENT_REQUIRED",
+                "VOICEPRINT_PROFILES_CONSENT_REQUIRED",
                 "Voiceprint profile consent is required before saving voiceprint samples.",
                 400,
             )
@@ -242,17 +242,17 @@ class VoiceprintProfileService:
         from app.services.transcription_settings_service import TranscriptionSettingsService
 
         preference_service = AppPreferenceService(self.session, self.settings)
-        if not preference_service.has_speaker_memory_consent():
+        if not preference_service.has_voiceprint_profiles_consent():
             raise AppError(
-                "SPEAKER_MEMORY_CONSENT_REQUIRED",
+                "VOICEPRINT_PROFILES_CONSENT_REQUIRED",
                 "Voiceprint profile consent is required before saving voiceprint samples.",
                 400,
             )
 
         transcription_settings = TranscriptionSettingsService(self.session, self.settings)
-        if not transcription_settings.is_speaker_memory_enabled():
+        if not transcription_settings.is_voiceprint_profiles_enabled():
             raise AppError(
-                "SPEAKER_MEMORY_DISABLED",
+                "VOICEPRINT_PROFILES_DISABLED",
                 "Voiceprint profiles are disabled. Enable them in Settings → Transcription.",
                 400,
             )

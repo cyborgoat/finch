@@ -61,9 +61,9 @@ export async function getHealth(): Promise<{
     llmProvider?: string
     llmConfigured?: boolean
     openrouterConfigured: boolean
-    speakerMemoryReady?: boolean
-    speakerMemoryReason?: string | null
-    speakerMemoryConsentGiven?: boolean
+    voiceprintProfilesReady?: boolean
+    voiceprintProfilesReason?: string | null
+    voiceprintProfilesConsentGiven?: boolean
   }
 }> {
   return request("/api/health")

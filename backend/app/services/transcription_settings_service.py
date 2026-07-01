@@ -6,7 +6,7 @@ from sqlmodel import Session
 from app.config import Settings, get_settings
 from app.core.startup_diagnostics import (
     get_diarization_status,
-    get_speaker_memory_status_for_preferences,
+    get_voiceprint_profiles_status_for_preferences,
 )
 from app.services.diarization_service import resolve_hf_token
 from app.schemas.transcription_settings import (
@@ -27,17 +27,17 @@ class TranscriptionSettingsService:
     def get_settings(self) -> TranscriptionSettingsResponse:
         stored = self._load_raw()
         diarization_enabled = bool(stored.get("diarization_enabled"))
-        speaker_memory_enabled = bool(stored.get("speaker_memory_enabled"))
-        speaker_auto_label_enabled = self._resolve_auto_label_enabled(stored)
+        voiceprint_profiles_enabled = self._resolve_voiceprint_profiles_enabled(stored)
+        voiceprint_auto_label_enabled = self._resolve_voiceprint_auto_label_enabled(stored)
         hf_token = resolve_hf_token(self.settings)
 
         diarization_ready, diarization_reason = self._diarization_status(
             diarization_enabled,
             hf_token,
         )
-        memory_status = get_speaker_memory_status_for_preferences(
+        profiles_status = get_voiceprint_profiles_status_for_preferences(
             diarization_enabled=diarization_enabled,
-            speaker_memory_enabled=speaker_memory_enabled,
+            voiceprint_profiles_enabled=voiceprint_profiles_enabled,
             hf_token=hf_token,
             settings=self.settings,
         )
@@ -46,10 +46,10 @@ class TranscriptionSettingsService:
             diarization_enabled=diarization_enabled,
             diarization_ready=diarization_ready,
             diarization_reason=diarization_reason,
-            speaker_memory_enabled=speaker_memory_enabled,
-            speaker_memory_ready=memory_status.ready and speaker_memory_enabled,
-            speaker_memory_reason=memory_status.reason,
-            speaker_auto_label_enabled=speaker_auto_label_enabled,
+            voiceprint_profiles_enabled=voiceprint_profiles_enabled,
+            voiceprint_profiles_ready=profiles_status.ready and voiceprint_profiles_enabled,
+            voiceprint_profiles_reason=profiles_status.reason,
+            voiceprint_auto_label_enabled=voiceprint_auto_label_enabled,
             source="stored" if stored else "unset",
         )
 
@@ -63,13 +63,15 @@ class TranscriptionSettingsService:
         if "diarization_enabled" in patch:
             current["diarization_enabled"] = bool(patch["diarization_enabled"])
 
-        if "speaker_memory_enabled" in patch:
-            current["speaker_memory_enabled"] = bool(patch["speaker_memory_enabled"])
+        if "voiceprint_profiles_enabled" in patch:
+            current["voiceprint_profiles_enabled"] = bool(patch["voiceprint_profiles_enabled"])
+            current.pop("speaker_memory_enabled", None)
 
-        if "speaker_auto_label_enabled" in patch:
-            enabled = bool(patch["speaker_auto_label_enabled"])
-            current["speaker_auto_label_enabled"] = enabled
-            self.preferences.set_speaker_auto_label_enabled(enabled)
+        if "voiceprint_auto_label_enabled" in patch:
+            enabled = bool(patch["voiceprint_auto_label_enabled"])
+            current["voiceprint_auto_label_enabled"] = enabled
+            current.pop("speaker_auto_label_enabled", None)
+            self.preferences.set_voiceprint_auto_label_enabled(enabled)
 
         self._save_raw(current)
         return self.get_settings()
@@ -80,23 +82,32 @@ class TranscriptionSettingsService:
             return bool(stored.get("diarization_enabled"))
         return self.settings.diarization_enabled
 
-    def is_speaker_memory_enabled(self) -> bool:
+    def is_voiceprint_profiles_enabled(self) -> bool:
         stored = self._load_raw()
         if stored:
-            return bool(stored.get("speaker_memory_enabled"))
-        return self.settings.speaker_memory_enabled
+            return self._resolve_voiceprint_profiles_enabled(stored)
+        return self.settings.voiceprint_profiles_enabled
 
-    def is_speaker_auto_label_enabled(self) -> bool:
+    def is_voiceprint_auto_label_enabled(self) -> bool:
         stored = self._load_raw()
-        return self._resolve_auto_label_enabled(stored)
+        return self._resolve_voiceprint_auto_label_enabled(stored)
 
     def get_hf_token(self) -> str | None:
         return resolve_hf_token(self.settings)
 
-    def _resolve_auto_label_enabled(self, stored: dict[str, Any]) -> bool:
+    def _resolve_voiceprint_profiles_enabled(self, stored: dict[str, Any]) -> bool:
+        if "voiceprint_profiles_enabled" in stored:
+            return bool(stored["voiceprint_profiles_enabled"])
+        if "speaker_memory_enabled" in stored:
+            return bool(stored["speaker_memory_enabled"])
+        return self.settings.voiceprint_profiles_enabled
+
+    def _resolve_voiceprint_auto_label_enabled(self, stored: dict[str, Any]) -> bool:
+        if "voiceprint_auto_label_enabled" in stored:
+            return bool(stored["voiceprint_auto_label_enabled"])
         if "speaker_auto_label_enabled" in stored:
             return bool(stored["speaker_auto_label_enabled"])
-        return self.preferences.is_speaker_auto_label_enabled()
+        return self.preferences.is_voiceprint_auto_label_enabled()
 
     def _diarization_status(
         self,

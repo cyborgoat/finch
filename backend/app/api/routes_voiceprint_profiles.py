@@ -46,14 +46,14 @@ def _voiceprint_profiles_status(session: Session) -> VoiceprintProfilesStatusRes
     preference_service = AppPreferenceService(session, settings)
     profile_service = VoiceprintProfileService(session, settings)
     transcription = TranscriptionSettingsService(session, settings).get_settings()
-    consent_at = preference_service.get_speaker_memory_consent_at()
+    consent_at = preference_service.get_voiceprint_profiles_consent_at()
     return VoiceprintProfilesStatusResponse(
-        enabled=preference_service.is_speaker_auto_label_enabled(),
-        consent_given=preference_service.has_speaker_memory_consent(),
+        enabled=preference_service.is_voiceprint_auto_label_enabled(),
+        consent_given=preference_service.has_voiceprint_profiles_consent(),
         consent_at=consent_at,
         profile_count=profile_service.count_profiles(),
-        ready=transcription.speaker_memory_ready,
-        reason=transcription.speaker_memory_reason,
+        ready=transcription.voiceprint_profiles_ready,
+        reason=transcription.voiceprint_profiles_reason,
     )
 
 
@@ -137,7 +137,7 @@ def toggle_voiceprint_profiles(
     session: Session = Depends(get_session),
 ) -> VoiceprintProfilesStatusResponse:
     preference_service = AppPreferenceService(session)
-    preference_service.set_speaker_memory_enabled(payload.enabled)
+    preference_service.set_voiceprint_auto_label_enabled(payload.enabled)
     return _voiceprint_profiles_status(session)
 
 

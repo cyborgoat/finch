@@ -31,7 +31,7 @@ Loads settings from `backend/.env` and repo root `.env`.
 | `diarization_min_segment_seconds` | `0.3` | Drop merged segments shorter than this |
 | `diarization_merge_gap_seconds` | `0.5` | Merge same-speaker turns within this gap |
 | `diarization_max_segments` | `0` | Cap segments (`0` = unlimited) |
-| `speaker_memory_enabled` | `false` | Voiceprint profiles (fallback; prefer Settings → Transcription) |
+| `voiceprint_profiles_enabled` | `false` | Voiceprint profiles (fallback; prefer Settings → Transcription) |
 | `speaker_embedding_model_id` | `pyannote/embedding` | Voiceprint model |
 | `speaker_min_enroll_seconds` | `2.0` | Min speech for enrollment sample |
 | `speaker_match_threshold` | `0.75` | Cosine similarity threshold for auto-match |

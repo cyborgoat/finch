@@ -25,7 +25,7 @@ type RecordingDetailLayoutProps = {
   text: string
   segments: SpeakerSegment[]
   profiles: VoiceprintProfileSummary[]
-  memoryStatus?: VoiceprintProfilesStatus
+  voiceprintProfilesStatus?: VoiceprintProfilesStatus
   notes: NoteSummary[]
   llmReady?: boolean
   speakerSavePending: boolean
@@ -46,7 +46,7 @@ export function RecordingDetailLayout({
   text,
   segments,
   profiles,
-  memoryStatus,
+  voiceprintProfilesStatus,
   notes: noteSummaries,
   llmReady,
   speakerSavePending,
@@ -230,7 +230,7 @@ export function RecordingDetailLayout({
               text={text}
               segments={segments}
               profiles={profiles}
-              memoryStatus={memoryStatus}
+              voiceprintProfilesStatus={voiceprintProfilesStatus}
               currentPlaybackTime={playback.currentTime}
               onSeekToTime={playback.seekAndPlay}
               onSegmentSpeakerSave={onSegmentSpeakerSave}

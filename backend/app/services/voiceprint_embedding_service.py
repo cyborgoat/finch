@@ -60,7 +60,7 @@ class VoiceprintEmbeddingService:
             raise AppError(
                 "SPEAKER_EMBEDDING_MODEL_LOAD_FAILED",
                 (
-                    "pyannote-audio is required for speaker memory. "
+                    "pyannote-audio is required for voiceprint profiles. "
                     "Install with: uv add pyannote-audio"
                 ),
                 500,

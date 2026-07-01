@@ -77,7 +77,7 @@ function RecordingDetailEditor({ recording }: { recording: Recording }) {
       text={editor.text}
       segments={editor.segments}
       profiles={editor.profiles}
-      memoryStatus={editor.memoryStatus}
+      voiceprintProfilesStatus={editor.voiceprintProfilesStatus}
       notes={notesData?.items ?? []}
       llmReady={llmReady}
       speakerSavePending={editor.speakerSavePending}

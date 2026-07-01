@@ -35,7 +35,7 @@ type SpeakerTurnDialogProps = {
   segment: SpeakerSegment
   clusterId: string
   profiles: VoiceprintProfileSummary[]
-  memoryStatus?: VoiceprintProfilesStatus
+  voiceprintProfilesStatus?: VoiceprintProfilesStatus
   isPending?: boolean
   onSave: (payload: SpeakerSavePayload) => Promise<void>
 }
@@ -46,7 +46,7 @@ export function SpeakerTurnDialog({
   segment,
   clusterId,
   profiles,
-  memoryStatus,
+  voiceprintProfilesStatus,
   isPending,
   onSave,
 }: SpeakerTurnDialogProps) {
@@ -83,9 +83,9 @@ export function SpeakerTurnDialog({
 
   const selectedProfile = profiles.find((item) => item.id === profileId)
   const useExisting = profileId !== "__new__" && Boolean(selectedProfile)
-  const memoryReady = memoryStatus?.ready ?? false
-  const hasConsent = memoryStatus?.consentGiven ?? false
-  const canEnroll = memoryReady && hasConsent
+  const voiceprintProfilesReady = voiceprintProfilesStatus?.ready ?? false
+  const hasConsent = voiceprintProfilesStatus?.consentGiven ?? false
+  const canEnroll = voiceprintProfilesReady && hasConsent
   const consentBusy = consentMutation.isPending || isPending
 
   const handleProfileChange = (value: string | null) => {
@@ -119,7 +119,7 @@ export function SpeakerTurnDialog({
     const payload = buildPayload()
     if (!payload) return
 
-    if (memoryReady && !hasConsent) {
+    if (voiceprintProfilesReady && !hasConsent) {
       setPendingSave({ ...payload, enroll: true })
       setConsentOpen(true)
       return
@@ -132,7 +132,7 @@ export function SpeakerTurnDialog({
     if (!pendingSave) return
     try {
       await consentMutation.mutateAsync()
-      await updateTranscriptionSettings({ speakerMemoryEnabled: true })
+      await updateTranscriptionSettings({ voiceprintProfilesEnabled: true })
       await performSave(pendingSave)
       setPendingSave(null)
       setConsentOpen(false)
@@ -192,15 +192,15 @@ export function SpeakerTurnDialog({
 
             {canEnroll ? (
               <p className="text-xs leading-relaxed text-muted-foreground">
-                {t("recording.memoryReadyHint")}
+                {t("recording.voiceprintProfilesReadyHint")}
               </p>
-            ) : memoryReady ? (
+            ) : voiceprintProfilesReady ? (
               <p className="text-xs leading-relaxed text-muted-foreground">
-                {t("recording.memoryConsentHint")}
+                {t("recording.voiceprintProfilesConsentHint")}
               </p>
             ) : (
               <p className="text-xs leading-relaxed text-muted-foreground">
-                {t("recording.memoryDisabledHint")}
+                {t("recording.voiceprintProfilesDisabledHint")}
               </p>
             )}
           </div>

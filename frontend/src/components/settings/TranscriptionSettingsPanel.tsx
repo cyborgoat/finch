@@ -63,21 +63,21 @@ export function TranscriptionSettingsPanel({
       </SettingsRow>
 
       <SettingsRow
-        label={t("settings.speakerMemoryFeatureLabel")}
+        label={t("settings.voiceprintProfilesFeatureLabel")}
         description={
-          settings.speakerMemoryReady || !settings.speakerMemoryEnabled
-            ? t("settings.speakerMemoryFeatureReadyDescription")
-            : (settings.speakerMemoryReason ?? t("settings.speakerMemoryFeatureNotReady"))
+          settings.voiceprintProfilesReady || !settings.voiceprintProfilesEnabled
+            ? t("settings.voiceprintProfilesFeatureReadyDescription")
+            : (settings.voiceprintProfilesReason ?? t("settings.voiceprintProfilesFeatureNotReady"))
         }
       >
         <div className="flex justify-end">
           <Switch
-            checked={settings.speakerMemoryEnabled}
+            checked={settings.voiceprintProfilesEnabled}
             onCheckedChange={(checked) => {
-              void persist({ speakerMemoryEnabled: checked })
+              void persist({ voiceprintProfilesEnabled: checked })
             }}
             disabled={busy}
-            aria-label={t("settings.speakerMemoryFeatureAriaLabel")}
+            aria-label={t("settings.voiceprintProfilesFeatureAriaLabel")}
           />
         </div>
       </SettingsRow>

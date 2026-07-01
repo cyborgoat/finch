@@ -32,9 +32,9 @@ def health(session: Session = Depends(get_session)) -> dict:
             "llmProvider": capabilities.llm_provider,
             "llmConfigured": capabilities.llm_configured,
             "openrouterConfigured": capabilities.openrouter_configured,
-            "speakerMemoryEnabled": capabilities.speaker_memory_enabled,
-            "speakerMemoryReady": capabilities.speaker_memory_ready,
-            "speakerMemoryReason": capabilities.speaker_memory_reason,
-            "speakerMemoryConsentGiven": capabilities.speaker_memory_consent_given,
+            "voiceprintProfilesEnabled": capabilities.voiceprint_profiles_enabled,
+            "voiceprintProfilesReady": capabilities.voiceprint_profiles_ready,
+            "voiceprintProfilesReason": capabilities.voiceprint_profiles_reason,
+            "voiceprintProfilesConsentGiven": capabilities.voiceprint_profiles_consent_given,
         },
     }

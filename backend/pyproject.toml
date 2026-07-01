@@ -43,6 +43,3 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
-
-[tool.uv.scripts]
-dev-debug = { cmd = "uvicorn app.main:app --reload", env = { DEBUG_MODE = "true" } }

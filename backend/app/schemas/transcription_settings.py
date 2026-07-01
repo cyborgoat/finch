@@ -9,14 +9,14 @@ class TranscriptionSettingsResponse(CamelModel):
     diarization_enabled: bool
     diarization_ready: bool
     diarization_reason: str | None = None
-    speaker_memory_enabled: bool
-    speaker_memory_ready: bool
-    speaker_memory_reason: str | None = None
-    speaker_auto_label_enabled: bool
+    voiceprint_profiles_enabled: bool
+    voiceprint_profiles_ready: bool
+    voiceprint_profiles_reason: str | None = None
+    voiceprint_auto_label_enabled: bool
     source: TranscriptionSettingsSource
 
 
 class UpdateTranscriptionSettingsRequest(CamelModel):
     diarization_enabled: bool | None = None
-    speaker_memory_enabled: bool | None = None
-    speaker_auto_label_enabled: bool | None = None
+    voiceprint_profiles_enabled: bool | None = None
+    voiceprint_auto_label_enabled: bool | None = None

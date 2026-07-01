@@ -12,7 +12,7 @@ type FullTranscriptPanelProps = {
   text: string
   segments?: SpeakerSegment[]
   profiles?: VoiceprintProfileSummary[]
-  memoryStatus?: VoiceprintProfilesStatus
+  voiceprintProfilesStatus?: VoiceprintProfilesStatus
   currentPlaybackTime?: number
   onSeekToTime?: (seconds: number) => void
   onSegmentSpeakerSave?: (
@@ -33,7 +33,7 @@ export function FullTranscriptPanel({
   text,
   segments = [],
   profiles = [],
-  memoryStatus,
+  voiceprintProfilesStatus,
   currentPlaybackTime = 0,
   onSeekToTime,
   onSegmentSpeakerSave,
@@ -152,7 +152,7 @@ export function FullTranscriptPanel({
           segment={editingSegment}
           clusterId={editingClusterId}
           profiles={profiles}
-          memoryStatus={memoryStatus}
+          voiceprintProfilesStatus={voiceprintProfilesStatus}
           isPending={speakerSavePending}
           onSave={(payload) =>
             onSegmentSpeakerSave(editingClusterId, editingSegment, payload)

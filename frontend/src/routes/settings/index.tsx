@@ -56,7 +56,7 @@ export const Route = createFileRoute("/settings/")({
 function SettingsPage() {
   const { t } = useTranslation()
   const { data: profilesData } = useVoiceprintProfiles()
-  const { data: memoryStatus } = useVoiceprintProfilesStatus()
+  const { data: voiceprintProfilesStatus } = useVoiceprintProfilesStatus()
   const { settings: transcriptionSettings } = useTranscriptionSettings()
   const deleteProfile = useDeleteVoiceprintProfile()
   const updateProfile = useUpdateVoiceprintProfile()
@@ -67,12 +67,12 @@ function SettingsPage() {
   const [consentPurpose, setConsentPurpose] = useState<ConsentPurpose>(null)
   const [addProfileOpen, setAddProfileOpen] = useState(false)
 
-  const autoLabelEnabled = memoryStatus?.enabled ?? false
+  const autoLabelEnabled = voiceprintProfilesStatus?.enabled ?? false
   const autoLabelReady =
-    (transcriptionSettings?.speakerMemoryEnabled ?? false) &&
-    (transcriptionSettings?.speakerMemoryReady ?? false)
+    (transcriptionSettings?.voiceprintProfilesEnabled ?? false) &&
+    (transcriptionSettings?.voiceprintProfilesReady ?? false)
   const voiceprintNotReadyReason =
-    memoryStatus?.reason ?? transcriptionSettings?.speakerMemoryReason ?? null
+    voiceprintProfilesStatus?.reason ?? transcriptionSettings?.voiceprintProfilesReason ?? null
   const togglePending = toggleMemory.isPending || consentMutation.isPending
   const settingsBusy = !ready || isUpdating
 
@@ -108,7 +108,7 @@ function SettingsPage() {
       return
     }
 
-    if (!memoryStatus?.consentGiven) {
+    if (!voiceprintProfilesStatus?.consentGiven) {
       requestConsent("auto-label")
       return
     }
@@ -125,7 +125,7 @@ function SettingsPage() {
     const purpose = consentPurpose
     try {
       await consentMutation.mutateAsync()
-      await updateTranscriptionSettings({ speakerMemoryEnabled: true })
+      await updateTranscriptionSettings({ voiceprintProfilesEnabled: true })
       if (purpose === "auto-label" || purpose === "enrollment") {
         await toggleMemory.mutateAsync(true)
         toast.success(
@@ -151,7 +151,7 @@ function SettingsPage() {
           disabled={settingsBusy}
           voiceprintReady={autoLabelReady}
           voiceprintNotReadyReason={voiceprintNotReadyReason}
-          voiceprintConsentGiven={memoryStatus?.consentGiven ?? false}
+          voiceprintConsentGiven={voiceprintProfilesStatus?.consentGiven ?? false}
           onVoiceprintConsentRequired={() => requestConsent("enrollment")}
           onUpdate={savePreference}
         />
@@ -370,7 +370,7 @@ function SettingsPage() {
           onOpenChange={setAddProfileOpen}
           ready={autoLabelReady}
           notReadyReason={voiceprintNotReadyReason}
-          consentGiven={memoryStatus?.consentGiven ?? false}
+          consentGiven={voiceprintProfilesStatus?.consentGiven ?? false}
           disabled={settingsBusy || togglePending}
           defaultDisplayName={preferences.userName}
           uiLanguage={preferences.uiLanguage}

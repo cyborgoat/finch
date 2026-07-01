@@ -79,7 +79,7 @@ cd backend && uv run python scripts/validate_diarization.py
 |----------|---------|
 | `HF_TOKEN` | Hugging Face token for pyannote diarization and voiceprint embeddings (backend `.env` only) |
 | `DIARIZATION_ENABLED` | Fallback for speaker diarization toggle (prefer **Settings → Transcription**) |
-| `SPEAKER_MEMORY_ENABLED` | Fallback for voiceprint profiles toggle (prefer **Settings → Transcription**) |
+| `VOICEPRINT_PROFILES_ENABLED` | Fallback for voiceprint profiles toggle (prefer **Settings → Transcription**). `SPEAKER_MEMORY_ENABLED` is still accepted as a legacy alias. |
 | `SPEAKER_MATCH_THRESHOLD` | Auto-match similarity threshold (default `0.65`) |
 
 Diarization and voiceprint **toggles** are configured in **Settings → Transcription** and stored locally in SQLite. The Hugging Face token is **not** in Settings — set `HF_TOKEN` in `.env`.

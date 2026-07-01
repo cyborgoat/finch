@@ -139,22 +139,22 @@ def _transcribe_with_diarization(
     from app.services.transcription_settings_service import TranscriptionSettingsService
 
     transcription_settings = TranscriptionSettingsService(session, settings)
-    speaker_memory_enabled = transcription_settings.is_speaker_memory_enabled()
-    auto_label_enabled = transcription_settings.is_speaker_auto_label_enabled()
-    consent_given = preference_service.has_speaker_memory_consent()
-    speaker_memory_active = (
-        speaker_memory_enabled and auto_label_enabled and consent_given
+    voiceprint_profiles_enabled = transcription_settings.is_voiceprint_profiles_enabled()
+    voiceprint_auto_label_enabled = transcription_settings.is_voiceprint_auto_label_enabled()
+    consent_given = preference_service.has_voiceprint_profiles_consent()
+    voiceprint_profiles_active = (
+        voiceprint_profiles_enabled and voiceprint_auto_label_enabled and consent_given
     )
     logger.debug(
-        "Voiceprint auto-label gate: active=%s memory_enabled=%s auto_label=%s consent=%s diarization_path=%s clusters=%d",
-        speaker_memory_active,
-        speaker_memory_enabled,
-        auto_label_enabled,
+        "Voiceprint auto-label gate: active=%s profiles_enabled=%s auto_label=%s consent=%s diarization_path=%s clusters=%d",
+        voiceprint_profiles_active,
+        voiceprint_profiles_enabled,
+        voiceprint_auto_label_enabled,
         consent_given,
         diarization_path,
         len(merged_turns),
     )
-    if speaker_memory_active:
+    if voiceprint_profiles_active:
         job_service.update_job(job, progress=0.27, stage="running_voiceprint_matching")
         try:
             embedding_service = VoiceprintEmbeddingService(
