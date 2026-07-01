@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -6,6 +6,7 @@ from app.core.errors import AppError
 from app.models.transcript import Transcript
 from app.schemas.user_settings import UserSettingsResponse
 from app.services.ai_action_service import AiActionService
+from app.services.diarization_service import SpeakerSegment, speaker_segments_to_json
 from tests.support.fakes import FAKE_LLM_MARKDOWN
 
 
@@ -112,3 +113,88 @@ def test_run_action_supports_legacy_markdown_summary_alias():
     )
 
     assert doc_type == "meeting_summary"
+
+
+def test_resolve_transcript_text_uses_voice_profile_names():
+    session = MagicMock()
+    service = AiActionService(session)
+
+    segments = [
+        SpeakerSegment(
+            speaker="Speaker 1",
+            start_sec=0.0,
+            end_sec=2.0,
+            text="Hello everyone.",
+            cluster_id="SPEAKER_00",
+            speaker_profile_id="speaker_profile12345678",
+        ),
+        SpeakerSegment(
+            speaker="Speaker 2",
+            start_sec=2.0,
+            end_sec=4.0,
+            text="Thanks for joining.",
+            cluster_id="SPEAKER_01",
+        ),
+    ]
+    transcript = Transcript(
+        id="transcript_test12345678",
+        audio_asset_id="audio_test1234567890",
+        title="Team sync",
+        raw_text="Speaker 1: Hello everyone.\n\nSpeaker 2: Thanks for joining.",
+        speaker_segments=speaker_segments_to_json(segments),
+        status="draft",
+    )
+
+    profile = MagicMock()
+    profile.display_name = "Robert"
+
+    with patch.object(
+        service,
+        "_load_profile_display_names",
+        return_value={"speaker_profile12345678": "Robert"},
+    ):
+        text = service.resolve_transcript_text(transcript, "editedText")
+
+    assert text == "Robert: Hello everyone.\n\nSpeaker 2: Thanks for joining."
+
+
+def test_run_action_uses_profile_names_in_prompt():
+    session = MagicMock()
+    service = AiActionService(session)
+
+    segments = [
+        SpeakerSegment(
+            speaker="Speaker 1",
+            start_sec=0.0,
+            end_sec=2.0,
+            text="We discussed the roadmap.",
+            cluster_id="SPEAKER_00",
+            speaker_profile_id="speaker_profile12345678",
+        ),
+    ]
+    transcript = Transcript(
+        id="transcript_test12345678",
+        audio_asset_id="audio_test1234567890",
+        title="Team sync",
+        raw_text="Speaker 1: We discussed the roadmap.",
+        speaker_segments=speaker_segments_to_json(segments),
+        status="draft",
+    )
+
+    mock_llm = MagicMock(return_value=FAKE_LLM_MARKDOWN)
+    service.llm_service.chat_completion = mock_llm
+
+    with patch.object(
+        service,
+        "_load_profile_display_names",
+        return_value={"speaker_profile12345678": "Robert"},
+    ):
+        service.run_action(
+            transcript,
+            action="meeting_summary",
+            source="editedText",
+        )
+
+    prompt = mock_llm.call_args.args[0][0]["content"]
+    assert "Robert: We discussed the roadmap." in prompt
+    assert "Speaker 1:" not in prompt
