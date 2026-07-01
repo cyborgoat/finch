@@ -14,6 +14,35 @@
     "new": "新建",
     "settingsLlmProvider": "设置 → LLM 提供商"
   },
+  "footer": {
+    "description": "本地优先的语音转写与笔记。在您的设备上完成转写、整理与摘要，数据留在本地。",
+    "copyright": "© {{year}} Finch。保留所有权利。",
+    "version": "v{{version}}",
+    "localFirstBadge": "在您的设备本地运行",
+    "sections": {
+      "product": "产品",
+      "resources": "资源",
+      "legal": "法律",
+      "contact": "联系"
+    },
+    "links": {
+      "documentation": "文档",
+      "quickstart": "快速入门",
+      "changelog": "更新日志",
+      "privacy": "隐私政策",
+      "terms": "服务条款",
+      "licenses": "开源许可"
+    },
+    "contact": {
+      "supportEmail": "支持邮箱",
+      "reportIssue": "反馈问题"
+    },
+    "social": {
+      "github": "Finch GitHub",
+      "email": "邮件联系",
+      "community": "社区论坛"
+    }
+  },
   "common": {
     "cancel": "取消",
     "save": "保存",
@@ -277,6 +306,7 @@
     "recordMyVoiceprintDescription": "朗读示例段落，以创建或更新关联到您的声纹。",
     "savedVoiceprintsLabel": "已保存档案",
     "savedVoiceprintsDescription": "您和其他说话人的声纹档案。您的档案在「关于您」中管理。",
+    "savedVoiceprintsAriaLabel": "展开或收起已保存档案",
     "addVoiceprintProfile": "添加档案",
     "savedProfilesCount": "已保存 {{count}} 个",
     "llmTitle": "LLM 提供商",

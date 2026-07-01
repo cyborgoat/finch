@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { ChevronDown, Plus } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
@@ -38,6 +39,7 @@ import {
 import { transcriptionSettingsQuery } from "@/lib/queries/transcriptionSettings"
 import { llmSettingsQuery } from "@/lib/queries/llmSettings"
 import { userSettingsQuery } from "@/lib/queries/userSettings"
+import { cn } from "@/lib/utils"
 
 type ConsentPurpose = "auto-label" | "enrollment" | null
 
@@ -66,6 +68,7 @@ function SettingsPage() {
   const [consentOpen, setConsentOpen] = useState(false)
   const [consentPurpose, setConsentPurpose] = useState<ConsentPurpose>(null)
   const [addProfileOpen, setAddProfileOpen] = useState(false)
+  const [savedProfilesExpanded, setSavedProfilesExpanded] = useState(false)
 
   const autoLabelEnabled = voiceprintProfilesStatus?.enabled ?? false
   const autoLabelReady =
@@ -320,39 +323,68 @@ function SettingsPage() {
               />
             </div>
           </SettingsRow>
-          <SettingsRow
-            label={t("settings.savedVoiceprintsLabel")}
-            description={t("settings.savedVoiceprintsDescription")}
-          >
-            <div className="flex w-full justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={settingsBusy || togglePending || !autoLabelReady}
-                onClick={() => setAddProfileOpen(true)}
-              >
-                {t("settings.addVoiceprintProfile")}
-              </Button>
-            </div>
-          </SettingsRow>
-          <VoiceprintProfileManager
-            embedded
-            profiles={profiles}
-            userVoiceprintProfileId={preferences.userVoiceprintProfileId}
-            isDeleting={deleteProfile.isPending}
-            isRenaming={updateProfile.isPending}
-            onRename={(voiceprintProfileId, displayName) => {
-              void updateProfile.mutateAsync({ voiceprintProfileId, displayName }).then(() => {
-                toast.success(t("toasts.speakerRenamed", { name: displayName }))
-              })
-            }}
-            onDelete={(voiceprintProfileId, displayName) => {
-              void deleteProfile.mutateAsync(voiceprintProfileId).then(() => {
-                toast.success(t("toasts.speakerRemoved", { name: displayName }))
-              })
-            }}
-          />
+          <div className="border-b border-border last:border-b-0">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+              aria-expanded={savedProfilesExpanded}
+              aria-label={t("settings.savedVoiceprintsAriaLabel")}
+              onClick={() => setSavedProfilesExpanded((expanded) => !expanded)}
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  {t("settings.savedVoiceprintsLabel")}
+                  {profiles.length > 0 ? (
+                    <span className="ml-1.5 font-normal text-muted-foreground">
+                      ({profiles.length})
+                    </span>
+                  ) : null}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t("settings.savedVoiceprintsDescription")}
+                </p>
+              </div>
+              <ChevronDown
+                className={cn(
+                  "size-4 shrink-0 text-muted-foreground transition-transform",
+                  savedProfilesExpanded && "rotate-180",
+                )}
+              />
+            </button>
+            {savedProfilesExpanded ? (
+              <div className="border-t border-border">
+                <VoiceprintProfileManager
+                  embedded
+                  profiles={profiles}
+                  userVoiceprintProfileId={preferences.userVoiceprintProfileId}
+                  isDeleting={deleteProfile.isPending}
+                  isRenaming={updateProfile.isPending}
+                  onRename={(voiceprintProfileId, displayName) => {
+                    void updateProfile.mutateAsync({ voiceprintProfileId, displayName }).then(() => {
+                      toast.success(t("toasts.speakerRenamed", { name: displayName }))
+                    })
+                  }}
+                  onDelete={(voiceprintProfileId, displayName) => {
+                    void deleteProfile.mutateAsync(voiceprintProfileId).then(() => {
+                      toast.success(t("toasts.speakerRemoved", { name: displayName }))
+                    })
+                  }}
+                />
+                <div className="flex justify-center border-t border-border py-3 pl-8 pr-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={settingsBusy || togglePending || !autoLabelReady}
+                    onClick={() => setAddProfileOpen(true)}
+                  >
+                    <Plus className="size-4" />
+                    {t("settings.addVoiceprintProfile")}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </SettingsSection>
 
         <VoiceprintConsentDialog

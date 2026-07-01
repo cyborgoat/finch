@@ -28,7 +28,13 @@ export function PageContainer({
     )
 
   return (
-    <div className={cn("mx-auto w-full page-stack", sizeClasses[size], className)}>
+    <div
+      className={cn(
+        "page-stack mx-auto flex min-h-full w-full flex-1 flex-col",
+        sizeClasses[size],
+        className,
+      )}
+    >
       {inner}
     </div>
   )

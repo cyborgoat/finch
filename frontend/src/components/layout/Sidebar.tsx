@@ -25,7 +25,7 @@ export function Sidebar() {
   ] as const
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-card/50 p-4">
+    <aside className="flex min-h-dvh w-56 shrink-0 flex-col border-r border-border bg-card/50 p-4">
       <Link
         to="/"
         className="mb-8 flex items-center gap-3 rounded-md px-2 py-1 transition-colors hover:bg-muted/60"

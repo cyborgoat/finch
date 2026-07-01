@@ -84,7 +84,13 @@ function SpeakerRow({
 
   return (
     <>
-      <div className={embedded ? "flex items-center justify-between gap-3 py-2" : "flex items-center justify-between gap-3 px-4 py-3"}>
+      <div
+        className={
+          embedded
+            ? "flex items-center justify-between gap-3 py-2 pl-8 pr-4"
+            : "flex items-center justify-between gap-3 px-4 py-3"
+        }
+      >
         <div className="flex min-w-0 items-center gap-2">
           <p className="min-w-0 truncate text-sm font-medium text-foreground">
             {profile.displayName}
@@ -201,7 +207,7 @@ export function VoiceprintProfileManager({
       <EmptyState
         title={t("voiceprints.emptyTitle")}
         description={t("voiceprints.emptyDescription")}
-        className="py-8"
+        className={embedded ? "py-8 pl-8 pr-4" : "py-8"}
       />
     )
   }

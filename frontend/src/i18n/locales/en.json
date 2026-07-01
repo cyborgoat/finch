@@ -14,6 +14,35 @@
     "new": "New",
     "settingsLlmProvider": "Settings → LLM provider"
   },
+  "footer": {
+    "description": "Local-first voice transcription and notes. Transcribe, organize, and summarize recordings entirely on your machine.",
+    "copyright": "© {{year}} Finch. All rights reserved.",
+    "version": "v{{version}}",
+    "localFirstBadge": "Runs locally on your device",
+    "sections": {
+      "product": "Product",
+      "resources": "Resources",
+      "legal": "Legal",
+      "contact": "Contact"
+    },
+    "links": {
+      "documentation": "Documentation",
+      "quickstart": "Quick start",
+      "changelog": "Changelog",
+      "privacy": "Privacy policy",
+      "terms": "Terms of service",
+      "licenses": "Open-source licenses"
+    },
+    "contact": {
+      "supportEmail": "Support",
+      "reportIssue": "Report an issue"
+    },
+    "social": {
+      "github": "Finch on GitHub",
+      "email": "Email support",
+      "community": "Community forum"
+    }
+  },
   "common": {
     "cancel": "Cancel",
     "save": "Save",
@@ -277,6 +306,7 @@
     "recordMyVoiceprintDescription": "Read the passage aloud to create or update the voiceprint linked to you.",
     "savedVoiceprintsLabel": "Saved profiles",
     "savedVoiceprintsDescription": "Voiceprints for you and other speakers. Yours is managed in About you.",
+    "savedVoiceprintsAriaLabel": "Show or hide saved profiles",
     "addVoiceprintProfile": "Add profile",
     "savedProfilesCount": "{{count}} saved",
     "llmTitle": "LLM provider",
