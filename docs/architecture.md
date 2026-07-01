@@ -1,9 +1,9 @@
 # Architecture
 
-Finch follows a **transcript-first** design: audio becomes a transcript locally; LLM-generated documents are optional derivatives.
+Finch follows a **transcript-first** design: audio becomes a transcript locally; LLM-generated notes are optional derivatives.
 
 ```txt
-Audio → Transcript → Document(s)
+Audio → Recording → Note(s)
 ```
 
 ## High-level view
@@ -13,8 +13,8 @@ flowchart TD
     client["Client / CLI script"] -->|HTTP| api["FastAPI backend"]
     api --> audioSvc["AudioService"]
     api --> jobSvc["JobService"]
-    api --> transcriptSvc["TranscriptService"]
-    api --> docSvc["DocumentService"]
+    api --> transcriptSvc["RecordingService"]
+    api --> docSvc["NoteService"]
     api --> aiSvc["AiActionService"]
     audioSvc --> fs["Local filesystem"]
     audioSvc --> db["SQLite"]
@@ -43,20 +43,20 @@ flowchart TD
 ```txt
 AudioAsset
   ↓
-Transcript
+Recording
   ↓
-Document
+Note(s)
 ```
 
 | Entity | Purpose |
 |--------|---------|
 | `AudioAsset` | Uploaded or recorded file metadata + paths to original/normalized WAV |
-| `Transcript` | `rawText`, optional `editedText`, `speakerSegments`, `status` (`draft` / `final` / `transcribing` / `failed`) |
-| `SpeakerProfile` | Enrolled speaker identity (`displayName`, `notes`) |
+| `Recording` | `rawText`, optional `editedText`, `speakerSegments`, `status` (`draft` / `final` / `transcribing` / `failed`) |
+| `SpeakerProfile` | Voiceprint profile identity (`displayName`, `notes`) |
 | `SpeakerEmbedding` | Local voiceprint vectors linked to a profile |
-| `AppPreference` | Speaker memory consent and enable toggle |
+| `AppPreference` | Key/value store (transcription settings, voiceprint consent, auto-label toggle, `user_settings` JSON) |
 | `Job` | Async work unit (`transcription`, `ai_action`) with progress/stage |
-| `Document` | LLM-generated Markdown linked to a transcript |
+| `Note` | LLM-generated or manual Markdown linked to a recording |
 
 ## Request flows
 
@@ -72,33 +72,33 @@ POST /api/audio/upload
 
 ### Transcription job
 
-When `DIARIZATION_ENABLED=true`:
+When diarization is enabled (via **Settings → Transcription** or `.env` fallback):
 
 ```txt
-POST /api/transcripts { audioAssetId }
-  → create Transcript placeholder (status=transcribing)
-  → create Job, resultId = transcript.id
+POST /api/recordings { audioAssetId }
+  → create Recording placeholder (status=transcribing)
+  → create Job, resultId = recording.id
   → transcription_worker
        → optional: pyannote diarization → speaker segments
-       → optional: speaker memory match → named labels
+       → optional: voiceprint match → named labels
        → Qwen3-ASR per segment (or full file if diarization off/fallback)
-       → update Transcript (rawText, speakerSegments, status=draft)
+       → update Recording (rawText, speakerSegments, status=draft)
        → Job completed
 ```
 
-On failure, the transcript is kept with `status=failed` and `errorMessage` (not deleted).
+On failure, the recording is kept with `status=failed` and `errorMessage` (not deleted).
 
-If diarization is enabled but unavailable (missing HF access, etc.), the worker falls back to full-file ASR and stores a `processingNote` on the transcript.
+If diarization is enabled but unavailable (missing HF access, etc.), the worker falls back to full-file ASR and stores a `processingNote` on the recording.
 
 Segment tuning (`DIARIZATION_MIN_SEGMENT_SECONDS`, `DIARIZATION_MERGE_GAP_SECONDS`, `DIARIZATION_MAX_SEGMENTS`) is applied after pyannote. See [diarization.md](diarization.md).
 
 ### Notes job
 
 ```txt
-POST /api/ai-actions { transcriptId, action: "meeting_summary" | "action_items" | ... }
+POST /api/ai-actions { recordingId, action: "meeting_summary" | "action_items" | ... }
   → Job (ai_action)
   → ai_action_worker → LlmService (configured provider)
-  → create Document (typed note)
+  → create Note (typed note)
 ```
 
 ## Storage
@@ -116,25 +116,25 @@ Config loads from `backend/.env` and repo root `.env`.
 
 | Resource | ID format | Example |
 |----------|-----------|---------|
-| Transcript | `transcript_` + hex | `transcript_a1b2c3d4e5f67890` |
-| Document | `doc_` + hex | `doc_b2c3d4e5f6789012` |
+| Recording | `recording_` + hex | `recording_a1b2c3d4e5f67890` |
+| Note | `note_` + hex | `note_b2c3d4e5f6789012` |
 | Audio asset | `audio_` + hex | `audio_a1b2c3d4e5f67890` |
 | Job | `job_` + hex | `job_c3d4e5f678901234` |
 | Speaker profile | `speaker_` + hex | `speaker_d4e5f67890123456` |
 
-Documents store a `transcript_id` foreign key pointing at the parent recording.
+Documents store a `recording_id` foreign key pointing at the parent recording.
 
 ## Frontend routes
 
 | Route | Purpose |
 |-------|---------|
 | `/` | Recent voice recordings |
-| `/files` | Recordings library |
-| `/files/{id}` | Recording detail (Source / Notes tabs) or document editor |
+| `/recordings` | Recordings library |
+| `/recordings/{id}` | Recording detail (Source / Notes tabs) |
 | `/upload`, `/record` | Ingest new audio |
 | `/settings` | User profile, language, AI prefs, speakers |
 
-The file detail page routes by ID prefix (`transcript_` → recording detail, `doc_` → document editor). Lists show recordings only; notes appear on a recording’s **Notes** tab.
+The recording detail page accepts only `recording_` IDs. Lists show recordings only; notes appear on a recording’s **Notes** tab.
 
 ### Recording detail UI
 
@@ -152,16 +152,17 @@ The file detail page routes by ID prefix (`transcript_` → recording detail, `d
 | POST | `/api/audio/upload` | Upload + normalize |
 | GET | `/api/audio/{id}/stream` | Stream normalized (or original) audio for playback |
 | GET/DELETE | `/api/audio/{id}` | Audio metadata / delete |
-| POST | `/api/transcripts` | Start transcription job |
-| GET/PATCH/DELETE | `/api/transcripts/{id}` | Transcript CRUD |
+| POST | `/api/recordings` | Start transcription job |
+| GET/PATCH/DELETE | `/api/recordings/{id}` | Recording CRUD |
 | GET | `/api/jobs/{id}` | Job status and progress |
 | POST | `/api/ai-actions` | Generate an AI note from a template |
 | GET | `/api/ai-actions/templates` | List AI note templates |
-| GET/POST/PATCH/DELETE | `/api/documents` | Document CRUD (includes manual blank notes via POST) |
-| GET/POST/PATCH/DELETE | `/api/speaker-profiles/...` | Speaker profile CRUD + detail |
+| GET/POST/PATCH/DELETE | `/api/notes` | Note CRUD (includes manual blank notes via POST) |
+| GET/PATCH | `/api/transcription-settings` | Diarization, voiceprint profiles, HF token (stored in SQLite) |
+| GET/POST/PATCH/DELETE | `/api/speaker-profiles/...` | Voiceprint profile CRUD + detail |
 | GET/POST/PATCH/DELETE | `/api/speaker-memory/...` | Consent, auto-label toggle, wipe voiceprint data |
-| GET/PATCH | `/api/user-settings` | User name, language, summarization prefs, linked speaker profile |
-| PATCH | `/api/transcripts/{id}/speakers` | Rename/link speakers (`enroll: true` saves voiceprint; optional `enrollStartSec` / `enrollEndSec` for turn-scoped samples) |
+| GET/PATCH | `/api/user-settings` | User name, language, summarization prefs, linked voiceprint profile |
+| PATCH | `/api/recordings/{id}/speakers` | Rename/link speakers (`enroll: true` saves voiceprint; optional `enrollStartSec` / `enrollEndSec` for turn-scoped samples) |
 
 ## Startup diagnostics
 

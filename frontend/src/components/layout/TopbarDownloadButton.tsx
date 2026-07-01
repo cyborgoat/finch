@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useTopbarActions } from "@/components/layout/TopbarActionsContext"
 import { downloadAudioAsset } from "@/lib/download"
-import { exportDocumentMd, exportTranscriptTxt } from "@/lib/export"
+import { exportNoteMd, exportTranscriptTxt } from "@/lib/export"
 
 export function TopbarDownloadButton() {
   const { t } = useTranslation()
@@ -35,7 +35,7 @@ export function TopbarDownloadButton() {
   const handleDownloadNote = () => {
     if (!noteMarkdown) return
     const label = actions.activeNoteTitle?.trim() || t("common.note").toLowerCase()
-    exportDocumentMd(`${actions.title} ${label}`, noteMarkdown)
+    exportNoteMd(`${actions.title} ${label}`, noteMarkdown)
   }
 
   return (
@@ -58,15 +58,15 @@ export function TopbarDownloadButton() {
       >
         <DropdownMenuItem onClick={handleDownloadAudio} disabled={busy}>
           <AudioLines />
-          {t("files.downloadAudio")}
+          {t("recordings.downloadAudio")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleDownloadTranscript} disabled={busy}>
           <FileText />
-          {t("files.downloadTranscript")}
+          {t("recordings.downloadTranscript")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleDownloadNote} disabled={busy || !hasNote}>
           <Notebook />
-          {t("files.downloadActiveNote")}
+          {t("recordings.downloadActiveNote")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

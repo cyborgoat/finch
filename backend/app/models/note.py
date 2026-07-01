@@ -5,9 +5,9 @@ from sqlmodel import Field, SQLModel
 from app.models.audio_asset import utc_now
 
 
-class Document(SQLModel, table=True):
+class Note(SQLModel, table=True):
     id: str = Field(primary_key=True)
-    transcript_id: str = Field(foreign_key="transcript.id")
+    recording_id: str = Field(foreign_key="recording.id")
     title: str
     type: str
     markdown: str

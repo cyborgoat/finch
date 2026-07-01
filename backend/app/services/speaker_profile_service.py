@@ -34,7 +34,7 @@ class SpeakerProfileService:
     def get_profile(self, profile_id: str) -> SpeakerProfile:
         profile = self.session.get(SpeakerProfile, profile_id)
         if profile is None:
-            raise AppError("SPEAKER_PROFILE_NOT_FOUND", "Speaker profile not found.", 404)
+            raise AppError("SPEAKER_PROFILE_NOT_FOUND", "Voiceprint profile not found.", 404)
         return profile
 
     def count_profiles(self) -> int:
@@ -127,7 +127,7 @@ class SpeakerProfileService:
         profile_id: str,
         vector: np.ndarray,
         *,
-        source_transcript_id: str | None = None,
+        source_recording_id: str | None = None,
         source_cluster_id: str | None = None,
         duration_sec: float | None = None,
     ) -> SpeakerEmbedding:
@@ -138,7 +138,7 @@ class SpeakerProfileService:
             profile_id=profile_id,
             embedding=embedding_to_json(vector),
             model_id=self.settings.speaker_embedding_model_id,
-            source_transcript_id=source_transcript_id,
+            source_recording_id=source_recording_id,
             source_cluster_id=source_cluster_id,
             duration_sec=duration_sec,
             created_at=datetime.now(UTC),
@@ -150,7 +150,7 @@ class SpeakerProfileService:
 
     def enroll_from_transcript(
         self,
-        transcript_id: str,
+        recording_id: str,
         cluster_id: str,
         display_name: str,
         profile_id: str | None = None,
@@ -158,18 +158,18 @@ class SpeakerProfileService:
         start_sec: float | None = None,
         end_sec: float | None = None,
     ) -> SpeakerProfile:
-        from app.services.transcript_service import TranscriptService
+        from app.services.recording_service import RecordingService
 
         preference_service = AppPreferenceService(self.session, self.settings)
         if not preference_service.has_speaker_memory_consent():
             raise AppError(
                 "SPEAKER_MEMORY_CONSENT_REQUIRED",
-                "Speaker memory consent is required before saving voiceprints.",
+                "Voiceprint profile consent is required before saving voiceprint samples.",
                 400,
             )
 
-        transcript_service = TranscriptService(self.session, self.settings)
-        transcript = transcript_service.get_transcript(transcript_id)
+        recording_service = RecordingService(self.session, self.settings)
+        transcript = recording_service.get_recording(recording_id)
         segments = speaker_segments_from_json(transcript.speaker_segments)
         if not segments:
             raise AppError(
@@ -227,25 +227,25 @@ class SpeakerProfileService:
         self.add_embedding(
             profile.id,
             vector,
-            source_transcript_id=transcript_id,
+            source_recording_id=recording_id,
             source_cluster_id=cluster_id,
             duration_sec=duration,
         )
         return profile
 
-    def count_related_transcripts(self, profile_id: str) -> int:
-        from app.models.transcript import Transcript
+    def count_related_recordings(self, profile_id: str) -> int:
+        from app.models.recording import Recording
         from app.services.diarization_service import speaker_segments_from_json
 
         count = 0
-        for transcript in self.session.exec(select(Transcript)).all():
+        for transcript in self.session.exec(select(Recording)).all():
             segments = speaker_segments_from_json(transcript.speaker_segments)
             if any(segment.speaker_profile_id == profile_id for segment in segments):
                 count += 1
         return count
 
     def get_profile_detail(self, profile_id: str) -> dict:
-        from app.models.transcript import Transcript
+        from app.models.recording import Recording
         from app.services.diarization_service import speaker_segments_from_json
 
         profile = self.get_profile(profile_id)
@@ -257,7 +257,7 @@ class SpeakerProfileService:
                 {
                     "id": record.id,
                     "model_id": record.model_id,
-                    "source_transcript_id": record.source_transcript_id,
+                    "source_recording_id": record.source_recording_id,
                     "source_cluster_id": record.source_cluster_id,
                     "duration_sec": record.duration_sec,
                     "dimensions": int(vector.size),
@@ -266,7 +266,7 @@ class SpeakerProfileService:
             )
 
         related: dict[str, dict] = {}
-        for transcript in self.session.exec(select(Transcript)).all():
+        for transcript in self.session.exec(select(Recording)).all():
             segments = speaker_segments_from_json(transcript.speaker_segments)
             count = sum(
                 1 for segment in segments if segment.speaker_profile_id == profile_id
@@ -297,7 +297,7 @@ class SpeakerProfileService:
         return {
             "profile": profile,
             "embeddings": embedding_summaries,
-            "related_transcripts": sorted(
+            "related_recordings": sorted(
                 related.values(),
                 key=lambda item: item["updated_at"],
                 reverse=True,

@@ -1,4 +1,4 @@
-import type { SpeakerProfileSummary, SpeakerSegment, Transcript } from "@/lib/types"
+import type { SpeakerProfileSummary, SpeakerSegment, Recording } from "@/lib/types"
 
 const SPEAKER_BLOCK_PATTERN =
   /(?:^|\n\n)([^:]+):\s*([\s\S]*?)(?=(?:\n\n[^:]+:)|$)/g
@@ -42,7 +42,7 @@ export function parseSpeakerLabeledText(text: string): SpeakerSegment[] {
 }
 
 export function resolveSpeakerSegments(
-  transcript: Pick<Transcript, "speakerSegments" | "rawText" | "editedText">,
+  transcript: Pick<Recording, "speakerSegments" | "rawText" | "editedText">,
 ): SpeakerSegment[] {
   if (transcript.speakerSegments && transcript.speakerSegments.length > 0) {
     return transcript.speakerSegments

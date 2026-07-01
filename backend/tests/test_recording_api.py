@@ -19,28 +19,28 @@ def test_transcription_flow(mock_run, client, sample_wav_bytes):
     audio_id = upload_response.json()["id"]
 
     job_response = client.post(
-        "/api/transcripts",
+        "/api/recordings",
         json={"audioAssetId": audio_id, "language": "auto"},
     )
 
     assert job_response.status_code == 200
     job_body = job_response.json()
     job_id = job_body["jobId"]
-    transcript_id = job_body["transcriptId"]
-    assert transcript_id is not None
+    recording_id = job_body["recordingId"]
+    assert recording_id is not None
 
     job = client.get(f"/api/jobs/{job_id}").json()
     assert job["status"] == "completed"
     assert job["resultId"] is not None
 
-    transcript_response = client.get(f"/api/transcripts/{job['resultId']}")
-    assert transcript_response.status_code == 200
-    transcript = transcript_response.json()
+    recording_response = client.get(f"/api/recordings/{job['resultId']}")
+    assert recording_response.status_code == 200
+    transcript = recording_response.json()
     assert transcript["rawText"] == FAKE_TRANSCRIPT_TEXT
     assert transcript["audioAssetId"] == audio_id
 
     patch_response = client.patch(
-        f"/api/transcripts/{transcript['id']}",
+        f"/api/recordings/{transcript['id']}",
         json={"editedText": "Edited transcript text", "status": "final"},
     )
     assert patch_response.status_code == 200
@@ -49,18 +49,18 @@ def test_transcription_flow(mock_run, client, sample_wav_bytes):
     assert patched["status"] == "final"
     assert patched["updatedAt"] is not None
 
-    list_response = client.get("/api/transcripts")
+    list_response = client.get("/api/recordings")
     assert list_response.status_code == 200
     assert len(list_response.json()["items"]) == 1
 
-    delete_response = client.delete(f"/api/transcripts/{transcript['id']}")
+    delete_response = client.delete(f"/api/recordings/{transcript['id']}")
     assert delete_response.status_code == 200
     assert delete_response.json()["ok"] is True
 
 
-@patch("app.api.routes_transcripts.run_transcription_job")
+@patch("app.api.routes_recordings.run_transcription_job")
 @patch("app.services.audio_service.subprocess.run")
-def test_create_transcript_job_adds_transcribing_placeholder(
+def test_create_recording_job_adds_transcribing_placeholder(
     mock_run,
     mock_worker,
     client,
@@ -76,20 +76,20 @@ def test_create_transcript_job_adds_transcribing_placeholder(
     audio_id = upload_response.json()["id"]
 
     job_response = client.post(
-        "/api/transcripts",
+        "/api/recordings",
         json={"audioAssetId": audio_id, "language": "auto"},
     )
     assert job_response.status_code == 200
     body = job_response.json()
-    transcript_id = body["transcriptId"]
+    recording_id = body["recordingId"]
 
-    transcript_response = client.get(f"/api/transcripts/{transcript_id}")
-    assert transcript_response.status_code == 200
-    transcript = transcript_response.json()
+    recording_response = client.get(f"/api/recordings/{recording_id}")
+    assert recording_response.status_code == 200
+    transcript = recording_response.json()
     assert transcript["status"] == "transcribing"
     assert transcript["rawText"] == ""
 
-    list_response = client.get("/api/transcripts")
+    list_response = client.get("/api/recordings")
     assert list_response.json()["items"][0]["status"] == "transcribing"
 
 
@@ -123,7 +123,7 @@ def test_diarization_fallback_when_hf_token_missing(
     audio_id = upload_response.json()["id"]
 
     job_response = client.post(
-        "/api/transcripts",
+        "/api/recordings",
         json={"audioAssetId": audio_id, "language": "auto"},
     )
     job_id = job_response.json()["jobId"]
@@ -131,7 +131,7 @@ def test_diarization_fallback_when_hf_token_missing(
     job = client.get(f"/api/jobs/{job_id}").json()
     assert job["status"] == "completed"
 
-    transcript = client.get(f"/api/transcripts/{job['resultId']}").json()
+    transcript = client.get(f"/api/recordings/{job['resultId']}").json()
     assert transcript["status"] == "draft"
     assert transcript["rawText"]
 
@@ -163,7 +163,7 @@ def test_diarization_produces_speaker_labeled_transcript(
     audio_id = upload_response.json()["id"]
 
     job_response = client.post(
-        "/api/transcripts",
+        "/api/recordings",
         json={"audioAssetId": audio_id, "language": "auto"},
     )
     assert job_response.status_code == 200
@@ -172,7 +172,7 @@ def test_diarization_produces_speaker_labeled_transcript(
     job = client.get(f"/api/jobs/{job_id}").json()
     assert job["status"] == "completed"
 
-    transcript = client.get(f"/api/transcripts/{job['resultId']}").json()
+    transcript = client.get(f"/api/recordings/{job['resultId']}").json()
     assert "Speaker 1:" in transcript["rawText"]
     assert "Speaker 2:" in transcript["rawText"]
     assert transcript["speakerSegments"] is not None
@@ -181,7 +181,7 @@ def test_diarization_produces_speaker_labeled_transcript(
 
 
 @patch("app.services.audio_service.subprocess.run")
-def test_failed_transcription_keeps_transcript_with_error(
+def test_failed_transcription_keeps_recording_with_error(
     mock_run,
     client,
     sample_wav_bytes,
@@ -202,20 +202,20 @@ def test_failed_transcription_keeps_transcript_with_error(
         side_effect=AppError("ASR_TRANSCRIPTION_FAILED", "Mock ASR failure", 500),
     ):
         job_response = client.post(
-            "/api/transcripts",
+            "/api/recordings",
             json={"audioAssetId": audio_id, "language": "auto"},
         )
 
     job_id = job_response.json()["jobId"]
-    transcript_id = job_response.json()["transcriptId"]
+    recording_id = job_response.json()["recordingId"]
 
     job = client.get(f"/api/jobs/{job_id}").json()
     assert job["status"] == "failed"
     assert job["error"] == "Mock ASR failure"
 
-    transcript = client.get(f"/api/transcripts/{transcript_id}").json()
+    transcript = client.get(f"/api/recordings/{recording_id}").json()
     assert transcript["status"] == "failed"
     assert transcript["errorMessage"] == "Mock ASR failure"
 
-    listed = client.get("/api/transcripts").json()["items"]
-    assert any(item["id"] == transcript_id and item["status"] == "failed" for item in listed)
+    listed = client.get("/api/recordings").json()["items"]
+    assert any(item["id"] == recording_id and item["status"] == "failed" for item in listed)

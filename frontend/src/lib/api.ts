@@ -2,17 +2,19 @@ import type {
   AiActionTemplate,
   ApiError,
   AudioAsset,
-  Document,
-  DocumentSummary,
+  Note,
+  NoteSummary,
   Job,
   SpeakerMemoryStatus,
   SpeakerProfileDetail,
   SpeakerProfileSummary,
-  Transcript,
-  TranscriptSummary,
+  Recording,
+  RecordingSummary,
   UserSettings,
   LlmSettings,
   UpdateLlmSettings,
+  TranscriptionSettings,
+  UpdateTranscriptionSettings,
 } from "@/lib/types"
 
 import { getApiBaseUrl } from "@/lib/api-base"
@@ -81,11 +83,11 @@ export async function getAudioAsset(audioId: string): Promise<AudioAsset> {
   return request(`/api/audio/${audioId}`)
 }
 
-export async function createTranscriptJob(input: {
+export async function createRecordingJob(input: {
   audioAssetId: string
   language?: string
-}): Promise<{ jobId: string; transcriptId: string; status: string }> {
-  return request("/api/transcripts", {
+}): Promise<{ jobId: string; recordingId: string; status: string }> {
+  return request("/api/recordings", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -96,53 +98,40 @@ export async function getJob(jobId: string): Promise<Job> {
   return request(`/api/jobs/${jobId}`)
 }
 
-export async function listTranscripts(): Promise<{ items: TranscriptSummary[] }> {
-  return request("/api/transcripts")
+export async function listRecordings(): Promise<{ items: RecordingSummary[] }> {
+  return request("/api/recordings")
 }
 
-export async function getTranscript(id: string): Promise<Transcript> {
-  return request(`/api/transcripts/${id}`)
+export async function getRecording(id: string): Promise<Recording> {
+  return request(`/api/recordings/${id}`)
 }
 
-export async function updateTranscript(
+export async function updateRecording(
   id: string,
-  input: Partial<Pick<Transcript, "title" | "editedText" | "status">>,
-): Promise<Transcript> {
-  return request(`/api/transcripts/${id}`, {
+  input: Partial<Pick<Recording, "title" | "editedText" | "status">>,
+): Promise<Recording> {
+  return request(`/api/recordings/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   })
 }
 
-export async function deleteTranscript(id: string): Promise<{ ok: boolean }> {
-  return request(`/api/transcripts/${id}`, { method: "DELETE" })
-}
-
-export async function createTranscriptSummary(input: {
-  transcriptId: string
-  source?: "rawText" | "editedText"
-  model?: string
-}): Promise<{ jobId: string; status: string }> {
-  return createAiAction({
-    transcriptId: input.transcriptId,
-    action: "meeting_summary",
-    source: input.source,
-    model: input.model,
-  })
+export async function deleteRecording(id: string): Promise<{ ok: boolean }> {
+  return request(`/api/recordings/${id}`, { method: "DELETE" })
 }
 
 export async function createAiAction(input: {
-  transcriptId: string
+  recordingId: string
   action: string
   source?: "rawText" | "editedText"
   model?: string
-}): Promise<{ jobId: string; documentId: string; status: string }> {
+}): Promise<{ jobId: string; noteId: string; status: string }> {
   return request("/api/ai-actions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      transcriptId: input.transcriptId,
+      recordingId: input.recordingId,
       action: input.action,
       source: input.source ?? "editedText",
       model: input.model,
@@ -154,47 +143,47 @@ export async function listAiActionTemplates(): Promise<{ items: AiActionTemplate
   return request("/api/ai-actions/templates")
 }
 
-export async function createDocument(input: {
-  transcriptId: string
+export async function createNote(input: {
+  recordingId: string
   title?: string
   markdown?: string
   type?: string
-}): Promise<Document> {
-  return request("/api/documents", {
+}): Promise<Note> {
+  return request("/api/notes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   })
 }
 
-export async function listDocuments(
-  transcriptId?: string,
-): Promise<{ items: DocumentSummary[] }> {
-  const query = transcriptId ? `?transcriptId=${encodeURIComponent(transcriptId)}` : ""
-  return request(`/api/documents${query}`)
+export async function listNotes(
+  recordingId?: string,
+): Promise<{ items: NoteSummary[] }> {
+  const query = recordingId ? `?recordingId=${encodeURIComponent(recordingId)}` : ""
+  return request(`/api/notes${query}`)
 }
 
-export async function getDocument(id: string): Promise<Document> {
-  return request(`/api/documents/${id}`)
+export async function getNote(id: string): Promise<Note> {
+  return request(`/api/notes/${id}`)
 }
 
-export async function updateDocument(
+export async function updateNote(
   id: string,
-  input: Partial<Pick<Document, "title" | "markdown">>,
-): Promise<Document> {
-  return request(`/api/documents/${id}`, {
+  input: Partial<Pick<Note, "title" | "markdown">>,
+): Promise<Note> {
+  return request(`/api/notes/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   })
 }
 
-export async function deleteDocument(id: string): Promise<{ ok: boolean }> {
-  return request(`/api/documents/${id}`, { method: "DELETE" })
+export async function deleteNote(id: string): Promise<{ ok: boolean }> {
+  return request(`/api/notes/${id}`, { method: "DELETE" })
 }
 
-export async function updateTranscriptSpeakers(
-  transcriptId: string,
+export async function updateRecordingSpeakers(
+  recordingId: string,
   mappings: Array<{
     clusterId: string
     displayName: string
@@ -205,11 +194,11 @@ export async function updateTranscriptSpeakers(
   }>,
 ): Promise<{
   id: string
-  speakerSegments: Transcript["speakerSegments"]
+  speakerSegments: Recording["speakerSegments"]
   rawText: string
   updatedAt: string
 }> {
-  return request(`/api/transcripts/${transcriptId}/speakers`, {
+  return request(`/api/recordings/${recordingId}/speakers`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ mappings }),
@@ -283,6 +272,20 @@ export async function updateLlmSettings(
   patch: UpdateLlmSettings,
 ): Promise<LlmSettings> {
   return request("/api/llm-settings", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  })
+}
+
+export async function getTranscriptionSettings(): Promise<TranscriptionSettings> {
+  return request("/api/transcription-settings")
+}
+
+export async function updateTranscriptionSettings(
+  patch: UpdateTranscriptionSettings,
+): Promise<TranscriptionSettings> {
+  return request("/api/transcription-settings", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(patch),

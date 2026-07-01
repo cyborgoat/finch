@@ -6,7 +6,7 @@ function finiteDuration(value: number | undefined | null): number {
   return value
 }
 
-export function useTranscriptPlayback(
+export function useRecordingPlayback(
   audioAssetId: string,
   knownDurationSeconds?: number | null,
 ) {

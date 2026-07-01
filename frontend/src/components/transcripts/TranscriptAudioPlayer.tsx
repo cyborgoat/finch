@@ -21,7 +21,7 @@ import {
 } from "@/lib/audio"
 import { cn } from "@/lib/utils"
 
-type TranscriptAudioPlayerProps = {
+type RecordingAudioPlayerProps = {
   filename?: string | null
   audioRef: React.RefObject<HTMLAudioElement | null>
   src: string
@@ -45,7 +45,7 @@ type TranscriptAudioPlayerProps = {
   className?: string
 }
 
-export function TranscriptAudioPlayer({
+export function RecordingAudioPlayer({
   filename,
   audioRef,
   src,
@@ -67,7 +67,7 @@ export function TranscriptAudioPlayer({
   onPause,
   onEnded,
   className,
-}: TranscriptAudioPlayerProps) {
+}: RecordingAudioPlayerProps) {
   const { t } = useTranslation()
   const max = duration > 0 ? duration : 0
   const canControl = Boolean(src) && (isReady || max > 0)

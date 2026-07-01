@@ -10,23 +10,26 @@ from app.services.diarization_service import (
     speaker_segments_to_json,
 )
 from app.services.speaker_profile_service import SpeakerProfileService
-from app.services.transcript_service import TranscriptService
+from app.services.recording_service import RecordingService
 
 
-class SpeakerTranscriptService:
+class SpeakerRecordingService:
     def __init__(self, session: Session, settings: Settings | None = None) -> None:
         self.session = session
         self.settings = settings or get_settings()
-        self.transcript_service = TranscriptService(session, self.settings)
+        self.recording_service = RecordingService(session, self.settings)
         self.profile_service = SpeakerProfileService(session, self.settings)
         self.preference_service = AppPreferenceService(session, self.settings)
+        from app.services.transcription_settings_service import TranscriptionSettingsService
+
+        self.transcription_settings = TranscriptionSettingsService(session, self.settings)
 
     def update_speakers(
         self,
-        transcript_id: str,
+        recording_id: str,
         mappings: list[dict],
     ) -> tuple[list[SpeakerSegment], str]:
-        transcript = self.transcript_service.get_transcript(transcript_id)
+        transcript = self.recording_service.get_recording(recording_id)
         segments = speaker_segments_from_json(transcript.speaker_segments)
         if not segments:
             raise AppError(
@@ -44,20 +47,20 @@ class SpeakerTranscriptService:
                 if not mapping.get("display_name", "").strip():
                     mapping["display_name"] = profile.display_name
             if mapping.get("enroll"):
-                if not self.preference_service.is_speaker_memory_enabled():
+                if not self.transcription_settings.is_speaker_memory_enabled():
                     raise AppError(
                         "SPEAKER_MEMORY_DISABLED",
-                        "Speaker memory is disabled. Enable it in Settings.",
+                        "Voiceprint profiles are disabled. Enable them in Settings → Transcription.",
                         400,
                     )
                 if not self.preference_service.has_speaker_memory_consent():
                     raise AppError(
                         "SPEAKER_MEMORY_CONSENT_REQUIRED",
-                        "Speaker memory consent is required. Enable speaker memory in Settings.",
+                        "Voiceprint profile consent is required before saving voiceprint samples.",
                         400,
                     )
                 profile = self.profile_service.enroll_from_transcript(
-                    transcript_id=transcript_id,
+                    recording_id=recording_id,
                     cluster_id=mapping["cluster_id"],
                     display_name=mapping["display_name"],
                     profile_id=mapping.get("profile_id"),
@@ -81,16 +84,14 @@ class SpeakerTranscriptService:
                     end_sec=segment.end_sec,
                     text=segment.text,
                     cluster_id=segment.cluster_id or cluster_id,
-                    speaker_profile_id=(
-                        mapping.get("profile_id") or segment.speaker_profile_id
-                    ),
+                    speaker_profile_id=mapping.get("profile_id"),
                     match_confidence=segment.match_confidence,
                     match_status="manual",
                 )
             )
 
         raw_text = build_labeled_transcript(updated_segments)
-        self.transcript_service.update_transcript(
+        self.recording_service.update_recording(
             transcript,
             raw_text=raw_text,
             speaker_segments=speaker_segments_to_json(updated_segments),

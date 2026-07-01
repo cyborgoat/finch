@@ -20,7 +20,7 @@ export function Sidebar() {
 
   const links = [
     { href: "/", label: t("nav.home") },
-    { href: "/files", label: t("nav.files") },
+    { href: "/recordings", label: t("nav.recordings") },
     { href: "/settings", label: t("nav.settings") },
   ] as const
 

@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from app.models.audio_asset import AudioAsset
-from app.models.transcript import Transcript
+from app.models.recording import Recording
 from app.services.diarization_service import SpeakerSegment, speaker_segments_to_json
 
 
@@ -36,8 +36,8 @@ def _seed_transcript(db_session, client):
         ),
     ]
     db_session.add(
-        Transcript(
-            id="transcript_speaker",
+        Recording(
+            id="recording_speaker",
             audio_asset_id="audio_speaker",
             title="Meeting",
             raw_text="Speaker 1: Hello\n\nSpeaker 2: Hi",
@@ -82,11 +82,11 @@ def test_speaker_memory_consent_and_profiles(client, db_session):
     assert update.json()["displayName"] == "Robert Smith"
 
 
-def test_update_transcript_speakers(client, db_session):
+def test_update_recording_speakers(client, db_session):
     _seed_transcript(db_session, client)
 
     response = client.patch(
-        "/api/transcripts/transcript_speaker/speakers",
+        "/api/recordings/recording_speaker/speakers",
         json={
             "mappings": [
                 {"clusterId": "SPEAKER_00", "displayName": "Robert", "enroll": False},
@@ -99,12 +99,113 @@ def test_update_transcript_speakers(client, db_session):
     assert body["rawText"].startswith("Robert: Hello")
     assert any(segment["speaker"] == "David" for segment in body["speakerSegments"])
 
-    transcript = client.get("/api/transcripts/transcript_speaker")
+    transcript = client.get("/api/recordings/recording_speaker")
     assert transcript.status_code == 200
     assert "Robert: Hello" in transcript.json()["rawText"]
 
 
+def test_update_recording_speakers_clears_profile_link_for_new_name(client, db_session):
+    _seed_transcript(db_session, client)
+
+    client.post("/api/speaker-profiles", json={"displayName": "Robert"})
+    profile_id = client.get("/api/speaker-profiles").json()["items"][0]["id"]
+
+    linked = client.patch(
+        "/api/recordings/recording_speaker/speakers",
+        json={
+            "mappings": [
+                {
+                    "clusterId": "SPEAKER_00",
+                    "displayName": "Robert",
+                    "profileId": profile_id,
+                    "enroll": False,
+                }
+            ]
+        },
+    )
+    assert linked.status_code == 200
+    assert linked.json()["speakerSegments"][0]["speakerProfileId"] == profile_id
+
+    renamed = client.patch(
+        "/api/recordings/recording_speaker/speakers",
+        json={
+            "mappings": [
+                {
+                    "clusterId": "SPEAKER_00",
+                    "displayName": "Alice",
+                    "profileId": None,
+                    "enroll": False,
+                }
+            ]
+        },
+    )
+    assert renamed.status_code == 200
+    segment = renamed.json()["speakerSegments"][0]
+    assert segment["speaker"] == "Alice"
+    assert segment["speakerProfileId"] is None
+
+
+def test_update_recording_speakers_enroll_without_auto_label(
+    client, db_session, monkeypatch
+):
+    from app.services.speaker_profile_service import SpeakerProfile
+
+    _seed_transcript(db_session, client)
+    client.post("/api/speaker-memory/consent")
+    client.patch(
+        "/api/transcription-settings",
+        json={"speakerMemoryEnabled": True},
+    )
+
+    created_profile = SpeakerProfile(id="profile_enroll", display_name="Robert")
+    monkeypatch.setattr(
+        "app.services.speaker_recording_service.SpeakerProfileService.enroll_from_transcript",
+        lambda self, **kwargs: created_profile,
+    )
+
+    response = client.patch(
+        "/api/recordings/recording_speaker/speakers",
+        json={
+            "mappings": [
+                {
+                    "clusterId": "SPEAKER_00",
+                    "displayName": "Robert",
+                    "enroll": True,
+                    "enrollStartSec": 0.0,
+                    "enrollEndSec": 2.0,
+                }
+            ]
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["speakerSegments"][0]["speakerProfileId"] == "profile_enroll"
+
+
+def test_transcription_settings_stored_in_preferences(client, db_session):
+    initial = client.get("/api/transcription-settings")
+    assert initial.status_code == 200
+    assert initial.json()["diarizationEnabled"] is False
+    assert initial.json()["speakerMemoryEnabled"] is False
+
+    updated = client.patch(
+        "/api/transcription-settings",
+        json={
+            "diarizationEnabled": True,
+            "speakerMemoryEnabled": True,
+            "hfToken": "hf_test_token",
+        },
+    )
+    assert updated.status_code == 200
+    body = updated.json()
+    assert body["diarizationEnabled"] is True
+    assert body["speakerMemoryEnabled"] is True
+    assert body["hfTokenConfigured"] is True
+    assert body["source"] == "stored"
+
+
 def test_get_speaker_profile_detail(client, db_session):
+
+
     create = client.post(
         "/api/speaker-profiles",
         json={"displayName": "Robert", "notes": "Host"},
@@ -117,7 +218,7 @@ def test_get_speaker_profile_detail(client, db_session):
     assert body["displayName"] == "Robert"
     assert "embeddingDescription" in body
     assert body["embeddings"] == []
-    assert body["relatedTranscripts"] == []
+    assert body["relatedRecordings"] == []
 
 
 def test_health_includes_speaker_memory_flags(client):

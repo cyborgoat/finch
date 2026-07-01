@@ -35,7 +35,7 @@ def main() -> int:
 
         print("Starting transcription job...")
         job_resp = client.post(
-            f"{API_BASE}/api/transcripts",
+            f"{API_BASE}/api/recordings",
             json={"audioAssetId": audio["id"], "language": "auto"},
         )
         job_resp.raise_for_status()
@@ -50,7 +50,7 @@ def main() -> int:
             print(f"  [{status}] {stage} ({progress:.0%})", flush=True)
 
             if status == "completed":
-                transcript_id = job["resultId"]
+                recording_id = job["resultId"]
                 break
             if status == "failed":
                 print(f"FAILED: {job.get('error')}")
@@ -58,14 +58,14 @@ def main() -> int:
 
             time.sleep(POLL_INTERVAL)
 
-        transcript = client.get(f"{API_BASE}/api/transcripts/{transcript_id}").json()
-        print("\n--- Transcript ---\n")
+        transcript = client.get(f"{API_BASE}/api/recordings/{recording_id}").json()
+        print("\n--- Recording ---\n")
         print(transcript["rawText"])
 
         out_path = audio_path.with_suffix(".txt")
         out_path.write_text(transcript["rawText"], encoding="utf-8")
         print(f"\nSaved to: {out_path}")
-        print(f"Transcript ID: {transcript_id}")
+        print(f"Transcript ID: {recording_id}")
         return 0
 
 

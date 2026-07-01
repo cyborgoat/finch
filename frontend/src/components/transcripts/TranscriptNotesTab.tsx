@@ -45,37 +45,37 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDeleteDocument, useUpdateDocument } from "@/hooks/useDocuments";
+import { useDeleteNote, useUpdateNote } from "@/hooks/useNotes";
 import { useJobPolling } from "@/hooks/useJobPolling";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
-import { createAiAction, createDocument, getDocument } from "@/lib/api";
-import { seedDocumentInCache } from "@/lib/documentCache";
-import type { AiActionTemplate, Document, DocumentSummary } from "@/lib/types";
+import { createAiAction, createNote, getNote } from "@/lib/api";
+import { seedNoteInCache } from "@/lib/noteCache";
+import type { AiActionTemplate, Note, NoteSummary } from "@/lib/types";
 
-type TranscriptNotesTabProps = {
-  transcriptId: string;
-  documents: DocumentSummary[];
+type RecordingNotesTabProps = {
+  recordingId: string;
+  notes?: NoteSummary[];
   llmReady?: boolean;
   activeNoteId: string | null;
-  activeNote?: Document;
+  activeNote?: Note;
   noteLoading?: boolean;
   onNoteIdChange?: (noteId: string | null) => void;
 };
 
-export function TranscriptNotesTab({
-  transcriptId,
-  documents,
+export function RecordingNotesTab({
+  recordingId,
+  notes: noteSummaries = [],
   llmReady = true,
   activeNoteId,
   activeNote,
   noteLoading = false,
   onNoteIdChange,
-}: TranscriptNotesTabProps) {
+}: RecordingNotesTabProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { preferences } = useUserPreferences();
-  const deleteMutation = useDeleteDocument();
-  const updateMutation = useUpdateDocument(activeNoteId ?? "");
+  const deleteMutation = useDeleteNote();
+  const updateMutation = useUpdateNote(activeNoteId ?? "");
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -90,8 +90,8 @@ export function TranscriptNotesTab({
     activeNote?.status === "generating" ? activeNote.generationJobId ?? null : null;
 
   const handleGenerationCompleted = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ["documents"] });
-    void queryClient.invalidateQueries({ queryKey: ["files"] });
+    void queryClient.invalidateQueries({ queryKey: ["notes"] });
+    void queryClient.invalidateQueries({ queryKey: ["recordings"] });
     setEditorDirty(false);
     toast.success(
       t("toasts.noteReady", { title: activeNote?.title ?? t("common.note") }),
@@ -100,7 +100,7 @@ export function TranscriptNotesTab({
 
   const handleGenerationFailed = useCallback(
     (failedJob: { error?: string | null }) => {
-      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+      void queryClient.invalidateQueries({ queryKey: ["notes"] });
       toast.error(failedJob.error ?? t("toasts.generateNoteFailed"));
     },
     [queryClient, t],
@@ -120,10 +120,10 @@ export function TranscriptNotesTab({
 
   const notes = useMemo(
     () =>
-      [...documents].sort((left, right) =>
+      [...noteSummaries].sort((left, right) =>
         right.updatedAt.localeCompare(left.updatedAt),
       ),
-    [documents],
+    [noteSummaries],
   );
 
   const noteItems = useMemo(
@@ -177,8 +177,8 @@ export function TranscriptNotesTab({
     }
   };
 
-  const handleNoteCreated = (documentId: string) => {
-    onNoteIdChange?.(documentId);
+  const handleNoteCreated = (noteId: string) => {
+    onNoteIdChange?.(noteId);
     setEditorDirty(false);
   };
 
@@ -186,15 +186,15 @@ export function TranscriptNotesTab({
     if (!llmReady || pendingTemplateId) return;
     setPendingTemplateId(template.id);
     try {
-      const { documentId } = await createAiAction({
-        transcriptId,
+      const { noteId } = await createAiAction({
+        recordingId,
         action: template.id,
         source: "editedText",
       });
-      const document = await getDocument(documentId);
-      seedDocumentInCache(queryClient, transcriptId, document);
+      const note = await getNote(noteId);
+      seedNoteInCache(queryClient, recordingId, note);
       setCreateOpen(false);
-      handleNoteCreated(documentId);
+      handleNoteCreated(noteId);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("toasts.startAiNoteFailed"));
     } finally {
@@ -206,10 +206,10 @@ export function TranscriptNotesTab({
     if (creatingBlank) return;
     setCreatingBlank(true);
     try {
-      const document = await createDocument({ transcriptId });
-      seedDocumentInCache(queryClient, transcriptId, document);
+      const note = await createNote({ recordingId });
+      seedNoteInCache(queryClient, recordingId, note);
       setCreateOpen(false);
-      handleNoteCreated(document.id);
+      handleNoteCreated(note.id);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("toasts.createNoteFailed"));
     } finally {
@@ -355,7 +355,7 @@ export function TranscriptNotesTab({
       ) : activeNote ? (
         <MdxNoteEditor
           key={activeNote.id}
-          document={activeNote}
+          note={activeNote}
           hideTitle
           onDirtyChange={setEditorDirty}
         />

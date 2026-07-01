@@ -2,27 +2,27 @@ import { createFileRoute } from "@tanstack/react-router"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
-import { FileBrowser } from "@/components/files/FileBrowser"
+import { RecordingBrowser } from "@/components/files/FileBrowser"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useFiles } from "@/hooks/useFiles"
+import { useRecordingsList } from "@/hooks/useRecordingsList"
 import {
-  useDeleteTranscript,
-  useRenameTranscript,
-} from "@/hooks/useTranscripts"
-import { filesQuery } from "@/lib/queries/files"
+  useDeleteRecording,
+  useRenameRecording,
+} from "@/hooks/useRecordings"
+import { recordingsListQuery } from "@/lib/queries/recordingsList"
 
-export const Route = createFileRoute("/files/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(filesQuery()),
+export const Route = createFileRoute("/recordings/")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(recordingsListQuery()),
   component: FilesPage,
 })
 
 function FilesPage() {
   const { t } = useTranslation()
-  const { data, isLoading } = useFiles()
-  const deleteTranscriptMutation = useDeleteTranscript()
-  const renameMutation = useRenameTranscript()
+  const { data, isLoading } = useRecordingsList()
+  const deleteRecordingMutation = useDeleteRecording()
+  const renameMutation = useRenameRecording()
   const [query, setQuery] = useState("")
 
   const items = useMemo(() => data?.items ?? [], [data?.items])
@@ -30,18 +30,18 @@ function FilesPage() {
   const handleRename = async (id: string, title: string) => {
     try {
       await renameMutation.mutateAsync({ id, title })
-      toast.success(t("toasts.fileRenamed"))
+      toast.success(t("toasts.recordingRenamed"))
     } catch {
-      toast.error(t("toasts.fileRenameFailed"))
+      toast.error(t("toasts.recordingRenameFailed"))
     }
   }
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteTranscriptMutation.mutateAsync(id)
-      toast.success(t("toasts.fileDeleted"))
+      await deleteRecordingMutation.mutateAsync(id)
+      toast.success(t("toasts.recordingDeleted"))
     } catch {
-      toast.error(t("toasts.fileDeleteFailed"))
+      toast.error(t("toasts.recordingDeleteFailed"))
     }
   }
 
@@ -59,13 +59,13 @@ function FilesPage() {
       {isLoading ? (
         <Skeleton className="h-48 w-full rounded-xl" />
       ) : (
-        <FileBrowser
+        <RecordingBrowser
           items={items}
           query={query}
           onRename={(id, title) => void handleRename(id, title)}
           onDelete={(id) => void handleDelete(id)}
           isRenaming={renameMutation.isPending}
-          isDeleting={deleteTranscriptMutation.isPending}
+          isDeleting={deleteRecordingMutation.isPending}
         />
       )}
     </PageContainer>

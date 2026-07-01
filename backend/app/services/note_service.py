@@ -4,33 +4,33 @@ from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
-from app.core.ids import generate_document_id
-from app.models.document import Document
+from app.core.ids import generate_note_id
+from app.models.note import Note
 
 
-class DocumentService:
+class NoteService:
     def __init__(self, session: Session, settings: Settings | None = None) -> None:
         self.session = session
         self.settings = settings or get_settings()
 
-    def create_document(
+    def create_note(
         self,
         *,
-        transcript_id: str,
+        recording_id: str,
         title: str,
-        doc_type: str,
+        note_type: str,
         markdown: str,
         model: str,
         prompt_version: str = "v1",
         status: str = "ready",
         generation_job_id: str | None = None,
-    ) -> Document:
+    ) -> Note:
         now = datetime.now(UTC)
-        document = Document(
-            id=generate_document_id(),
-            transcript_id=transcript_id,
+        document = Note(
+            id=generate_note_id(),
+            recording_id=recording_id,
             title=title,
-            type=doc_type,
+            type=note_type,
             markdown=markdown,
             model=model,
             prompt_version=prompt_version,
@@ -44,38 +44,38 @@ class DocumentService:
         self.session.refresh(document)
         return document
 
-    def create_generating_document(
+    def create_generating_note(
         self,
         *,
-        transcript_id: str,
+        recording_id: str,
         title: str,
-        doc_type: str,
+        note_type: str,
         generation_job_id: str,
         model: str = "pending",
-    ) -> Document:
-        return self.create_document(
-            transcript_id=transcript_id,
+    ) -> Note:
+        return self.create_note(
+            recording_id=recording_id,
             title=title,
-            doc_type=doc_type,
+            note_type=note_type,
             markdown="",
             model=model,
             status="generating",
             generation_job_id=generation_job_id,
         )
 
-    def create_manual_document(
+    def create_manual_note(
         self,
         *,
-        transcript_id: str,
+        recording_id: str,
         title: str | None = None,
         markdown: str = "",
-        doc_type: str = "note",
-    ) -> Document:
+        note_type: str = "note",
+    ) -> Note:
         resolved_title = title.strip() if title and title.strip() else self._default_manual_title()
-        return self.create_document(
-            transcript_id=transcript_id,
+        return self.create_note(
+            recording_id=recording_id,
             title=resolved_title,
-            doc_type=doc_type,
+            note_type=note_type,
             markdown=markdown,
             model="manual",
         )
@@ -85,21 +85,21 @@ class DocumentService:
         date_label = datetime.now(UTC).strftime("%b %d, %Y")
         return f"Note · {date_label}"
 
-    def list_documents(self, transcript_id: str | None = None) -> list[Document]:
-        statement = select(Document).order_by(Document.created_at.desc())
-        if transcript_id:
-            statement = statement.where(Document.transcript_id == transcript_id)
+    def list_notes(self, recording_id: str | None = None) -> list[Note]:
+        statement = select(Note).order_by(Note.created_at.desc())
+        if recording_id:
+            statement = statement.where(Note.recording_id == recording_id)
         return list(self.session.exec(statement).all())
 
-    def get_document(self, document_id: str) -> Document:
-        document = self.session.get(Document, document_id)
+    def get_note(self, note_id: str) -> Note:
+        document = self.session.get(Note, note_id)
         if document is None:
-            raise AppError("DOCUMENT_NOT_FOUND", "Document not found.", 404)
+            raise AppError("NOTE_NOT_FOUND", "Note not found.", 404)
         return document
 
-    def update_document(
+    def update_note(
         self,
-        document: Document,
+        document: Note,
         *,
         title: str | None = None,
         markdown: str | None = None,
@@ -107,7 +107,7 @@ class DocumentService:
         status: str | None = None,
         generation_job_id: str | None = None,
         clear_generation_job_id: bool = False,
-    ) -> Document:
+    ) -> Note:
         if title is not None:
             document.title = title
         if markdown is not None:
@@ -126,11 +126,11 @@ class DocumentService:
         self.session.refresh(document)
         return document
 
-    def delete_document(self, document: Document) -> None:
+    def delete_note(self, document: Note) -> None:
         self.session.delete(document)
         self.session.commit()
 
-    def delete_by_transcript(self, transcript_id: str) -> None:
-        for document in self.list_documents(transcript_id=transcript_id):
+    def delete_by_recording(self, recording_id: str) -> None:
+        for document in self.list_notes(recording_id=recording_id):
             self.session.delete(document)
         self.session.commit()

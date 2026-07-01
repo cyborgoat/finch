@@ -1,29 +1,31 @@
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
   useSpeakerMemoryStatus,
   useSpeakerProfiles,
 } from "@/hooks/useSpeakerProfiles"
 import {
-  useDeleteTranscript,
-  useUpdateTranscript,
-} from "@/hooks/useTranscripts"
-import { updateTranscriptSpeakers, FinchApiError } from "@/lib/api"
+  useDeleteRecording,
+  useUpdateRecording,
+} from "@/hooks/useRecordings"
+import { updateRecordingSpeakers, FinchApiError } from "@/lib/api"
 import {
   profileNameById,
   resolveSpeakerSegments,
   transcriptDisplayText,
   formatSpeakerTranscript,
 } from "@/lib/transcriptFormat"
-import type { SpeakerSegment, Transcript } from "@/lib/types"
+import type { SpeakerSegment, Recording } from "@/lib/types"
 
-export function useTranscriptEditor(transcript: Transcript) {
+export function useRecordingEditor(recording: Recording) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const updateMutation = useUpdateTranscript(transcript.id)
-  const deleteMutation = useDeleteTranscript()
+  const updateMutation = useUpdateRecording(recording.id)
+  const deleteMutation = useDeleteRecording()
   const { data: memoryStatus } = useSpeakerMemoryStatus()
   const { data: profilesData } = useSpeakerProfiles()
   const profiles = useMemo(
@@ -32,14 +34,14 @@ export function useTranscriptEditor(transcript: Transcript) {
   )
   const profileNames = useMemo(() => profileNameById(profiles), [profiles])
 
-  const initialSegments = resolveSpeakerSegments(transcript)
+  const initialSegments = resolveSpeakerSegments(recording)
 
-  const [title, setTitle] = useState(transcript.title)
+  const [title, setTitle] = useState(recording.title)
   const [segments, setSegments] = useState(initialSegments)
   const [text, setText] = useState(() =>
     transcriptDisplayText(
-      transcript.rawText,
-      transcript.editedText,
+      recording.rawText,
+      recording.editedText,
       initialSegments,
       profileNames,
     ),
@@ -47,49 +49,48 @@ export function useTranscriptEditor(transcript: Transcript) {
   const [speakerSavePending, setSpeakerSavePending] = useState(false)
 
   useEffect(() => {
-    if (transcript.editedText?.trim()) return
+    if (recording.editedText?.trim()) return
     setText(
       transcriptDisplayText(
-        transcript.rawText,
-        transcript.editedText,
+        recording.rawText,
+        recording.editedText,
         segments,
         profileNames,
       ),
     )
-  }, [transcript.rawText, transcript.editedText, segments, profileNames])
+  }, [recording.rawText, recording.editedText, segments, profileNames])
 
   const applySpeakerUpdate = (updatedSegments: SpeakerSegment[], rawText: string) => {
     setSegments(updatedSegments)
-    const formatted =
-      formatSpeakerTranscript(updatedSegments, profileNames) || rawText
+    const formatted = formatSpeakerTranscript(updatedSegments, profileNames) || rawText
     setText(formatted)
-    void queryClient.invalidateQueries({ queryKey: ["transcripts", transcript.id] })
+    void queryClient.invalidateQueries({ queryKey: ["recordings", recording.id] })
     void queryClient.invalidateQueries({ queryKey: ["speaker-profiles"] })
+    void queryClient.invalidateQueries({ queryKey: ["speaker-memory-status"] })
   }
 
   const applySegmentSpeaker = async (
     clusterId: string,
     segment: SpeakerSegment,
-    payload: { displayName: string; profileId?: string },
+    payload: { displayName: string; profileId: string | null; enroll: boolean },
   ) => {
     setSpeakerSavePending(true)
     try {
-      const enroll = Boolean(
-        memoryStatus?.enabled && memoryStatus?.consentGiven,
-      )
-      const result = await updateTranscriptSpeakers(transcript.id, [
+      const result = await updateRecordingSpeakers(recording.id, [
         {
           clusterId,
           displayName: payload.displayName,
           profileId: payload.profileId,
-          enroll,
+          enroll: payload.enroll,
           enrollStartSec: segment.startSec,
           enrollEndSec: segment.endSec,
         },
       ])
       applySpeakerUpdate(result.speakerSegments ?? [], result.rawText)
       toast.success(
-        enroll ? "Speaker saved and voiceprint updated" : "Speaker updated",
+        payload.enroll
+          ? t("toasts.speakerSavedWithVoiceprint")
+          : t("toasts.speakerUpdated"),
       )
     } catch (error) {
       const message =
@@ -97,7 +98,7 @@ export function useTranscriptEditor(transcript: Transcript) {
           ? error.message
           : error instanceof Error
             ? error.message
-            : "Failed to update speaker"
+            : t("toasts.speakerUpdateFailed")
       toast.error(message)
       throw error
     } finally {
@@ -109,7 +110,7 @@ export function useTranscriptEditor(transcript: Transcript) {
     try {
       await updateMutation.mutateAsync({ title: nextTitle })
       setTitle(nextTitle)
-      queryClient.setQueryData<Transcript>(["transcripts", transcript.id], (current) =>
+      queryClient.setQueryData<Recording>(["recordings", recording.id], (current) =>
         current ? { ...current, title: nextTitle } : current,
       )
       toast.success("Recording renamed")
@@ -121,9 +122,9 @@ export function useTranscriptEditor(transcript: Transcript) {
 
   const handleDelete = async () => {
     try {
-      await deleteMutation.mutateAsync(transcript.id)
+      await deleteMutation.mutateAsync(recording.id)
       toast.success("Session deleted")
-      void navigate({ to: "/files" })
+      void navigate({ to: "/recordings" })
     } catch {
       toast.error("Failed to delete session")
     }

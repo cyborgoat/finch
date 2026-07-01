@@ -68,8 +68,14 @@ def get_cached_pipeline_access(
     return _pipeline_access_cache[cache_key]
 
 
-def resolve_hf_token(settings: Settings | None = None) -> str | None:
+def resolve_hf_token(
+    settings: Settings | None = None,
+    *,
+    stored_token: str | None = None,
+) -> str | None:
     settings = settings or get_settings()
+    if stored_token and stored_token.strip():
+        return stored_token.strip()
     if settings.hf_token:
         return settings.hf_token
     try:
@@ -100,8 +106,14 @@ class SpeakerSegment(BaseModel):
 
 
 class DiarizationService:
-    def __init__(self, settings: Settings | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        *,
+        hf_token: str | None = None,
+    ) -> None:
         self.settings = settings or get_settings()
+        self.hf_token = hf_token
         self._pipeline = None
 
     def load_pipeline(self) -> None:
@@ -121,13 +133,13 @@ class DiarizationService:
                 500,
             ) from exc
 
-        token = resolve_hf_token(self.settings)
+        token = resolve_hf_token(self.settings, stored_token=self.hf_token)
         if not token:
             raise AppError(
                 "DIARIZATION_MODEL_LOAD_FAILED",
                 (
-                    "HF_TOKEN is required for pyannote speaker diarization. "
-                    "Set HF_TOKEN in .env or run: huggingface-cli login"
+                    "Hugging Face token is required for pyannote speaker diarization. "
+                    "Add it in Settings → Transcription or run: huggingface-cli login"
                 ),
                 500,
             )

@@ -24,7 +24,7 @@ export type SpeakerProfileSummary = {
   displayName: string
   notes?: string | null
   embeddingCount: number
-  relatedTranscriptCount?: number
+  relatedRecordingCount?: number
   createdAt: string
   updatedAt: string
 }
@@ -32,14 +32,14 @@ export type SpeakerProfileSummary = {
 export type SpeakerEmbeddingSummary = {
   id: string
   modelId: string
-  sourceTranscriptId?: string | null
+  sourceRecordingId?: string | null
   sourceClusterId?: string | null
   durationSec?: number | null
   dimensions: number
   createdAt: string
 }
 
-export type RelatedTranscriptSummary = {
+export type RelatedRecordingSummary = {
   id: string
   title: string
   segmentCount: number
@@ -53,7 +53,7 @@ export type SpeakerProfileDetail = {
   embeddingCount: number
   embeddingDescription: string
   embeddings: SpeakerEmbeddingSummary[]
-  relatedTranscripts: RelatedTranscriptSummary[]
+  relatedRecordings: RelatedRecordingSummary[]
   createdAt: string
   updatedAt: string
 }
@@ -90,7 +90,7 @@ export type AiActionTemplate = {
   id: string
   title: string
   description: string
-  docType: string
+  noteType: string
 }
 
 export type LlmProviderId = "openrouter" | "openai" | "anthropic" | "custom"
@@ -120,7 +120,26 @@ export type UpdateLlmSettings = {
   defaultModel?: string
 }
 
-export type Transcript = {
+export type TranscriptionSettings = {
+  diarizationEnabled: boolean
+  diarizationReady: boolean
+  diarizationReason?: string | null
+  speakerMemoryEnabled: boolean
+  speakerMemoryReady: boolean
+  speakerMemoryReason?: string | null
+  speakerAutoLabelEnabled: boolean
+  hfTokenConfigured: boolean
+  source: "stored" | "unset"
+}
+
+export type UpdateTranscriptionSettings = {
+  diarizationEnabled?: boolean
+  speakerMemoryEnabled?: boolean
+  speakerAutoLabelEnabled?: boolean
+  hfToken?: string
+}
+
+export type Recording = {
   id: string
   audioAssetId: string
   title: string
@@ -135,7 +154,7 @@ export type Transcript = {
   updatedAt: string
 }
 
-export type TranscriptSummary = {
+export type RecordingSummary = {
   id: string
   audioAssetId: string
   title: string
@@ -147,29 +166,29 @@ export type TranscriptSummary = {
   updatedAt: string
 }
 
-export type DocumentStatus = "ready" | "generating" | "failed"
+export type NoteStatus = "ready" | "generating" | "failed"
 
-export type DocumentSummary = {
+export type NoteSummary = {
   id: string
-  transcriptId: string
+  recordingId: string
   title: string
-  type: Document["type"]
+  type: Note["type"]
   model: string
-  status: DocumentStatus
+  status: NoteStatus
   generationJobId?: string | null
   createdAt: string
   updatedAt: string
 }
 
-export type Document = {
+export type Note = {
   id: string
-  transcriptId: string
+  recordingId: string
   title: string
   type: NoteType
   markdown: string
   model: string
   promptVersion: string
-  status: DocumentStatus
+  status: NoteStatus
   generationJobId?: string | null
   createdAt: string
   updatedAt: string

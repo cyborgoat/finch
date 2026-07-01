@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog"
 import { StickyActionBar } from "@/components/layout/StickyActionBar"
 
-type DocumentToolbarProps = {
+type NoteToolbarProps = {
   onSave?: () => void
   onCopy: () => void
   onExport: () => void
@@ -13,14 +13,14 @@ type DocumentToolbarProps = {
   isDeleting?: boolean
 }
 
-export function DocumentToolbar({
+export function NoteToolbar({
   onSave,
   onCopy,
   onExport,
   onDelete,
   isSaving,
   isDeleting,
-}: DocumentToolbarProps) {
+}: NoteToolbarProps) {
   const { t } = useTranslation()
 
   return (
@@ -37,12 +37,12 @@ export function DocumentToolbar({
         </Button>
         <Button variant="outline" size="sm" onClick={onExport}>
           <Download className="size-4" />
-          {t("files.exportMd")}
+          {t("recordings.exportMd")}
         </Button>
       </div>
       <DeleteConfirmDialog
-        title={t("files.deleteDocumentTitle")}
-        description={t("files.deleteDocumentDescription")}
+        title={t("notes.deleteTitle")}
+        description={t("notes.deleteDescription")}
         onConfirm={onDelete}
         isPending={isDeleting}
         variant="ghost"

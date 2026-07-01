@@ -19,7 +19,7 @@ from app.services.diarization_service import (
     speaker_segments_to_json,
 )
 from app.services.job_service import JobService
-from app.services.transcript_service import TranscriptService
+from app.services.recording_service import RecordingService
 from app.core.startup_diagnostics import log_error_guidance, log_transcription_pipeline
 from app.storage.database import get_engine
 
@@ -28,16 +28,16 @@ logger = logging.getLogger(__name__)
 DIARIZATION_FALLBACK_CODES = {"DIARIZATION_MODEL_LOAD_FAILED", "DIARIZATION_FAILED"}
 
 
-def _mark_transcript_failed(
-    transcript_service: TranscriptService,
+def _mark_recording_failed(
+    recording_service: RecordingService,
     job,
     error_message: str,
 ) -> None:
     if not job.result_id:
         return
     try:
-        transcript = transcript_service.get_transcript(job.result_id)
-        transcript_service.update_transcript(
+        transcript = recording_service.get_recording(job.result_id)
+        recording_service.update_recording(
             transcript,
             status="failed",
             error_message=error_message,
@@ -132,11 +132,21 @@ def _transcribe_with_diarization(
     from app.services.speaker_matching_service import SpeakerMatchingService, SpeakerMatchResult
 
     preference_service = AppPreferenceService(session, settings)
-    speaker_memory_active = preference_service.is_speaker_memory_enabled()
-    if speaker_memory_active and preference_service.has_speaker_memory_consent():
+    from app.services.transcription_settings_service import TranscriptionSettingsService
+
+    transcription_settings = TranscriptionSettingsService(session, settings)
+    speaker_memory_active = (
+        transcription_settings.is_speaker_memory_enabled()
+        and transcription_settings.is_speaker_auto_label_enabled()
+        and preference_service.has_speaker_memory_consent()
+    )
+    if speaker_memory_active:
         job_service.update_job(job, progress=0.27, stage="running_speaker_matching")
         try:
-            embedding_service = SpeakerEmbeddingService(settings)
+            embedding_service = SpeakerEmbeddingService(
+                settings,
+                hf_token=transcription_settings.get_hf_token(),
+            )
             cluster_embeddings = embedding_service.extract_cluster_embeddings(
                 diarization_path,
                 merged_turns,
@@ -219,11 +229,15 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
     settings = get_settings()
 
     with Session(get_engine()) as session:
+        from app.services.transcription_settings_service import TranscriptionSettingsService
+
         job_service = JobService(session, settings)
         audio_service = AudioService(session, settings)
-        transcript_service = TranscriptService(session, settings)
+        recording_service = RecordingService(session, settings)
+        transcription_settings = TranscriptionSettingsService(session, settings)
+        stored_hf_token = transcription_settings.get_hf_token()
         asr_service = AsrService(settings)
-        diarization_service = DiarizationService(settings)
+        diarization_service = DiarizationService(settings, hf_token=stored_hf_token)
 
         job = job_service.get_job(job_id)
 
@@ -234,7 +248,7 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
                 audio_asset_id,
                 language,
             )
-            log_transcription_pipeline(settings)
+            log_transcription_pipeline(settings, session=session)
 
             job_service.update_job(job, status="processing", progress=0.1, stage="loading_model")
 
@@ -251,7 +265,7 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
             segments: list[SpeakerSegment]
             processing_note: str | None = None
 
-            if settings.diarization_enabled:
+            if transcription_settings.is_diarization_enabled():
                 try:
                     diarization_service.load_pipeline()
                     raw_text, detected_language, segments = _transcribe_with_diarization(
@@ -294,16 +308,16 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
                     language=language,
                 )
 
-            job_service.update_job(job, progress=0.8, stage="saving_transcript")
+            job_service.update_job(job, progress=0.8, stage="saving_recording")
             if not job.result_id:
                 raise AppError(
-                    "TRANSCRIPT_NOT_FOUND",
+                    "RECORDING_NOT_FOUND",
                     "Transcript placeholder is missing for this job.",
                     500,
                 )
-            transcript = transcript_service.get_transcript(job.result_id)
+            transcript = recording_service.get_recording(job.result_id)
             speaker_json = speaker_segments_to_json(segments) if segments else None
-            transcript_service.update_transcript(
+            recording_service.update_recording(
                 transcript,
                 raw_text=raw_text,
                 language=detected_language,
@@ -328,7 +342,7 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
                     job_id,
                     detected_language or "unknown",
                     " (no speaker labels — see startup logs or transcript processing note)"
-                    if settings.diarization_enabled
+                    if transcription_settings.is_diarization_enabled()
                     else "",
                 )
             if processing_note:
@@ -343,7 +357,7 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
             )
         except AppError as exc:
             log_error_guidance(exc.code, exc.message)
-            _mark_transcript_failed(transcript_service, job, exc.message)
+            _mark_recording_failed(recording_service, job, exc.message)
             job_service.update_job(
                 job,
                 status="failed",
@@ -352,7 +366,7 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
             )
         except Exception as exc:
             logger.exception("Transcription job %s failed with unexpected error", job_id)
-            _mark_transcript_failed(transcript_service, job, str(exc))
+            _mark_recording_failed(recording_service, job, str(exc))
             job_service.update_job(
                 job,
                 status="failed",

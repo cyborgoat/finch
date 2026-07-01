@@ -4,10 +4,9 @@ import { ChevronRight } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
 import { cn } from "@/lib/utils"
-import { parseFileDetailTab } from "@/lib/fileDetailTabs"
-import { resolveFileKind } from "@/lib/files"
-import { documentQuery } from "@/lib/queries/documents"
-import { transcriptQuery } from "@/lib/queries/transcripts"
+import { parseRecordingDetailTab } from "@/lib/recordingDetailTabs"
+import { resolveRecordingKind } from "@/lib/recordings"
+import { recordingQuery } from "@/lib/queries/recordings"
 
 type Crumb = {
   label: string
@@ -15,36 +14,26 @@ type Crumb = {
   params?: { id: string }
 }
 
-function useFileRecordTitle(id: string | undefined) {
-  const kind = id ? resolveFileKind(id) : null
-  const transcript = useQuery({
-    ...transcriptQuery(id ?? ""),
-    enabled: kind === "transcript" && Boolean(id),
-  })
-  const document = useQuery({
-    ...documentQuery(id ?? ""),
-    enabled: kind === "document" && Boolean(id),
+function useRecordingTitle(id: string | undefined) {
+  const kind = id ? resolveRecordingKind(id) : null
+  const recording = useQuery({
+    ...recordingQuery(id ?? ""),
+    enabled: kind === "recording" && Boolean(id),
   })
 
-  if (kind === "transcript") {
-    return transcript.data?.title?.trim() || undefined
-  }
-  if (kind === "document") {
-    return document.data?.title?.trim() || undefined
-  }
-  return undefined
+  return recording.data?.title?.trim() || undefined
 }
 
-function useFileDetailTab() {
+function useRecordingDetailTab() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const search = useRouterState({ select: (state) => state.location.search })
 
-  if (!pathname.startsWith("/files/")) {
+  if (!pathname.startsWith("/recordings/")) {
     return "source" as const
   }
 
   if (typeof search === "object" && search !== null && "tab" in search) {
-    return parseFileDetailTab((search as { tab?: unknown }).tab)
+    return parseRecordingDetailTab((search as { tab?: unknown }).tab)
   }
 
   return "source" as const
@@ -55,20 +44,20 @@ function buildCrumbs(
   pathname: string,
   id: string | undefined,
   recordTitle: string | undefined,
-  tab: ReturnType<typeof useFileDetailTab>,
+  tab: ReturnType<typeof useRecordingDetailTab>,
 ): Crumb[] {
   if (pathname === "/") {
     return [{ label: t("nav.home") }]
   }
-  if (pathname === "/files") {
-    return [{ label: t("nav.files") }]
+  if (pathname === "/recordings") {
+    return [{ label: t("nav.recordings") }]
   }
-  if (pathname.startsWith("/files/") && id) {
+  if (pathname.startsWith("/recordings/") && id) {
     const crumbs: Crumb[] = [
-      { label: t("nav.files"), to: "/files" },
+      { label: t("nav.recordings"), to: "/recordings" },
       {
         label: recordTitle || t("nav.untitled"),
-        to: "/files/$id",
+        to: "/recordings/$id",
         params: { id },
       },
     ]
@@ -94,8 +83,8 @@ export function NavBreadcrumb() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const params = useParams({ strict: false })
   const id = typeof params.id === "string" ? params.id : undefined
-  const recordTitle = useFileRecordTitle(id)
-  const tab = useFileDetailTab()
+  const recordTitle = useRecordingTitle(id)
+  const tab = useRecordingDetailTab()
   const crumbs = buildCrumbs(t, pathname, id, recordTitle, tab)
 
   return (

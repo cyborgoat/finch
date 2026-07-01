@@ -29,23 +29,23 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import type { FileSummary } from "@/lib/files"
+import type { RecordingListItem } from "@/lib/recordings"
 
-type FileRowActionsProps = {
-  item: FileSummary
+type RecordingRowActionsProps = {
+  item: RecordingListItem
   onRename?: (id: string, title: string) => void | Promise<void>
   onDelete: (id: string) => void
   isRenaming?: boolean
   isDeleting?: boolean
 }
 
-export function FileRowActions({
+export function RecordingRowActions({
   item,
   onRename,
   onDelete,
   isRenaming,
   isDeleting,
-}: FileRowActionsProps) {
+}: RecordingRowActionsProps) {
   const { t } = useTranslation()
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -79,7 +79,7 @@ export function FileRowActions({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label={t("files.actionsAriaLabel")}
+              aria-label={t("recordings.actionsAriaLabel")}
               disabled={busy}
             >
               <MoreHorizontal className="size-4" />
@@ -106,9 +106,9 @@ export function FileRowActions({
         <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{t("files.renameTitle")}</DialogTitle>
+              <DialogTitle>{t("recordings.renameTitle")}</DialogTitle>
               <DialogDescription>
-                {t("files.renameDescription")}
+                {t("recordings.renameDescription")}
               </DialogDescription>
             </DialogHeader>
             <div className="field-stack py-2">
@@ -146,9 +146,9 @@ export function FileRowActions({
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("files.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogTitle>{t("recordings.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("files.deleteDescription")}
+              {t("recordings.deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

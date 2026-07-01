@@ -2,39 +2,39 @@ from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlmodel import Session, select
 
 from app.models.audio_asset import AudioAsset
-from app.models.transcript import Transcript
+from app.models.recording import Recording
 from app.schemas.audio import OkResponse
-from app.schemas.transcript import (
-    CreateTranscriptRequest,
-    CreateTranscriptResponse,
+from app.schemas.recording import (
+    CreateRecordingRequest,
+    CreateRecordingResponse,
     SpeakerSegmentSchema,
-    TranscriptListResponse,
-    TranscriptResponse,
-    TranscriptSummary,
-    UpdateTranscriptRequest,
-    UpdateTranscriptResponse,
+    RecordingListResponse,
+    RecordingResponse,
+    RecordingSummary,
+    UpdateRecordingRequest,
+    UpdateRecordingResponse,
 )
 from app.schemas.speaker import (
-    UpdateTranscriptSpeakersRequest,
-    UpdateTranscriptSpeakersResponse,
+    UpdateRecordingSpeakersRequest,
+    UpdateRecordingSpeakersResponse,
 )
 from app.services.audio_service import AudioService
 from app.services.diarization_service import speaker_segments_from_json
-from app.services.document_service import DocumentService
+from app.services.note_service import NoteService
 from app.services.job_service import JobService
-from app.services.transcript_service import TranscriptService
-from app.services.speaker_transcript_service import SpeakerTranscriptService
+from app.services.recording_service import RecordingService
+from app.services.speaker_recording_service import SpeakerRecordingService
 from app.storage.database import get_session
 from app.workers.transcription_worker import run_transcription_job
 
-router = APIRouter(prefix="/transcripts", tags=["transcripts"])
+router = APIRouter(prefix="/recordings", tags=["recordings"])
 
 
 def _to_summary(
-    transcript: Transcript,
+    transcript: Recording,
     duration_seconds: float | None = None,
-) -> TranscriptSummary:
-    return TranscriptSummary(
+) -> RecordingSummary:
+    return RecordingSummary(
         id=transcript.id,
         audio_asset_id=transcript.audio_asset_id,
         title=transcript.title,
@@ -61,9 +61,9 @@ def _segment_to_schema(segment) -> SpeakerSegmentSchema:
     )
 
 
-def _to_response(transcript: Transcript) -> TranscriptResponse:
+def _to_response(transcript: Recording) -> RecordingResponse:
     segments = speaker_segments_from_json(transcript.speaker_segments)
-    return TranscriptResponse(
+    return RecordingResponse(
         id=transcript.id,
         audio_asset_id=transcript.audio_asset_id,
         title=transcript.title,
@@ -81,18 +81,18 @@ def _to_response(transcript: Transcript) -> TranscriptResponse:
     )
 
 
-@router.post("", response_model=CreateTranscriptResponse)
-def create_transcript_job(
-    payload: CreateTranscriptRequest,
+@router.post("", response_model=CreateRecordingResponse)
+def create_recording_job(
+    payload: CreateRecordingRequest,
     background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
-) -> CreateTranscriptResponse:
+) -> CreateRecordingResponse:
     audio_service = AudioService(session)
     audio_asset = audio_service.get_audio(payload.audio_asset_id)
 
-    title = audio_asset.filename.rsplit(".", 1)[0] or "Untitled Transcript"
-    transcript_service = TranscriptService(session)
-    transcript = transcript_service.create_transcript(
+    title = audio_asset.filename.rsplit(".", 1)[0] or "Untitled Recording"
+    recording_service = RecordingService(session)
+    transcript = recording_service.create_recording(
         audio_asset_id=audio_asset.id,
         title=title,
         raw_text="",
@@ -108,17 +108,17 @@ def create_transcript_job(
         payload.audio_asset_id,
         payload.language,
     )
-    return CreateTranscriptResponse(
+    return CreateRecordingResponse(
         job_id=job.id,
-        transcript_id=transcript.id,
+        recording_id=transcript.id,
         status=job.status,
     )
 
 
-@router.get("", response_model=TranscriptListResponse)
-def list_transcripts(session: Session = Depends(get_session)) -> TranscriptListResponse:
-    service = TranscriptService(session)
-    transcripts = service.list_transcripts()
+@router.get("", response_model=RecordingListResponse)
+def list_recordings(session: Session = Depends(get_session)) -> RecordingListResponse:
+    service = RecordingService(session)
+    transcripts = service.list_recordings()
     audio_ids = {transcript.audio_asset_id for transcript in transcripts}
     duration_by_audio_id: dict[str, float | None] = {}
     if audio_ids:
@@ -135,33 +135,33 @@ def list_transcripts(session: Session = Depends(get_session)) -> TranscriptListR
         )
         for transcript in transcripts
     ]
-    return TranscriptListResponse(items=items)
+    return RecordingListResponse(items=items)
 
 
-@router.get("/{transcript_id}", response_model=TranscriptResponse)
-def get_transcript(
-    transcript_id: str,
+@router.get("/{recording_id}", response_model=RecordingResponse)
+def get_recording(
+    recording_id: str,
     session: Session = Depends(get_session),
-) -> TranscriptResponse:
-    service = TranscriptService(session)
-    return _to_response(service.get_transcript(transcript_id))
+) -> RecordingResponse:
+    service = RecordingService(session)
+    return _to_response(service.get_recording(recording_id))
 
 
-@router.patch("/{transcript_id}", response_model=UpdateTranscriptResponse)
-def update_transcript(
-    transcript_id: str,
-    payload: UpdateTranscriptRequest,
+@router.patch("/{recording_id}", response_model=UpdateRecordingResponse)
+def update_recording(
+    recording_id: str,
+    payload: UpdateRecordingRequest,
     session: Session = Depends(get_session),
-) -> UpdateTranscriptResponse:
-    service = TranscriptService(session)
-    transcript = service.get_transcript(transcript_id)
-    updated = service.update_transcript(
+) -> UpdateRecordingResponse:
+    service = RecordingService(session)
+    transcript = service.get_recording(recording_id)
+    updated = service.update_recording(
         transcript,
         title=payload.title,
         edited_text=payload.edited_text,
         status=payload.status,
     )
-    return UpdateTranscriptResponse(
+    return UpdateRecordingResponse(
         id=updated.id,
         title=updated.title,
         edited_text=updated.edited_text,
@@ -170,13 +170,13 @@ def update_transcript(
     )
 
 
-@router.patch("/{transcript_id}/speakers", response_model=UpdateTranscriptSpeakersResponse)
-def update_transcript_speakers(
-    transcript_id: str,
-    payload: UpdateTranscriptSpeakersRequest,
+@router.patch("/{recording_id}/speakers", response_model=UpdateRecordingSpeakersResponse)
+def update_recording_speakers(
+    recording_id: str,
+    payload: UpdateRecordingSpeakersRequest,
     session: Session = Depends(get_session),
-) -> UpdateTranscriptSpeakersResponse:
-    service = SpeakerTranscriptService(session)
+) -> UpdateRecordingSpeakersResponse:
+    service = SpeakerRecordingService(session)
     mappings = [
         {
             "cluster_id": item.cluster_id,
@@ -188,9 +188,9 @@ def update_transcript_speakers(
         }
         for item in payload.mappings
     ]
-    segments, raw_text = service.update_speakers(transcript_id, mappings)
-    transcript = TranscriptService(session).get_transcript(transcript_id)
-    return UpdateTranscriptSpeakersResponse(
+    segments, raw_text = service.update_speakers(recording_id, mappings)
+    transcript = RecordingService(session).get_recording(recording_id)
+    return UpdateRecordingSpeakersResponse(
         id=transcript.id,
         speaker_segments=[_segment_to_schema(segment) for segment in segments],
         raw_text=raw_text,
@@ -198,14 +198,14 @@ def update_transcript_speakers(
     )
 
 
-@router.delete("/{transcript_id}", response_model=OkResponse)
-def delete_transcript(
-    transcript_id: str,
+@router.delete("/{recording_id}", response_model=OkResponse)
+def delete_recording(
+    recording_id: str,
     session: Session = Depends(get_session),
 ) -> OkResponse:
-    service = TranscriptService(session)
-    document_service = DocumentService(session)
-    transcript = service.get_transcript(transcript_id)
-    document_service.delete_by_transcript(transcript.id)
-    service.delete_transcript(transcript)
+    service = RecordingService(session)
+    note_service = NoteService(session)
+    transcript = service.get_recording(recording_id)
+    note_service.delete_by_recording(transcript.id)
+    service.delete_recording(transcript)
     return OkResponse()

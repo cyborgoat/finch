@@ -3,7 +3,7 @@ import sqlite3
 from sqlmodel import Session, select
 
 from app.config import get_settings
-from app.models.transcript import Transcript
+from app.models.recording import Recording
 from app.storage.database import create_db_and_tables, get_engine, reset_engine
 
 
@@ -23,7 +23,7 @@ def test_sqlite_migration_adds_speaker_segments_column(tmp_path, monkeypatch):
                 normalized_path TEXT,
                 created_at TEXT NOT NULL
             );
-            CREATE TABLE transcript (
+            CREATE TABLE recording (
                 id TEXT PRIMARY KEY,
                 audio_asset_id TEXT NOT NULL,
                 title TEXT NOT NULL,
@@ -39,10 +39,10 @@ def test_sqlite_migration_adds_speaker_segments_column(tmp_path, monkeypatch):
             ) VALUES (
                 'audio_test', 'upload', 'sample.wav', 'audio/wav', 100, '2026-01-01T00:00:00'
             );
-            INSERT INTO transcript (
+            INSERT INTO recording (
                 id, audio_asset_id, title, raw_text, status, created_at, updated_at
             ) VALUES (
-                'transcript_test', 'audio_test', 'Sample', 'Hello', 'draft',
+                'recording_test', 'audio_test', 'Sample', 'Hello', 'draft',
                 '2026-01-01T00:00:00', '2026-01-01T00:00:00'
             );
             """
@@ -55,12 +55,12 @@ def test_sqlite_migration_adds_speaker_segments_column(tmp_path, monkeypatch):
     create_db_and_tables()
 
     with sqlite3.connect(db_path) as connection:
-        columns = {row[1] for row in connection.execute("PRAGMA table_info(transcript)")}
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(recording)")}
     assert "speaker_segments" in columns
 
     with Session(get_engine()) as session:
-        transcript = session.exec(
-            select(Transcript).where(Transcript.id == "transcript_test")
+        recording = session.exec(
+            select(Recording).where(Recording.id == "recording_test")
         ).one()
-        assert transcript.raw_text == "Hello"
-        assert transcript.speaker_segments is None
+        assert recording.raw_text == "Hello"
+        assert recording.speaker_segments is None

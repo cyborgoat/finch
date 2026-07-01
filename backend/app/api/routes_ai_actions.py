@@ -10,9 +10,9 @@ from app.schemas.ai_action import (
 )
 from app.services.ai_action_presets import get_preset, list_presets, resolve_action_id
 from app.services.ai_action_service import AiActionService
-from app.services.document_service import DocumentService
+from app.services.note_service import NoteService
 from app.services.job_service import JobService
-from app.services.transcript_service import TranscriptService
+from app.services.recording_service import RecordingService
 from app.storage.database import get_session
 from app.workers.ai_action_worker import run_ai_action_job
 
@@ -26,7 +26,7 @@ def list_ai_action_templates() -> AiActionTemplateListResponse:
             id=preset.id,
             title=preset.title,
             description=preset.description,
-            doc_type=preset.doc_type,
+            note_type=preset.note_type,
         )
         for preset in list_presets()
     ]
@@ -44,8 +44,8 @@ def create_ai_action_job(
     if preset is None:
         raise AppError("AI_ACTION_INVALID", f"Unknown action: {payload.action}.", 400)
 
-    transcript_service = TranscriptService(session)
-    transcript = transcript_service.get_transcript(payload.transcript_id)
+    recording_service = RecordingService(session)
+    transcript = recording_service.get_recording(payload.recording_id)
 
     job_service = JobService(session)
     job = job_service.create_job("ai_action")
@@ -54,11 +54,11 @@ def create_ai_action_job(
     placeholder_title = ai_action_service.build_title(preset.title_prefix, transcript)
     resolved_model = payload.model or ai_action_service.llm_service.resolve_default_model()
 
-    document_service = DocumentService(session)
-    document = document_service.create_generating_document(
-        transcript_id=transcript.id,
+    note_service = NoteService(session)
+    document = note_service.create_generating_note(
+        recording_id=transcript.id,
         title=placeholder_title,
-        doc_type=preset.doc_type,
+        note_type=preset.note_type,
         generation_job_id=job.id,
         model=resolved_model,
     )
@@ -67,7 +67,7 @@ def create_ai_action_job(
     background_tasks.add_task(
         run_ai_action_job,
         job.id,
-        payload.transcript_id,
+        payload.recording_id,
         payload.action,
         payload.source,
         payload.model,
@@ -75,6 +75,6 @@ def create_ai_action_job(
     )
     return CreateAiActionResponse(
         job_id=job.id,
-        document_id=document.id,
+        note_id=document.id,
         status=job.status,
     )

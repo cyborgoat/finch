@@ -8,7 +8,7 @@ Finch is a local-first voice transcription app. Audio is transcribed on your mac
 |-----|-------------|
 | [Quickstart](quickstart.md) | Install, configure, run, and transcribe |
 | [Diarization](diarization.md) | Speaker labels: setup, validation, tuning |
-| [Speaker memory](speaker-memory.md) | Persistent speaker names and voiceprints |
+| [Voiceprint profiles](speaker-memory.md) | Persistent speaker names and local voiceprints |
 | [Architecture](architecture.md) | System design, data model, request flows |
 | [Features & roadmap](features.md) | What's built and what's planned |
 | [Backend modules](modules.md) | `backend/app/` package reference |
@@ -21,26 +21,26 @@ Finch is a local-first voice transcription app. Audio is transcribed on your mac
 ## Core model
 
 ```txt
-AudioAsset → Transcript (recording) → Document(s) / notes (optional)
+AudioAsset → Recording → Note(s) (optional)
 ```
 
-The transcript is the durable artifact. LLM-generated and manual Markdown notes are optional derivatives stored as documents linked to the source recording.
+The transcript on a recording is the durable artifact. LLM-generated and manual Markdown notes are optional derivatives linked to the source recording.
 
 ## Frontend routes
 
 | Route | Purpose |
 |-------|---------|
 | `/` | Recent voice recordings |
-| `/files` | Full recordings library (title search) |
-| `/files/{id}` | Recording detail (Source / Notes) or standalone document editor |
+| `/recordings` | Full recordings library (title search) |
+| `/recordings/{id}` | Recording detail (**Source** / **Notes** tabs) |
 | `/upload`, `/record` | Create new recordings |
-| `/settings` | User profile, language, AI note prefs, LLM provider, speakers |
+| `/settings` | User profile, language, AI note prefs, LLM provider, transcription, voiceprint profiles |
 
 Recording detail uses a **topbar** with breadcrumbs, a download menu (audio, transcript `.txt`, active note `.md`), and actions (rename, delete). The **Source** tab shows the audio player and a compact auto-scrolling transcript. The **Notes** tab supports multiple markdown notes per recording (AI templates or blank), with a dropdown to switch notes, rename/delete actions, and MDXEditor.
 
-LLM provider credentials are configured in **Settings → LLM provider** and stored locally in SQLite — not in `.env`.
+LLM and transcription settings are configured in the frontend and stored locally in SQLite — not in `.env`.
 
-Recording and document IDs use type prefixes (`transcript_`, `doc_`) so routes can infer file kind from the URL. Other resources use their own prefixes (`audio_`, `job_`, etc.).
+Recording IDs use the `recording_` prefix in URLs (e.g. `/recordings/recording_a1b2c3d4e5f67890`). Notes use `note_` IDs in the API but are opened on a recording’s **Notes** tab (`?tab=notes&noteId=…`), not as standalone routes. Other resources use their own prefixes (`audio_`, `job_`, etc.).
 
 ## Privacy
 

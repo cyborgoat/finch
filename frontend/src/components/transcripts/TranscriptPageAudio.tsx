@@ -1,22 +1,22 @@
 
-import { TranscriptAudioPlayer } from "@/components/transcripts/TranscriptAudioPlayer"
+import { RecordingAudioPlayer } from "@/components/transcripts/TranscriptAudioPlayer"
 import { useAudioAsset } from "@/hooks/useAudioAsset"
-import { useTranscriptPlayback } from "@/hooks/useTranscriptPlayback"
+import { useRecordingPlayback } from "@/hooks/useRecordingPlayback"
 
-type TranscriptPageAudioProps = {
+type RecordingPageAudioProps = {
   audioAssetId: string
   className?: string
 }
 
-export function TranscriptPageAudio({ audioAssetId, className }: TranscriptPageAudioProps) {
+export function RecordingPageAudio({ audioAssetId, className }: RecordingPageAudioProps) {
   const { data: audioAsset } = useAudioAsset(audioAssetId)
-  const playback = useTranscriptPlayback(
+  const playback = useRecordingPlayback(
     audioAssetId,
     audioAsset?.durationSeconds,
   )
 
   return (
-    <TranscriptAudioPlayer
+    <RecordingAudioPlayer
       className={className}
       filename={audioAsset?.filename}
       audioRef={playback.audioRef}

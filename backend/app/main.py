@@ -6,12 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import (
     routes_ai_actions,
     routes_audio,
-    routes_documents,
+    routes_notes,
     routes_health,
     routes_jobs,
     routes_llm_settings,
+    routes_transcription_settings,
     routes_speaker_profiles,
-    routes_transcripts,
+    routes_recordings,
     routes_user_settings,
 )
 from app.config import get_settings
@@ -47,13 +48,14 @@ def create_app() -> FastAPI:
 
     app.include_router(routes_health.router, prefix="/api")
     app.include_router(routes_audio.router, prefix="/api")
-    app.include_router(routes_transcripts.router, prefix="/api")
+    app.include_router(routes_recordings.router, prefix="/api")
     app.include_router(routes_jobs.router, prefix="/api")
     app.include_router(routes_ai_actions.router, prefix="/api")
-    app.include_router(routes_documents.router, prefix="/api")
+    app.include_router(routes_notes.router, prefix="/api")
     app.include_router(routes_speaker_profiles.router, prefix="/api")
     app.include_router(routes_user_settings.router, prefix="/api")
     app.include_router(routes_llm_settings.router, prefix="/api")
+    app.include_router(routes_transcription_settings.router, prefix="/api")
 
     return app
 

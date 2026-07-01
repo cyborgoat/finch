@@ -18,7 +18,7 @@ type FullTranscriptPanelProps = {
   onSegmentSpeakerSave?: (
     clusterId: string,
     segment: SpeakerSegment,
-    payload: { displayName: string; profileId?: string },
+    payload: { displayName: string; profileId: string | null; enroll: boolean },
   ) => Promise<void>
   speakerSavePending?: boolean
   disabled?: boolean
@@ -61,7 +61,7 @@ export function FullTranscriptPanel({
 
   return (
     <>
-      <Section title={t("transcript.sectionTitle")}>
+      <Section title={t("recording.sectionTitle")}>
         <ScrollArea className="surface-card h-96 rounded-xl border border-border">
           {segments.length > 0 ? (
             <div className="space-y-1 p-3">
@@ -70,7 +70,10 @@ export function FullTranscriptPanel({
                 const displayName = resolveSpeakerDisplayName(clusterId, {
                   segment,
                   profiles,
-                  fallback: segment.speaker,
+                  fallback:
+                    segment.matchStatus === "unknown"
+                      ? t("recording.unknownSpeaker")
+                      : segment.speaker,
                 })
                 const isActive = index === currentSegmentIndex
 
@@ -151,11 +154,9 @@ export function FullTranscriptPanel({
           profiles={profiles}
           memoryStatus={memoryStatus}
           isPending={speakerSavePending}
-          onSave={(payload) => {
-            void onSegmentSpeakerSave(editingClusterId, editingSegment, payload).then(
-              () => setEditingSegment(null),
-            )
-          }}
+          onSave={(payload) =>
+            onSegmentSpeakerSave(editingClusterId, editingSegment, payload)
+          }
         />
       ) : null}
     </>

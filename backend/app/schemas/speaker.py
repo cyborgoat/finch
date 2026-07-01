@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from app.schemas import CamelModel
-from app.schemas.transcript import SpeakerSegmentSchema
+from app.schemas.recording import SpeakerSegmentSchema
 
 
 class SpeakerMappingItem(CamelModel):
@@ -13,11 +13,11 @@ class SpeakerMappingItem(CamelModel):
     enroll_end_sec: float | None = None
 
 
-class UpdateTranscriptSpeakersRequest(CamelModel):
+class UpdateRecordingSpeakersRequest(CamelModel):
     mappings: list[SpeakerMappingItem]
 
 
-class UpdateTranscriptSpeakersResponse(CamelModel):
+class UpdateRecordingSpeakersResponse(CamelModel):
     id: str
     speaker_segments: list[SpeakerSegmentSchema]
     raw_text: str
@@ -39,7 +39,7 @@ class SpeakerProfileSummary(CamelModel):
     display_name: str
     notes: str | None = None
     embedding_count: int = 0
-    related_transcript_count: int = 0
+    related_recording_count: int = 0
     created_at: datetime
     updated_at: datetime
 
@@ -47,14 +47,14 @@ class SpeakerProfileSummary(CamelModel):
 class SpeakerEmbeddingSummary(CamelModel):
     id: str
     model_id: str
-    source_transcript_id: str | None = None
+    source_recording_id: str | None = None
     source_cluster_id: str | None = None
     duration_sec: float | None = None
     dimensions: int
     created_at: datetime
 
 
-class RelatedTranscriptSummary(CamelModel):
+class RelatedRecordingSummary(CamelModel):
     id: str
     title: str
     segment_count: int
@@ -68,7 +68,7 @@ class SpeakerProfileDetailResponse(CamelModel):
     embedding_count: int = 0
     embedding_description: str
     embeddings: list[SpeakerEmbeddingSummary]
-    related_transcripts: list[RelatedTranscriptSummary]
+    related_recordings: list[RelatedRecordingSummary]
     created_at: datetime
     updated_at: datetime
 

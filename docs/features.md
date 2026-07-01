@@ -23,30 +23,31 @@ What Finch does today and what is intentionally out of scope.
 - Per-speaker ASR → labeled output (`Speaker 1: …`, `Speaker 2: …`)
 - Falls back to full-file ASR if diarization is unavailable
 - Tunable segment merge and audio source — see [diarization.md](diarization.md)
+- Enable in **Settings → Transcription** (stored locally in SQLite)
 
-### Speaker memory (optional)
+### Voiceprint profiles (optional)
 
 - Local voiceprint storage with [pyannote/embedding](https://huggingface.co/pyannote/embedding)
 - Match unknown speakers to saved profiles or assign new names on a transcript
 - Clickable speaker names on each transcript turn to assign or update labels
 - Voiceprint enrollment when you edit a speaker (when auto-label is on and consent given)
 - Auto-match known speakers on future transcripts (when auto-label is enabled in Settings)
-- Profile management in **Settings → Speakers** (rename, delete, map **You**)
+- Profile management in **Settings → Voiceprint profiles** (rename, delete, map **You**)
 - Consent-gated auto-label toggle — see [speaker-memory.md](speaker-memory.md)
 
-### File library
+### Recordings library
 
-- Unified **Files** browser at `/files` — voice recordings only; generated documents and artifacts belong to each recording
+- **Recordings** browser at `/recordings` — voice recordings only; notes belong to each recording
 - Home shows recent voice recordings sorted by last updated
-- Title search on the Files page (filters by recording name)
-- Recording detail at `/files/{id}` with two tabs:
+- Title search on the Recordings page (filters by recording name)
+- Recording detail at `/recordings/{id}` with two tabs:
   - **Source** — audio player and compact scrollable transcript (speaker, timestamp, text per turn)
   - **Notes** — multiple markdown notes per recording (AI templates or blank), editable with MDXEditor
-- Prefixed IDs in URLs (e.g. `/files/transcript_a1b2c3d4e5f67890`, `/files/doc_b2c3d4e5f6789012`)
+- Prefixed recording IDs in URLs (e.g. `/recordings/recording_a1b2c3d4e5f67890`)
 - **Topbar** on recording detail: breadcrumb navigation, download menu (audio, transcript `.txt`, active note `.md`), and actions menu (rename, delete session)
-- Rename and delete from the topbar actions menu or the Files list ellipsis menu; list API includes audio duration (`durationSeconds`)
+- Rename and delete from the topbar actions menu or the Recordings list ellipsis menu; list API includes audio duration (`durationSeconds`)
 - Built-in audio player (seek, ±15s skip, playback speed)
-- Transcript auto-scrolls to the active turn during playback; click timestamps to seek
+- Recording auto-scrolls to the active turn during playback; click timestamps to seek
 - Read-only transcript on Source (no manual text editing)
 - In-progress (`transcribing`) and failed states in the UI
 
@@ -56,22 +57,19 @@ What Finch does today and what is intentionally out of scope.
 - Provider selection and API keys in **Settings → LLM provider** (stored locally in SQLite)
 - **Notes** tab on each recording: create multiple markdown notes via AI templates or blank note
 - AI templates: meeting summary, action items, key decisions, follow-up email
-- MDXEditor for in-app editing notes; auto-save toggle (default on) or manual Save
+- MDXEditor for in-app note editing; auto-save toggle (default on) or manual Save
 - User content language, summary style/format, and display name applied to AI note prompts (content language on all templates; style/format on meeting summary)
-- Notes stored as linked documents per transcript (`meeting_summary`, `action_items`, `note`, etc.)
-
-### Documents
-
-- Markdown notes linked to source transcripts
-- Document detail editor at `/files/doc_*` with MDXEditor and export
+- Notes stored as linked markdown per recording (`meeting_summary`, `action_items`, `note`, etc.)
+- Switch notes via dropdown (`?tab=notes&noteId=…`); rename/delete from the notes actions menu
 
 ### User settings
 
-- **You:** display name and link to your speaker profile (applied to meeting summary prompts when set)
+- **You:** display name and link to your voiceprint profile (applied to meeting summary prompts when set)
 - **Language & region:** interface language (English / 中文) and AI note content language (separate settings)
 - **AI notes:** style (concise / balanced / detailed) and format (paragraphs / bullets) — applied when generating meeting summaries; auto-save toggle for note editing
-- **Speakers:** auto-label toggle, saved speaker list (rename / delete)
-- Persisted via `GET/PATCH /api/user-settings` (stored in `AppPreference`)
+- **Transcription:** diarization, voiceprint profiles, Hugging Face token (stored locally in SQLite)
+- **Voiceprint profiles:** auto-label toggle, saved profile list (rename / delete)
+- Persisted via `GET/PATCH /api/user-settings`, `/api/transcription-settings`, and related APIs (stored in `AppPreference`)
 
 ### Internationalization
 
@@ -83,7 +81,7 @@ What Finch does today and what is intentionally out of scope.
 ### Operations
 
 - Startup configuration summary and dependency checks
-- `/api/health` capability flags (not shown on the settings page)
+- `/api/health` capability flags
 - `scripts/validate_diarization.py` for pre-flight checks
 
 ## Not implemented yet
@@ -91,7 +89,7 @@ What Finch does today and what is intentionally out of scope.
 | Area | Notes |
 |------|--------|
 | **Transcript editing** | Source transcript is read-only (rename title via topbar only) |
-| **Full-text search** | Files search filters by title only |
+| **Full-text search** | Recordings search filters by title only |
 | **Rich exports** | PDF, DOCX, HTML, Obsidian, Notion (audio + transcript `.txt` and note `.md` exist today) |
 
 ## Planned (post-MVP)
@@ -99,7 +97,7 @@ What Finch does today and what is intentionally out of scope.
 | Area | Examples |
 |------|----------|
 | Waveform | Visual waveform and finer scrubbing beyond click-to-seek |
-| Search | Full-text over transcripts and documents; later semantic search |
+| Search | Full-text over transcripts and notes; later semantic search |
 | Export | PDF, DOCX, HTML, Obsidian vault, Notion Markdown |
 | Local LLM | Configure via Settings → LLM provider with `custom` (Ollama, LM Studio, vLLM) |
 | Real-time ASR | Streaming microphone → partial transcript updates |

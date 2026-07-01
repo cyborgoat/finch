@@ -14,18 +14,18 @@ class SpeakerSegmentSchema(CamelModel):
     match_status: str | None = None
 
 
-class CreateTranscriptRequest(CamelModel):
+class CreateRecordingRequest(CamelModel):
     audio_asset_id: str
     language: str = "auto"
 
 
-class CreateTranscriptResponse(CamelModel):
+class CreateRecordingResponse(CamelModel):
     job_id: str
-    transcript_id: str
+    recording_id: str
     status: str
 
 
-class TranscriptSummary(CamelModel):
+class RecordingSummary(CamelModel):
     id: str
     audio_asset_id: str
     title: str
@@ -38,11 +38,11 @@ class TranscriptSummary(CamelModel):
     updated_at: datetime
 
 
-class TranscriptListResponse(CamelModel):
-    items: list[TranscriptSummary]
+class RecordingListResponse(CamelModel):
+    items: list[RecordingSummary]
 
 
-class TranscriptResponse(CamelModel):
+class RecordingResponse(CamelModel):
     id: str
     audio_asset_id: str
     title: str
@@ -57,13 +57,13 @@ class TranscriptResponse(CamelModel):
     updated_at: datetime
 
 
-class UpdateTranscriptRequest(CamelModel):
+class UpdateRecordingRequest(CamelModel):
     title: str | None = None
     edited_text: str | None = None
     status: str | None = None
 
 
-class UpdateTranscriptResponse(CamelModel):
+class UpdateRecordingResponse(CamelModel):
     id: str
     title: str
     edited_text: str | None = None

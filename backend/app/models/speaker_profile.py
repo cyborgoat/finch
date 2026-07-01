@@ -18,7 +18,7 @@ class SpeakerEmbedding(SQLModel, table=True):
     profile_id: str = Field(foreign_key="speakerprofile.id")
     embedding: str
     model_id: str
-    source_transcript_id: str | None = None
+    source_recording_id: str | None = None
     source_cluster_id: str | None = None
     duration_sec: float | None = None
     created_at: datetime = Field(default_factory=utc_now)

@@ -3,9 +3,9 @@ from datetime import datetime
 from app.schemas import CamelModel
 
 
-class DocumentSummary(CamelModel):
+class NoteSummary(CamelModel):
     id: str
-    transcript_id: str
+    recording_id: str
     title: str
     type: str
     model: str
@@ -15,13 +15,13 @@ class DocumentSummary(CamelModel):
     updated_at: datetime
 
 
-class DocumentListResponse(CamelModel):
-    items: list[DocumentSummary]
+class NoteListResponse(CamelModel):
+    items: list[NoteSummary]
 
 
-class DocumentResponse(CamelModel):
+class NoteResponse(CamelModel):
     id: str
-    transcript_id: str
+    recording_id: str
     title: str
     type: str
     markdown: str
@@ -33,20 +33,20 @@ class DocumentResponse(CamelModel):
     updated_at: datetime
 
 
-class UpdateDocumentRequest(CamelModel):
+class UpdateNoteRequest(CamelModel):
     title: str | None = None
     markdown: str | None = None
 
 
-class UpdateDocumentResponse(CamelModel):
+class UpdateNoteResponse(CamelModel):
     id: str
     title: str
     markdown: str
     updated_at: datetime
 
 
-class CreateDocumentRequest(CamelModel):
-    transcript_id: str
+class CreateNoteRequest(CamelModel):
+    recording_id: str
     title: str | None = None
     markdown: str = ""
     type: str = "note"

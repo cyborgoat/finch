@@ -28,8 +28,14 @@ def embedding_from_json(raw: str) -> np.ndarray:
 
 
 class SpeakerEmbeddingService:
-    def __init__(self, settings: Settings | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        *,
+        hf_token: str | None = None,
+    ) -> None:
         self.settings = settings or get_settings()
+        self.hf_token = hf_token
         self._inference = None
 
     def load_model(self) -> None:
@@ -49,11 +55,11 @@ class SpeakerEmbeddingService:
                 500,
             ) from exc
 
-        token = resolve_hf_token(self.settings)
+        token = resolve_hf_token(self.settings, stored_token=self.hf_token)
         if not token:
             raise AppError(
                 "SPEAKER_EMBEDDING_MODEL_LOAD_FAILED",
-                "HF_TOKEN is required for speaker embeddings.",
+                "Hugging Face token is required for speaker embeddings. Add it in Settings → Transcription.",
                 500,
             )
 

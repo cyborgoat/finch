@@ -1,42 +1,42 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
-import { RecentFileList } from "@/components/files/RecentFileList"
+import { RecentRecordingList } from "@/components/files/RecentFileList"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useRecentFiles } from "@/hooks/useFiles"
+import { useRecentRecordings } from "@/hooks/useRecordingsList"
 import {
-  useDeleteTranscript,
-  useRenameTranscript,
-} from "@/hooks/useTranscripts"
-import { filesQuery } from "@/lib/queries/files"
+  useDeleteRecording,
+  useRenameRecording,
+} from "@/hooks/useRecordings"
+import { recordingsListQuery } from "@/lib/queries/recordingsList"
 
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(filesQuery()),
+  loader: ({ context }) => context.queryClient.ensureQueryData(recordingsListQuery()),
   component: HomePage,
 })
 
 function HomePage() {
   const { t } = useTranslation()
-  const { data: items, isLoading } = useRecentFiles(8)
-  const deleteTranscriptMutation = useDeleteTranscript()
-  const renameMutation = useRenameTranscript()
+  const { data: items, isLoading } = useRecentRecordings(8)
+  const deleteRecordingMutation = useDeleteRecording()
+  const renameMutation = useRenameRecording()
 
   const handleRename = async (id: string, title: string) => {
     try {
       await renameMutation.mutateAsync({ id, title })
-      toast.success(t("toasts.fileRenamed"))
+      toast.success(t("toasts.recordingRenamed"))
     } catch {
-      toast.error(t("toasts.fileRenameFailed"))
+      toast.error(t("toasts.recordingRenameFailed"))
     }
   }
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteTranscriptMutation.mutateAsync(id)
-      toast.success(t("toasts.fileDeleted"))
+      await deleteRecordingMutation.mutateAsync(id)
+      toast.success(t("toasts.recordingDeleted"))
     } catch {
-      toast.error(t("toasts.fileDeleteFailed"))
+      toast.error(t("toasts.recordingDeleteFailed"))
     }
   }
 
@@ -45,12 +45,12 @@ function HomePage() {
       {isLoading ? (
         <Skeleton className="h-56 w-full rounded-xl" />
       ) : (
-        <RecentFileList
+        <RecentRecordingList
           items={items ?? []}
           onRename={(id, title) => void handleRename(id, title)}
           onDelete={(id) => void handleDelete(id)}
           isRenaming={renameMutation.isPending}
-          isDeleting={deleteTranscriptMutation.isPending}
+          isDeleting={deleteRecordingMutation.isPending}
         />
       )}
     </PageContainer>

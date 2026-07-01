@@ -7,7 +7,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <I18nProvider>{children}</I18nProvider>
-      <Toaster richColors position="top-right" />
+      <Toaster position="top-center" />
     </TooltipProvider>
   )
 }

@@ -116,64 +116,54 @@ def _get_llm_capability(settings: Settings, session=None) -> tuple[str, bool]:
     return provider, configured
 
 
-def get_capability_status(
+def get_diarization_status(
+    *,
+    enabled: bool,
+    hf_token: str | None,
     settings: Settings | None = None,
-    session=None,
-) -> CapabilityStatus:
+) -> tuple[bool, str | None]:
     settings = settings or get_settings()
-    hf_token = resolve_hf_token(settings)
+    if not enabled:
+        return True, None
+
     pyannote_installed = _dependency_installed("pyannote.audio")
     diarization_reason: str | None = None
 
-    if settings.diarization_enabled:
-        if not hf_token:
-            diarization_reason = (
-                "HF_TOKEN is not set and no Hugging Face CLI login was found."
-            )
-        elif not pyannote_installed:
-            diarization_reason = "pyannote-audio is not installed."
-        else:
-            access_ok, access_reason = get_cached_pipeline_access(
-                settings.diarization_pipeline_id,
-                hf_token,
-            ) or (False, "Could not verify Hugging Face model access.")
-            if not access_ok:
-                diarization_reason = access_reason
+    if not hf_token:
+        diarization_reason = (
+            "Hugging Face token is not configured. Add it in Settings → Transcription."
+        )
+    elif not pyannote_installed:
+        diarization_reason = "pyannote-audio is not installed."
+    else:
+        access_ok, access_reason = get_cached_pipeline_access(
+            settings.diarization_pipeline_id,
+            hf_token,
+        ) or (False, "Could not verify Hugging Face model access.")
+        if not access_ok:
+            diarization_reason = access_reason
 
-    diarization_ready = not settings.diarization_enabled or (
-        bool(hf_token) and pyannote_installed and diarization_reason is None
-    )
-
-    memory_status = get_speaker_memory_status(settings=settings)
-    llm_provider, llm_configured = _get_llm_capability(settings, session)
-
-    return CapabilityStatus(
-        diarization_enabled=settings.diarization_enabled,
-        diarization_ready=diarization_ready,
-        diarization_reason=diarization_reason,
-        llm_provider=llm_provider,
-        llm_configured=llm_configured,
-        openrouter_configured=llm_configured and llm_provider == "openrouter",
-        speaker_memory_enabled=settings.speaker_memory_enabled,
-        speaker_memory_ready=memory_status.ready and settings.speaker_memory_enabled,
-        speaker_memory_reason=memory_status.reason,
-        speaker_memory_consent_given=False,
-    )
+    diarization_ready = bool(hf_token) and pyannote_installed and diarization_reason is None
+    return diarization_ready, diarization_reason
 
 
-def get_speaker_memory_status(
-    session=None,
+def get_speaker_memory_status_for_preferences(
+    *,
+    diarization_enabled: bool,
+    speaker_memory_enabled: bool,
+    hf_token: str | None,
     settings: Settings | None = None,
 ) -> SpeakerMemoryStatus:
     settings = settings or get_settings()
-    hf_token = resolve_hf_token(settings)
     pyannote_installed = _dependency_installed("pyannote.audio")
     reason: str | None = None
 
-    if not settings.diarization_enabled:
-        reason = "Speaker memory requires DIARIZATION_ENABLED=true."
+    if not speaker_memory_enabled:
+        reason = "Voiceprint profiles are disabled in Settings."
+    elif not diarization_enabled:
+        reason = "Voiceprint profiles require speaker diarization to be enabled in Settings."
     elif not hf_token:
-        reason = "HF_TOKEN is required for speaker embeddings."
+        reason = "Hugging Face token is not configured. Add it in Settings → Transcription."
     elif not pyannote_installed:
         reason = "pyannote-audio is not installed."
     elif not _dependency_installed("omegaconf"):
@@ -185,29 +175,89 @@ def get_speaker_memory_status(
     return SpeakerMemoryStatus(ready=ready, reason=reason)
 
 
+def get_capability_status(
+    settings: Settings | None = None,
+    session=None,
+) -> CapabilityStatus:
+    settings = settings or get_settings()
+
+    diarization_enabled = settings.diarization_enabled
+    speaker_memory_enabled = settings.speaker_memory_enabled
+    hf_token = resolve_hf_token(settings)
+    speaker_auto_label = False
+
+    if session is not None:
+        from app.services.transcription_settings_service import TranscriptionSettingsService
+
+        transcription_settings = TranscriptionSettingsService(session, settings)
+        diarization_enabled = transcription_settings.is_diarization_enabled()
+        speaker_memory_enabled = transcription_settings.is_speaker_memory_enabled()
+        speaker_auto_label = transcription_settings.is_speaker_auto_label_enabled()
+        hf_token = transcription_settings.get_hf_token() or hf_token
+
+    diarization_ready, diarization_reason = get_diarization_status(
+        enabled=diarization_enabled,
+        hf_token=hf_token,
+        settings=settings,
+    )
+    memory_status = get_speaker_memory_status_for_preferences(
+        diarization_enabled=diarization_enabled,
+        speaker_memory_enabled=speaker_memory_enabled,
+        hf_token=hf_token,
+        settings=settings,
+    )
+    llm_provider, llm_configured = _get_llm_capability(settings, session)
+
+    consent_given = False
+    if session is not None:
+        from app.services.app_preference_service import AppPreferenceService
+
+        consent_given = AppPreferenceService(session, settings).has_speaker_memory_consent()
+
+    return CapabilityStatus(
+        diarization_enabled=diarization_enabled,
+        diarization_ready=diarization_ready,
+        diarization_reason=diarization_reason,
+        llm_provider=llm_provider,
+        llm_configured=llm_configured,
+        openrouter_configured=llm_configured and llm_provider == "openrouter",
+        speaker_memory_enabled=speaker_auto_label,
+        speaker_memory_ready=memory_status.ready and speaker_memory_enabled,
+        speaker_memory_reason=memory_status.reason,
+        speaker_memory_consent_given=consent_given,
+    )
+
+
+def get_speaker_memory_status(
+    session=None,
+    settings: Settings | None = None,
+) -> SpeakerMemoryStatus:
+    settings = settings or get_settings()
+    diarization_enabled = settings.diarization_enabled
+    speaker_memory_enabled = settings.speaker_memory_enabled
+    hf_token = resolve_hf_token(settings)
+
+    if session is not None:
+        from app.services.transcription_settings_service import TranscriptionSettingsService
+
+        transcription_settings = TranscriptionSettingsService(session, settings)
+        diarization_enabled = transcription_settings.is_diarization_enabled()
+        speaker_memory_enabled = transcription_settings.is_speaker_memory_enabled()
+        hf_token = transcription_settings.get_hf_token() or hf_token
+
+    return get_speaker_memory_status_for_preferences(
+        diarization_enabled=diarization_enabled,
+        speaker_memory_enabled=speaker_memory_enabled,
+        hf_token=hf_token,
+        settings=settings,
+    )
+
+
 def get_capability_status_with_session(
     session,
     settings: Settings | None = None,
 ) -> CapabilityStatus:
-    settings = settings or get_settings()
-    base = get_capability_status(settings, session)
-    from app.services.app_preference_service import AppPreferenceService
-
-    preference_service = AppPreferenceService(session, settings)
-    memory_status = get_speaker_memory_status(session, settings)
-    enabled = preference_service.is_speaker_memory_enabled()
-    return CapabilityStatus(
-        diarization_enabled=base.diarization_enabled,
-        diarization_ready=base.diarization_ready,
-        diarization_reason=base.diarization_reason,
-        llm_provider=base.llm_provider,
-        llm_configured=base.llm_configured,
-        openrouter_configured=base.openrouter_configured,
-        speaker_memory_enabled=enabled,
-        speaker_memory_ready=memory_status.ready and enabled,
-        speaker_memory_reason=memory_status.reason,
-        speaker_memory_consent_given=preference_service.has_speaker_memory_consent(),
-    )
+    return get_capability_status(settings, session)
 
 
 def _loaded_env_files() -> list[str]:
@@ -302,10 +352,10 @@ def log_startup_summary(settings: Settings | None = None) -> None:
                 _log_action("Set HF_TOKEN=hf_... in .env, restart backend, re-transcribe")
                 _log_action("Install dependency: cd backend && uv add pyannote-audio")
 
-        _log_section("Speaker memory")
+        _log_section("Voiceprint profiles")
         if not settings.speaker_memory_enabled:
-            _log_bullet("Disabled (SPEAKER_MEMORY_ENABLED=false) — generic Speaker 1/2 labels only.")
-            _log_action("Enable in .env and Settings to remember speaker names across transcripts.")
+            _log_bullet("Disabled — configure in Settings → Transcription in the app.")
+            _log_action("Enable voiceprint profiles in Settings → Transcription.")
         else:
             _log_bullet(f"Enabled — embedding model: {settings.speaker_embedding_model_id}")
             _log_bullet(f"Match threshold: {settings.speaker_match_threshold}")
@@ -413,11 +463,15 @@ def log_error_guidance(code: str, message: str) -> None:
         logger.error("  → %s", step)
 
 
-def log_transcription_pipeline(settings: Settings | None = None) -> None:
+def log_transcription_pipeline(
+    settings: Settings | None = None,
+    *,
+    session=None,
+) -> None:
     settings = settings or get_settings()
-    capabilities = get_capability_status(settings)
+    capabilities = get_capability_status(settings, session)
 
-    if settings.diarization_enabled:
+    if capabilities.diarization_enabled:
         if capabilities.diarization_ready:
             logger.info(
                 "Transcription pipeline: diarization → per-speaker ASR → labeled transcript"

@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
-import { useUpdateDocument } from "@/hooks/useDocuments"
+import { useUpdateNote } from "@/hooks/useNotes"
 import { useUserPreferences } from "@/hooks/useUserPreferences"
-import type { Document } from "@/lib/types"
+import type { Note } from "@/lib/types"
 
 const MdxEditorCore = lazy(() =>
   import("@/components/documents/MdxEditorCore").then((module) => ({
@@ -20,7 +20,7 @@ const MdxEditorCore = lazy(() =>
 type SaveStatus = "saved" | "saving" | "unsaved"
 
 type MdxNoteEditorProps = {
-  document: Document
+  note: Note
   hideTitle?: boolean
   onDirtyChange?: (dirty: boolean) => void
   onDelete?: () => void
@@ -28,7 +28,7 @@ type MdxNoteEditorProps = {
 }
 
 export function MdxNoteEditor({
-  document,
+  note,
   hideTitle = false,
   onDirtyChange,
   onDelete,
@@ -36,14 +36,14 @@ export function MdxNoteEditor({
 }: MdxNoteEditorProps) {
   const { t } = useTranslation()
   const saveTimerRef = useRef<number | null>(null)
-  const updateMutation = useUpdateDocument(document.id)
+  const updateMutation = useUpdateNote(note.id)
   const { preferences, updatePreferences } = useUserPreferences()
 
-  const [title, setTitle] = useState(document.title)
-  const [savedTitle, setSavedTitle] = useState(document.title)
-  const [savedMarkdown, setSavedMarkdown] = useState(document.markdown)
-  const [draftMarkdown, setDraftMarkdown] = useState(document.markdown)
-  const [editorSeed, setEditorSeed] = useState(document.markdown)
+  const [title, setTitle] = useState(note.title)
+  const [savedTitle, setSavedTitle] = useState(note.title)
+  const [savedMarkdown, setSavedMarkdown] = useState(note.markdown)
+  const [draftMarkdown, setDraftMarkdown] = useState(note.markdown)
+  const [editorSeed, setEditorSeed] = useState(note.markdown)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved")
 
   const autoSave = preferences.notesAutoSave
@@ -52,13 +52,13 @@ export function MdxNoteEditor({
   const dirty = hideTitle ? markdownDirty : titleDirty || markdownDirty
 
   useEffect(() => {
-    setTitle(document.title)
-    setSavedTitle(document.title)
-    setSavedMarkdown(document.markdown)
-    setDraftMarkdown(document.markdown)
-    setEditorSeed(document.markdown)
+    setTitle(note.title)
+    setSavedTitle(note.title)
+    setSavedMarkdown(note.markdown)
+    setDraftMarkdown(note.markdown)
+    setEditorSeed(note.markdown)
     setSaveStatus("saved")
-  }, [document.id])
+  }, [note.id])
 
   useEffect(() => {
     onDirtyChange?.(saveStatus === "unsaved" || dirty)
@@ -121,14 +121,14 @@ export function MdxNoteEditor({
   const handleMarkdownChange = (nextMarkdown: string) => {
     setDraftMarkdown(nextMarkdown)
     if (autoSave) {
-      scheduleAutoSave(hideTitle ? document.title : title, nextMarkdown)
+      scheduleAutoSave(hideTitle ? note.title : title, nextMarkdown)
     } else {
       setSaveStatus("unsaved")
     }
   }
 
   const handleManualSave = () => {
-    void persist(hideTitle ? document.title : title, draftMarkdown)
+    void persist(hideTitle ? note.title : title, draftMarkdown)
   }
 
   const handleAutoSaveToggle = (checked: boolean) => {
@@ -136,7 +136,7 @@ export function MdxNoteEditor({
       toast.error(t("toasts.failedToUpdateAutoSave"))
     })
     if (checked && (saveStatus === "unsaved" || dirty)) {
-      scheduleAutoSave(hideTitle ? document.title : title, draftMarkdown)
+      scheduleAutoSave(hideTitle ? note.title : title, draftMarkdown)
     }
   }
 
@@ -152,11 +152,11 @@ export function MdxNoteEditor({
       <div className="flex flex-wrap items-center justify-between gap-3">
         {!hideTitle ? (
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <Label htmlFor={`note-title-${document.id}`} className="sr-only">
+            <Label htmlFor={`note-title-${note.id}`} className="sr-only">
               {t("notes.editorNoteTitleAriaLabel")}
             </Label>
             <Input
-              id={`note-title-${document.id}`}
+              id={`note-title-${note.id}`}
               value={title}
               onChange={(event) => handleTitleChange(event.target.value)}
               className="max-w-md font-medium"
@@ -169,11 +169,11 @@ export function MdxNoteEditor({
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <Switch
-              id={`auto-save-${document.id}`}
+              id={`auto-save-${note.id}`}
               checked={autoSave}
               onCheckedChange={handleAutoSaveToggle}
             />
-            <Label htmlFor={`auto-save-${document.id}`} className="text-sm text-muted-foreground">
+            <Label htmlFor={`auto-save-${note.id}`} className="text-sm text-muted-foreground">
               {t("notes.editorAutoSave")}
             </Label>
           </div>
@@ -208,7 +208,7 @@ export function MdxNoteEditor({
           fallback={<Skeleton className="min-h-[480px] w-full rounded-lg" />}
         >
           <MdxEditorCore
-            key={document.id}
+            key={note.id}
             markdown={editorSeed}
             onChange={handleMarkdownChange}
             contentEditableClassName="mdx-note-content min-h-[480px] px-4 py-3 text-sm leading-relaxed"

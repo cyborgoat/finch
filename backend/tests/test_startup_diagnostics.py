@@ -48,7 +48,7 @@ def test_log_startup_summary_emits_configuration(caplog_info):
     assert "Finch backend started" in output
     assert "Transcription (ASR)" in output
     assert "Speaker diarization" in output
-    assert "Speaker memory" in output
+    assert "Voiceprint profiles" in output
     assert "Transcript summarization (LLM)" in output
     assert "Dependencies" in output
 

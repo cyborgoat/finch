@@ -15,8 +15,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAudioUpload } from "@/hooks/useAudioUpload"
 import { useJobPolling } from "@/hooks/useJobPolling"
-import { useInvalidateTranscripts } from "@/hooks/useTranscripts"
-import { createTranscriptJob } from "@/lib/api"
+import { useInvalidateRecordings } from "@/hooks/useRecordings"
+import { createRecordingJob } from "@/lib/api"
 import type { AudioAsset } from "@/lib/types"
 
 export const Route = createFileRoute("/upload/")({
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/upload/")({
 function UploadPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const invalidateTranscripts = useInvalidateTranscripts()
+  const invalidateRecordings = useInvalidateRecordings()
   const { upload, isUploading, error, reset } = useAudioUpload()
   const [asset, setAsset] = useState<AudioAsset | null>(null)
   const [jobId, setJobId] = useState<string | null>(null)
@@ -36,7 +36,7 @@ function UploadPage() {
     (resultId: string | null | undefined) => {
       if (resultId) {
         toast.success(t("toasts.transcriptionComplete"))
-        void navigate({ to: "/files/$id", params: { id: resultId } })
+        void navigate({ to: "/recordings/$id", params: { id: resultId } })
       }
     },
     [navigate, t],
@@ -45,11 +45,11 @@ function UploadPage() {
   const { job, error: pollError } = useJobPolling(jobId, {
     enabled: !!jobId,
     onCompleted: (j) => {
-      invalidateTranscripts()
+      invalidateRecordings()
       onCompleted(j.resultId)
     },
     onFailed: (j) => {
-      invalidateTranscripts()
+      invalidateRecordings()
       toast.error(j.error ?? t("toasts.transcriptionFailed"))
     },
   })
@@ -72,16 +72,17 @@ function UploadPage() {
     if (!asset) return
     setIsTranscribing(true)
     try {
-      const { jobId: newJobId, transcriptId } = await createTranscriptJob({
+      const { jobId: newJobId, recordingId } = await createRecordingJob({
         audioAssetId: asset.id,
         language: "auto",
       })
       setJobId(newJobId)
-      invalidateTranscripts()
+      invalidateRecordings()
       toast.message(t("toasts.transcriptionStarted"))
       void navigate({
-        to: "/files/$id",
-        params: { id: transcriptId },
+        to: "/recordings/$id",
+        params: { id: recordingId },
+        search: { jobId: newJobId },
       })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("toasts.failedToStartJob"))

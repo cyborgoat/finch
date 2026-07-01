@@ -30,6 +30,7 @@ export function useRecordSpeakerConsent() {
     mutationFn: recordSpeakerMemoryConsent,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["speaker-memory-status"] })
+      void queryClient.invalidateQueries({ queryKey: ["transcription-settings"] })
       void queryClient.invalidateQueries({ queryKey: ["health"] })
     },
   })
@@ -41,6 +42,7 @@ export function useToggleSpeakerMemory() {
     mutationFn: toggleSpeakerMemory,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["speaker-memory-status"] })
+      void queryClient.invalidateQueries({ queryKey: ["transcription-settings"] })
       void queryClient.invalidateQueries({ queryKey: ["health"] })
     },
   })

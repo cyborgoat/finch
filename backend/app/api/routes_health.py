@@ -19,7 +19,7 @@ def health(session: Session = Depends(get_session)) -> dict:
         and diarization_reason
     ):
         diarization_reason = (
-            f"{diarization_reason} Set HF_TOKEN in .env or run huggingface-cli login."
+            f"{diarization_reason} Add a Hugging Face token in Settings → Transcription."
         )
 
     return {

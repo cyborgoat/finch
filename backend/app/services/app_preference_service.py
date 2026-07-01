@@ -7,6 +7,7 @@ from app.models.app_preference import AppPreference
 
 SPEAKER_MEMORY_CONSENT_KEY = "speaker_memory_consent_at"
 SPEAKER_MEMORY_ENABLED_KEY = "speaker_memory_enabled"
+SPEAKER_AUTO_LABEL_KEY = "speaker_auto_label_enabled"
 
 
 class AppPreferenceService:
@@ -52,14 +53,29 @@ class AppPreferenceService:
         return now
 
     def is_speaker_memory_enabled(self) -> bool:
-        raw = self.get(SPEAKER_MEMORY_ENABLED_KEY)
-        if raw is None:
-            return self.settings.speaker_memory_enabled
-        return raw.lower() in {"1", "true", "yes", "on"}
+        """Legacy auto-label preference (prefer TranscriptionSettingsService)."""
+        return self.is_speaker_auto_label_enabled()
+
+    def is_speaker_auto_label_enabled(self) -> bool:
+        raw = self.get(SPEAKER_AUTO_LABEL_KEY)
+        if raw is not None:
+            return raw.lower() in {"1", "true", "yes", "on"}
+        legacy = self.get(SPEAKER_MEMORY_ENABLED_KEY)
+        if legacy is not None:
+            return legacy.lower() in {"1", "true", "yes", "on"}
+        return False
 
     def set_speaker_memory_enabled(self, enabled: bool) -> None:
+        self.set_speaker_auto_label_enabled(enabled)
+
+    def set_speaker_auto_label_enabled(self, enabled: bool) -> None:
+        self.set(SPEAKER_AUTO_LABEL_KEY, "true" if enabled else "false")
         self.set(SPEAKER_MEMORY_ENABLED_KEY, "true" if enabled else "false")
 
     def clear_speaker_memory_preferences(self) -> None:
-        for key in (SPEAKER_MEMORY_CONSENT_KEY, SPEAKER_MEMORY_ENABLED_KEY):
+        for key in (
+            SPEAKER_MEMORY_CONSENT_KEY,
+            SPEAKER_MEMORY_ENABLED_KEY,
+            SPEAKER_AUTO_LABEL_KEY,
+        ):
             self.delete(key)

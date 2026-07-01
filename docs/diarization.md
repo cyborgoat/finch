@@ -26,18 +26,20 @@ Speaker 2: Happy to be here.
 
 A **403 gated repo** error means this step was skipped — not a missing token.
 
-### 2. Configure token
+### 2. Configure token and enable diarization
 
 Create a **read** token at [hf.co/settings/tokens](https://huggingface.co/settings/tokens) for the **same account** that accepted the terms.
 
-Add to repo root `.env` or `backend/.env`:
+Preferred: enable diarization and paste the token in **Settings → Transcription** (stored locally in SQLite).
+
+Optional `.env` fallbacks (used when nothing is stored yet):
 
 ```env
 DIARIZATION_ENABLED=true
 HF_TOKEN=hf_...
 ```
 
-Alternatively: `huggingface-cli login` (Finch reads the CLI token when `HF_TOKEN` is unset).
+Alternatively: `huggingface-cli login` (Finch reads the CLI token when no stored token is set).
 
 ### 3. Validate before transcribing
 

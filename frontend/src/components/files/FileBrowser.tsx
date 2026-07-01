@@ -9,7 +9,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { EmptyState } from "@/components/effects/EmptyState"
-import { useTranscriptFileColumns } from "@/components/files/transcriptFileTableColumns"
+import { useRecordingFileColumns } from "@/components/files/transcriptFileTableColumns"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -19,11 +19,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { filterFiles, type FileSummary } from "@/lib/files"
+import { filterRecordings, type RecordingListItem } from "@/lib/recordings"
 import { cn } from "@/lib/utils"
 
-type FileBrowserProps = {
-  items: FileSummary[]
+type RecordingBrowserProps = {
+  items: RecordingListItem[]
   query?: string
   onRename?: (id: string, title: string) => void | Promise<void>
   onDelete: (id: string) => void
@@ -55,21 +55,21 @@ function SortableHeader({
   )
 }
 
-export function FileBrowser({
+export function RecordingBrowser({
   items,
   query = "",
   onRename,
   onDelete,
   isRenaming,
   isDeleting,
-}: FileBrowserProps) {
+}: RecordingBrowserProps) {
   const { t } = useTranslation()
-  const data = useMemo(() => filterFiles(items, query), [items, query])
+  const data = useMemo(() => filterRecordings(items, query), [items, query])
   const [sorting, setSorting] = useState<SortingState>([
     { id: "updatedAt", desc: true },
   ])
 
-  const columns = useTranscriptFileColumns({
+  const columns = useRecordingFileColumns({
     onRename,
     onDelete,
     isRenaming,
@@ -89,8 +89,8 @@ export function FileBrowser({
   if (items.length === 0) {
     return (
       <EmptyState
-        title={t("files.emptyTitle")}
-        description={t("files.emptyDescription")}
+        title={t("recordings.emptyTitle")}
+        description={t("recordings.emptyDescription")}
       />
     )
   }
@@ -98,7 +98,7 @@ export function FileBrowser({
   if (data.length === 0) {
     return (
       <p className="text-base font-light text-muted-foreground">
-        {t("files.noSearchResults")}
+        {t("recordings.noSearchResults")}
       </p>
     )
   }

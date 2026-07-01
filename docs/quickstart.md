@@ -23,7 +23,7 @@ uv sync
 uv add torch qwen-asr
 ```
 
-Diarization and speaker memory are off by default (`DIARIZATION_ENABLED=false`, `SPEAKER_MEMORY_ENABLED=false`).
+Diarization and voiceprint profiles are off by default. Configure them in **Settings → Transcription** after starting the frontend, or set `DIARIZATION_ENABLED=false` and `SPEAKER_MEMORY_ENABLED=false` in `.env` as fallbacks.
 
 ## 2. Run the backend
 
@@ -53,18 +53,18 @@ curl -F "file=@../data/your-audio.mp3" -F "source=upload" \
 ### Start transcription job
 
 ```bash
-curl -X POST http://localhost:8000/api/transcripts \
+curl -X POST http://localhost:8000/api/recordings \
   -H "Content-Type: application/json" \
   -d '{"audioAssetId": "audio_abc123", "language": "auto"}'
 ```
 
-Returns `jobId` and `transcriptId` (e.g. `transcript_a1b2c3d4e5f67890`). A placeholder with `status: "transcribing"` appears immediately.
+Returns `jobId` and `recordingId` (e.g. `recording_a1b2c3d4e5f67890`). A placeholder with `status: "transcribing"` appears immediately.
 
 ### Poll and read
 
 ```bash
 curl http://localhost:8000/api/jobs/job_abc123
-curl http://localhost:8000/api/transcripts/transcript_abc123def4567890
+curl http://localhost:8000/api/recordings/recording_abc123def4567890
 ```
 
 ## 4. CLI script
@@ -87,11 +87,11 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 — **New** (Record / Upload), **Files**, **Settings**.
+Open http://localhost:3000 — **New** (Record / Upload), **Recordings**, **Settings**.
 
-- **Home** and **Files** list voice recordings only.
+- **Home** and **Recordings** list voice recordings only.
 - Open a recording for the **Source** (transcript) and **Notes** (AI templates + blank notes) tabs.
-- URLs use prefixed IDs: `/files/transcript_…` for recordings, `/files/doc_…` for documents.
+- Recording URLs use the `recording_` prefix: `/recordings/recording_…`. Notes open on the **Notes** tab (`?tab=notes&noteId=…`).
 
 If you have an old local database from before the ID format change, delete `backend/finch.db` and restart the backend.
 
@@ -109,6 +109,8 @@ First run downloads the model from Hugging Face. On Apple Silicon, `ASR_DEVICE=a
 
 See **[diarization.md](diarization.md)** for full setup. Summary:
 
+Enable in **Settings → Transcription**, or set fallbacks in `.env`:
+
 ```env
 DIARIZATION_ENABLED=true
 HF_TOKEN=hf_...
@@ -122,15 +124,17 @@ uv add pyannote-audio
 uv run python scripts/validate_diarization.py
 ```
 
-## 8. Speaker memory
+## 8. Voiceprint profiles
 
 Optional persistent speaker names via local voiceprints. Requires diarization.
+
+Enable in **Settings → Transcription**, or set a fallback in `.env`:
 
 ```env
 SPEAKER_MEMORY_ENABLED=true
 ```
 
-In the UI: **Settings → Speakers → Auto-label speaker names** (consent on first enable). On a transcript, **click a speaker name** on any turn to assign or update a label (voiceprints update from that turn when auto-label is on). Link your profile under **Settings → You**.
+In the UI: **Settings → Voiceprint profiles → Auto-label speaker names** (consent on first enable). On a transcript, **click a speaker name** on any turn to assign or update a label (voiceprints update from that turn when auto-label is on). Link your profile under **Settings → You**.
 
 See **[speaker-memory.md](speaker-memory.md)** for full setup.
 
@@ -147,11 +151,11 @@ Supported providers:
 
 Credentials are stored locally in the Finch SQLite database. The API never returns saved API keys — only an `apiKeyConfigured` flag.
 
-Create notes from the **Notes** tab on a recording detail page (`/files/{id}?tab=notes`), or via the API:
+Create notes from the **Notes** tab on a recording detail page (`/recordings/{id}?tab=notes`), or via the API:
 
 - `GET /api/ai-actions/templates` — list AI note templates
 - `POST /api/ai-actions` — generate a note (`action`: `meeting_summary`, `action_items`, `key_decisions`, `follow_up_email`; legacy alias `markdown_summary` → `meeting_summary`)
-- `POST /api/documents` — create a blank manual note
+- `POST /api/notes` — create a blank manual note
 
 User language and summarization preferences from **Settings** are applied to meeting summary prompts automatically.
 
@@ -171,6 +175,6 @@ Tests patch external services (ffmpeg, ASR, diarization, LLM) at test time — n
 | `403` / `gated repo` (diarization) | Accept [pyannote model terms](https://huggingface.co/pyannote/speaker-diarization-community-1); same HF account as `HF_TOKEN` |
 | `ffmpeg is not installed` | `brew install ffmpeg` (macOS) |
 | No speaker labels | Run `uv run python scripts/validate_diarization.py` |
-| Speaker names not saving | Click the speaker name on a turn — labels save immediately; enable auto-label in **Settings → Speakers** for voiceprints |
+| Speaker names not saving | Click the speaker name on a turn — labels save immediately; enable auto-label in **Settings → Voiceprint profiles** for voiceprints |
 | Slow long audio | Expected on CPU/MPS; ASR chunks ~45s segments |
 | Failed transcript visible | By design — check `errorMessage`, fix issue, re-transcribe |

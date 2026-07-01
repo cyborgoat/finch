@@ -25,7 +25,7 @@ export function exportTranscriptTxt(title: string, text: string) {
   )
 }
 
-export function exportDocumentMd(title: string, markdown: string) {
+export function exportNoteMd(title: string, markdown: string) {
   downloadText(
     `finch-document-${sanitizeFilename(title)}.md`,
     markdown,

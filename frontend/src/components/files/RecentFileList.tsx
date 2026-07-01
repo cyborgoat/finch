@@ -4,7 +4,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { useTranscriptFileColumns } from "@/components/files/transcriptFileTableColumns"
+import { useRecordingFileColumns } from "@/components/files/transcriptFileTableColumns"
 import {
   Table,
   TableBody,
@@ -13,26 +13,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { FileSummary } from "@/lib/files"
+import type { RecordingListItem } from "@/lib/recordings"
 import { cn } from "@/lib/utils"
 
-type RecentFileListProps = {
-  items: FileSummary[]
+type RecentRecordingListProps = {
+  items: RecordingListItem[]
   onRename?: (id: string, title: string) => void | Promise<void>
   onDelete: (id: string) => void
   isRenaming?: boolean
   isDeleting?: boolean
 }
 
-export function RecentFileList({
+export function RecentRecordingList({
   items,
   onRename,
   onDelete,
   isRenaming,
   isDeleting,
-}: RecentFileListProps) {
+}: RecentRecordingListProps) {
   const { t } = useTranslation()
-  const columns = useTranscriptFileColumns({
+  const columns = useRecordingFileColumns({
     onRename,
     onDelete,
     isRenaming,
@@ -48,7 +48,7 @@ export function RecentFileList({
   if (items.length === 0) {
     return (
       <p className="text-base font-light text-muted-foreground">
-        {t("files.recentEmpty")}
+        {t("recordings.recentEmpty")}
       </p>
     )
   }

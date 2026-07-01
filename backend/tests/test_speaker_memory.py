@@ -46,7 +46,7 @@ def test_speaker_profile_requires_consent_for_enroll(db_session: Session):
     from datetime import UTC, datetime
 
     from app.models.audio_asset import AudioAsset
-    from app.models.transcript import Transcript
+    from app.models.recording import Recording
     from app.services.diarization_service import SpeakerSegment, speaker_segments_to_json
     from app.services.speaker_profile_service import SpeakerProfileService
 
@@ -76,8 +76,8 @@ def test_speaker_profile_requires_consent_for_enroll(db_session: Session):
         )
     ]
     db_session.add(
-        Transcript(
-            id="transcript_test",
+        Recording(
+            id="recording_test",
             audio_asset_id="audio_test",
             title="Test",
             raw_text="Speaker 1: Hello",
@@ -91,7 +91,7 @@ def test_speaker_profile_requires_consent_for_enroll(db_session: Session):
 
     with pytest.raises(AppError) as exc_info:
         profile_service.enroll_from_transcript(
-            "transcript_test",
+            "recording_test",
             "SPEAKER_00",
             "Robert",
         )

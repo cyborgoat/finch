@@ -4,11 +4,11 @@ import { Folder } from "lucide-react"
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { formatDuration } from "@/components/audio/AudioUploader"
-import { FileRowActions } from "@/components/files/FileRowActions"
+import { RecordingRowActions } from "@/components/files/FileRowActions"
 import { Badge } from "@/components/ui/badge"
-import type { FileSummary } from "@/lib/files"
+import type { RecordingListItem } from "@/lib/recordings"
 
-type TranscriptFileTableActions = {
+type RecordingFileTableActions = {
   onRename?: (id: string, title: string) => void | Promise<void>
   onDelete: (id: string) => void
   isRenaming?: boolean
@@ -16,16 +16,16 @@ type TranscriptFileTableActions = {
   showTranscribingDetail?: boolean
 }
 
-export function useTranscriptFileColumns({
+export function useRecordingFileColumns({
   onRename,
   onDelete,
   isRenaming,
   isDeleting,
   showTranscribingDetail = false,
-}: TranscriptFileTableActions) {
+}: RecordingFileTableActions) {
   const { t } = useTranslation()
 
-  return useMemo<ColumnDef<FileSummary>[]>(
+  return useMemo<ColumnDef<RecordingListItem>[]>(
     () => [
       {
         id: "title",
@@ -47,7 +47,7 @@ export function useTranscriptFileColumns({
                   </span>
                 ) : (
                   <Link
-                    to="/files/$id"
+                    to="/recordings/$id"
                     params={{ id: item.id }}
                     className="text-base font-light hover:underline"
                   >
@@ -56,7 +56,7 @@ export function useTranscriptFileColumns({
                 )}
                 {showTranscribingDetail && isTranscribing ? (
                   <p className="mt-1.5 text-sm font-light leading-relaxed text-muted-foreground">
-                    {t("files.transcribingHint")}
+                    {t("recordings.transcribingHint")}
                   </p>
                 ) : null}
                 {showTranscribingDetail && isFailed && item.errorMessage ? (
@@ -114,7 +114,7 @@ export function useTranscriptFileColumns({
         header: () => <span className="sr-only">{t("common.actions")}</span>,
         enableSorting: false,
         cell: ({ row }) => (
-          <FileRowActions
+          <RecordingRowActions
             item={row.original}
             onRename={onRename}
             onDelete={onDelete}

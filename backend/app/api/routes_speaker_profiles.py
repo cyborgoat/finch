@@ -12,7 +12,7 @@ from app.schemas.speaker import (
     SpeakerProfileResponse,
     SpeakerProfileSummary,
     SpeakerEmbeddingSummary,
-    RelatedTranscriptSummary,
+    RelatedRecordingSummary,
     UpdateSpeakerProfileRequest,
 )
 from app.services.app_preference_service import AppPreferenceService
@@ -29,7 +29,7 @@ def _profile_summary(service: SpeakerProfileService, profile) -> SpeakerProfileS
         display_name=profile.display_name,
         notes=profile.notes,
         embedding_count=service.count_embeddings(profile.id),
-        related_transcript_count=service.count_related_transcripts(profile.id),
+        related_recording_count=service.count_related_recordings(profile.id),
         created_at=profile.created_at,
         updated_at=profile.updated_at,
     )
@@ -37,20 +37,20 @@ def _profile_summary(service: SpeakerProfileService, profile) -> SpeakerProfileS
 
 def _memory_status(session: Session) -> SpeakerMemoryStatusResponse:
     from app.config import get_settings
-    from app.core.startup_diagnostics import get_speaker_memory_status
+    from app.services.transcription_settings_service import TranscriptionSettingsService
 
     settings = get_settings()
     preference_service = AppPreferenceService(session, settings)
     profile_service = SpeakerProfileService(session, settings)
-    status = get_speaker_memory_status(session, settings)
+    transcription = TranscriptionSettingsService(session, settings).get_settings()
     consent_at = preference_service.get_speaker_memory_consent_at()
     return SpeakerMemoryStatusResponse(
-        enabled=preference_service.is_speaker_memory_enabled(),
+        enabled=preference_service.is_speaker_auto_label_enabled(),
         consent_given=preference_service.has_speaker_memory_consent(),
         consent_at=consent_at,
         profile_count=profile_service.count_profiles(),
-        ready=status.ready,
-        reason=status.reason,
+        ready=transcription.speaker_memory_ready,
+        reason=transcription.speaker_memory_reason,
     )
 
 
@@ -93,9 +93,9 @@ def get_speaker_profile(
         embedding_count=len(detail["embeddings"]),
         embedding_description=detail["embedding_description"],
         embeddings=[SpeakerEmbeddingSummary.model_validate(item) for item in detail["embeddings"]],
-        related_transcripts=[
-            RelatedTranscriptSummary.model_validate(item)
-            for item in detail["related_transcripts"]
+        related_recordings=[
+            RelatedRecordingSummary.model_validate(item)
+            for item in detail["related_recordings"]
         ],
         created_at=profile.created_at,
         updated_at=profile.updated_at,

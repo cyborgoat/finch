@@ -8,9 +8,9 @@ Finch is a local-first voice transcription app. Audio is transcribed on your mac
 - Browser recording with live waveform visualization
 - Local ASR with [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B)
 - Optional speaker diarization via [pyannote-audio](https://github.com/pyannote/pyannote-audio)
-- Optional speaker memory — persistent names via local voiceprints
+- Optional voiceprint profiles — persistent speaker names via local voiceprints
 - Background transcription jobs with in-progress status in the UI
-- Transcript library: **Files** at `/files` (voice recordings); detail page with **Source** and **Notes** tabs; topbar download/actions
+- Recordings library at `/recordings`; detail page with **Source** and **Notes** tabs; topbar download/actions
 - AI note templates (meeting summary, action items, key decisions, follow-up email) and blank notes via configurable LLM providers
 - Markdown notes with MDXEditor; auto-save or manual save
 - UI localization (English / 中文) with separate interface and AI note content language settings
@@ -24,7 +24,7 @@ See [docs/features.md](docs/features.md) for the full feature list and roadmap.
 | [docs/README.md](docs/README.md) | Documentation index |
 | [docs/quickstart.md](docs/quickstart.md) | Install, configure, run, transcribe |
 | [docs/diarization.md](docs/diarization.md) | Speaker labels: setup, validation, tuning |
-| [docs/speaker-memory.md](docs/speaker-memory.md) | Persistent speaker names and voiceprints |
+| [docs/speaker-memory.md](docs/speaker-memory.md) | Voiceprint profiles: persistent speaker names |
 | [docs/architecture.md](docs/architecture.md) | System design and data flow |
 | [docs/modules.md](docs/modules.md) | Backend module reference |
 | [docs/features.md](docs/features.md) | Implemented features and planned work |
@@ -77,10 +77,12 @@ cd backend && uv run python scripts/validate_diarization.py
 
 | Variable | Purpose |
 |----------|---------|
-| `DIARIZATION_ENABLED` | Enable speaker diarization pipeline |
-| `HF_TOKEN` | Hugging Face token for pyannote models |
-| `SPEAKER_MEMORY_ENABLED` | Remember speaker names across transcripts |
+| `DIARIZATION_ENABLED` | Fallback for speaker diarization (prefer **Settings → Transcription**) |
+| `HF_TOKEN` | Fallback Hugging Face token for pyannote models |
+| `SPEAKER_MEMORY_ENABLED` | Fallback for voiceprint profiles (prefer **Settings → Transcription**) |
 | `SPEAKER_MATCH_THRESHOLD` | Auto-match similarity threshold (default `0.75`) |
+
+Diarization, voiceprint profiles, and HF token can be configured in **Settings → Transcription** and are stored locally in SQLite. `.env` values apply only when nothing is stored yet.
 
 LLM provider credentials are **not** configured via `.env`. Use **Settings → LLM provider** in the frontend; values are stored locally in SQLite.
 
@@ -95,7 +97,7 @@ Audio stays on your machine for ASR and diarization. LLM actions send transcript
 ```txt
 finch/
   backend/     # FastAPI app
-  frontend/    # TanStack Start app
+  frontend/    # TanStack Start app (source in frontend/src/)
   docs/        # Official documentation
 ```
 

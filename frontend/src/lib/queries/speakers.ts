@@ -4,7 +4,7 @@ import {
   listSpeakerProfiles,
 } from "@/lib/api"
 
-export function speakerProfilesQuery() {
+export function speakerProfilesListQuery() {
   return queryOptions({
     queryKey: ["speaker-profiles"],
     queryFn: listSpeakerProfiles,

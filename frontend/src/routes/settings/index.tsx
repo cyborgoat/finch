@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next"
 import { SettingsRow, SettingsSection } from "@/components/settings/SettingsSection"
 import { UserProfileSettings } from "@/components/settings/UserProfileSettings"
 import { LlmSettingsPanel } from "@/components/settings/LlmSettingsPanel"
+import { TranscriptionSettingsPanel } from "@/components/settings/TranscriptionSettingsPanel"
 import { SpeakerConsentDialog } from "@/components/speakers/SpeakerConsentDialog"
 import { SpeakerProfileManager } from "@/components/speakers/SpeakerProfileManager"
 import { PageContainer } from "@/components/layout/PageContainer"
@@ -25,21 +26,25 @@ import {
   useUpdateSpeakerProfile,
 } from "@/hooks/useSpeakerProfiles"
 import { useUserPreferences } from "@/hooks/useUserPreferences"
+import { useTranscriptionSettings } from "@/hooks/useTranscriptionSettings"
+import { updateTranscriptionSettings } from "@/lib/api"
 import type { UserPreferences } from "@/lib/userPreferences"
 import {
   speakerMemoryStatusQuery,
-  speakerProfilesQuery,
+  speakerProfilesListQuery,
 } from "@/lib/queries/speakers"
+import { transcriptionSettingsQuery } from "@/lib/queries/transcriptionSettings"
 import { llmSettingsQuery } from "@/lib/queries/llmSettings"
 import { userSettingsQuery } from "@/lib/queries/userSettings"
 
 export const Route = createFileRoute("/settings/")({
   loader: ({ context }) =>
     Promise.all([
-      context.queryClient.ensureQueryData(speakerProfilesQuery()),
+      context.queryClient.ensureQueryData(speakerProfilesListQuery()),
       context.queryClient.ensureQueryData(speakerMemoryStatusQuery()),
       context.queryClient.ensureQueryData(userSettingsQuery()),
       context.queryClient.ensureQueryData(llmSettingsQuery()),
+      context.queryClient.ensureQueryData(transcriptionSettingsQuery()),
     ]),
   component: SettingsPage,
 })
@@ -48,6 +53,7 @@ function SettingsPage() {
   const { t } = useTranslation()
   const { data: profilesData } = useSpeakerProfiles()
   const { data: memoryStatus } = useSpeakerMemoryStatus()
+  const { settings: transcriptionSettings } = useTranscriptionSettings()
   const deleteProfile = useDeleteSpeakerProfile()
   const updateProfile = useUpdateSpeakerProfile()
   const toggleMemory = useToggleSpeakerMemory()
@@ -56,7 +62,9 @@ function SettingsPage() {
   const [consentOpen, setConsentOpen] = useState(false)
 
   const autoLabelEnabled = memoryStatus?.enabled ?? false
-  const autoLabelReady = memoryStatus?.ready ?? false
+  const autoLabelReady =
+    (transcriptionSettings?.speakerMemoryEnabled ?? false) &&
+    (transcriptionSettings?.speakerMemoryReady ?? false)
   const togglePending = toggleMemory.isPending || consentMutation.isPending
   const settingsBusy = !ready || isUpdating
 
@@ -103,6 +111,7 @@ function SettingsPage() {
   const handleConsent = async () => {
     try {
       await consentMutation.mutateAsync()
+      await updateTranscriptionSettings({ speakerMemoryEnabled: true })
       await toggleMemory.mutateAsync(true)
       setConsentOpen(false)
       toast.success(t("toasts.autoLabelOn"))
@@ -259,6 +268,8 @@ function SettingsPage() {
           </SettingsRow>
         </SettingsSection>
 
+        <TranscriptionSettingsPanel disabled={settingsBusy} />
+
         <LlmSettingsPanel disabled={settingsBusy} />
 
         <SettingsSection
@@ -270,7 +281,9 @@ function SettingsPage() {
             description={
               autoLabelReady
                 ? t("settings.autoLabelReadyDescription")
-                : (memoryStatus?.reason ?? t("settings.autoLabelNotReady"))
+                : (memoryStatus?.reason ??
+                  transcriptionSettings?.speakerMemoryReason ??
+                  t("settings.autoLabelNotReady"))
             }
           >
             <div className="flex justify-end">

@@ -5,28 +5,28 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { useRegisterTopbarActions } from "@/components/layout/TopbarActionsContext"
-import { TranscriptNotesTab } from "@/components/transcripts/TranscriptNotesTab"
-import { TranscriptAudioPlayer } from "@/components/transcripts/TranscriptAudioPlayer"
+import { RecordingNotesTab } from "@/components/transcripts/TranscriptNotesTab"
+import { RecordingAudioPlayer } from "@/components/transcripts/TranscriptAudioPlayer"
 import { FullTranscriptPanel } from "@/components/transcripts/FullTranscriptPanel"
 import { useAudioAsset } from "@/hooks/useAudioAsset"
-import { useDocument } from "@/hooks/useDocuments"
-import { useTranscriptPlayback } from "@/hooks/useTranscriptPlayback"
-import type { DocumentSummary, SpeakerMemoryStatus, SpeakerProfileSummary, Transcript } from "@/lib/types"
+import { useNote } from "@/hooks/useNotes"
+import { useRecordingPlayback } from "@/hooks/useRecordingPlayback"
+import type { NoteSummary, SpeakerMemoryStatus, SpeakerProfileSummary, Recording } from "@/lib/types"
 import type { SpeakerSegment } from "@/lib/types"
 import {
-  fileDetailTabSearch,
-  parseFileDetailTab,
-  type FileDetailTab,
-} from "@/lib/fileDetailTabs"
+  recordingDetailTabSearch,
+  parseRecordingDetailTab,
+  type RecordingDetailTab,
+} from "@/lib/recordingDetailTabs"
 
-type TranscriptDetailLayoutProps = {
-  transcript: Transcript
+type RecordingDetailLayoutProps = {
+  recording: Recording
   title: string
   text: string
   segments: SpeakerSegment[]
   profiles: SpeakerProfileSummary[]
   memoryStatus?: SpeakerMemoryStatus
-  documents: DocumentSummary[]
+  notes: NoteSummary[]
   llmReady?: boolean
   speakerSavePending: boolean
   renamePending: boolean
@@ -36,18 +36,18 @@ type TranscriptDetailLayoutProps = {
   onSegmentSpeakerSave: (
     clusterId: string,
     segment: SpeakerSegment,
-    payload: { displayName: string; profileId?: string },
+    payload: { displayName: string; profileId: string | null; enroll: boolean },
   ) => Promise<void>
 }
 
-export function TranscriptDetailLayout({
-  transcript,
+export function RecordingDetailLayout({
+  recording,
   title,
   text,
   segments,
   profiles,
   memoryStatus,
-  documents,
+  notes: noteSummaries,
   llmReady,
   speakerSavePending,
   renamePending,
@@ -55,14 +55,14 @@ export function TranscriptDetailLayout({
   onRename,
   onDelete,
   onSegmentSpeakerSave,
-}: TranscriptDetailLayoutProps) {
+}: RecordingDetailLayoutProps) {
   const { t } = useTranslation()
-  const navigate = useNavigate({ from: "/files/$id/" })
-  const { tab, noteId } = useSearch({ from: "/files/$id/" })
-  const activeTab = parseFileDetailTab(tab)
-  const { data: audioAsset } = useAudioAsset(transcript.audioAssetId)
-  const playback = useTranscriptPlayback(
-    transcript.audioAssetId,
+  const navigate = useNavigate({ from: "/recordings/$id/" })
+  const { tab, noteId } = useSearch({ from: "/recordings/$id/" })
+  const activeTab = parseRecordingDetailTab(tab)
+  const { data: audioAsset } = useAudioAsset(recording.audioAssetId)
+  const playback = useRecordingPlayback(
+    recording.audioAssetId,
     audioAsset?.durationSeconds,
   )
 
@@ -71,10 +71,10 @@ export function TranscriptDetailLayout({
 
   const notes = useMemo(
     () =>
-      [...documents].sort((left, right) =>
+      [...noteSummaries].sort((left, right) =>
         right.updatedAt.localeCompare(left.updatedAt),
       ),
-    [documents],
+    [noteSummaries],
   )
 
   const activeNoteId = useMemo(() => {
@@ -102,7 +102,7 @@ export function TranscriptDetailLayout({
       !pendingNoteId
     ) {
       void navigate({
-        search: fileDetailTabSearch("notes", activeNoteId),
+        search: recordingDetailTabSearch("notes", activeNoteId),
         replace: true,
       })
     }
@@ -110,16 +110,16 @@ export function TranscriptDetailLayout({
 
   const setTab = useCallback(
     (value: string) => {
-      const nextTab = value as FileDetailTab
+      const nextTab = value as RecordingDetailTab
       if (nextTab === "notes" && activeNoteId) {
         void navigate({
-          search: fileDetailTabSearch("notes", activeNoteId),
+          search: recordingDetailTabSearch("notes", activeNoteId),
           replace: true,
         })
         return
       }
       void navigate({
-        search: fileDetailTabSearch(nextTab),
+        search: recordingDetailTabSearch(nextTab),
         replace: true,
       })
     },
@@ -136,7 +136,7 @@ export function TranscriptDetailLayout({
         setPendingNoteId(null)
       }
       void navigate({
-        search: fileDetailTabSearch("notes", nextNoteId),
+        search: recordingDetailTabSearch("notes", nextNoteId),
         replace: true,
       })
     },
@@ -144,36 +144,36 @@ export function TranscriptDetailLayout({
   )
 
   const {
-    data: activeNoteDocument,
+    data: activeNote,
     isLoading: activeNoteLoading,
     isFetching: activeNoteFetching,
-  } = useDocument(activeNoteId ?? "")
+  } = useNote(activeNoteId ?? "")
 
-  const activeNote =
-    activeNoteDocument?.id === activeNoteId ? activeNoteDocument : undefined
+  const resolvedActiveNote =
+    activeNote?.id === activeNoteId ? activeNote : undefined
   const activeNoteLoadingState =
-    !!activeNoteId && (activeNoteLoading || activeNoteFetching) && !activeNote
+    !!activeNoteId && (activeNoteLoading || activeNoteFetching) && !resolvedActiveNote
 
   const topbarActions = useMemo(
     () => ({
-      audioAssetId: transcript.audioAssetId,
+      audioAssetId: recording.audioAssetId,
       audioFilename: audioAsset?.filename,
       title,
       transcriptText: text,
-      activeNoteMarkdown: activeNoteDocument?.markdown ?? null,
-      activeNoteTitle: activeNoteDocument?.title ?? null,
+      activeNoteMarkdown: resolvedActiveNote?.markdown ?? null,
+      activeNoteTitle: resolvedActiveNote?.title ?? null,
       onRename,
       onDelete,
       isRenaming: renamePending,
       isDeleting: deletePending,
     }),
     [
-      transcript.audioAssetId,
+      recording.audioAssetId,
       audioAsset?.filename,
       title,
       text,
-      activeNoteDocument?.markdown,
-      activeNoteDocument?.title,
+      resolvedActiveNote?.markdown,
+      resolvedActiveNote?.title,
       onRename,
       onDelete,
       renamePending,
@@ -204,7 +204,7 @@ export function TranscriptDetailLayout({
 
         <TabsContent value="source" className="mt-0 pt-6">
           <BlurFade className="section-stack">
-            <TranscriptAudioPlayer
+            <RecordingAudioPlayer
               filename={audioAsset?.filename}
               audioRef={playback.audioRef}
               src={playback.src}
@@ -241,12 +241,12 @@ export function TranscriptDetailLayout({
         </TabsContent>
 
         <TabsContent value="notes" className="mt-0 pt-6">
-          <TranscriptNotesTab
-            transcriptId={transcript.id}
-            documents={documents}
+          <RecordingNotesTab
+            recordingId={recording.id}
+            notes={noteSummaries}
             llmReady={llmReady}
             activeNoteId={activeNoteId}
-            activeNote={activeNote}
+            activeNote={resolvedActiveNote}
             noteLoading={activeNoteLoadingState}
             onNoteIdChange={setSelectedNoteId}
           />

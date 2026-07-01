@@ -2,7 +2,7 @@ from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
-from app.models.transcript import Transcript
+from app.models.recording import Recording
 from app.services.diarization_service import (
     SpeakerSegment,
     build_labeled_transcript,
@@ -29,7 +29,7 @@ def build_labeled_transcript_with_profile_names(
     profile_name_by_id: dict[str, str],
 ) -> str:
     return build_labeled_transcript(
-        resolve_segment_speaker_labels(segments, profile_name_by_id)
+        resolve_segment_speaker_labels(segments, profile_name_by_id),
     )
 
 
@@ -54,20 +54,20 @@ def load_profile_display_names(
 
 
 def resolve_transcript_text(
-    transcript: Transcript,
+    recording: Recording,
     source: str,
     session: Session,
     settings: Settings | None = None,
 ) -> str:
-    if source == "editedText" and transcript.edited_text and transcript.edited_text.strip():
-        return transcript.edited_text.strip()
+    if source == "editedText" and recording.edited_text and recording.edited_text.strip():
+        return recording.edited_text.strip()
 
-    segments = speaker_segments_from_json(transcript.speaker_segments)
+    segments = speaker_segments_from_json(recording.speaker_segments)
     if segments:
         profile_names = load_profile_display_names(session, segments, settings)
         return build_labeled_transcript_with_profile_names(segments, profile_names)
 
-    return (transcript.raw_text or "").strip()
+    return (recording.raw_text or "").strip()
 
 
 def propagate_profile_display_name(
@@ -76,15 +76,15 @@ def propagate_profile_display_name(
     display_name: str,
     settings: Settings | None = None,
 ) -> int:
-    from app.services.transcript_service import TranscriptService
+    from app.services.recording_service import RecordingService
 
     settings = settings or get_settings()
-    transcript_service = TranscriptService(session, settings)
+    recording_service = RecordingService(session, settings)
     trimmed_name = display_name.strip()
     updated_count = 0
 
-    for transcript in session.exec(select(Transcript)).all():
-        segments = speaker_segments_from_json(transcript.speaker_segments)
+    for recording in session.exec(select(Recording)).all():
+        segments = speaker_segments_from_json(recording.speaker_segments)
         if not segments:
             continue
 
@@ -101,8 +101,8 @@ def propagate_profile_display_name(
         if not changed:
             continue
 
-        transcript_service.update_transcript(
-            transcript,
+        recording_service.update_recording(
+            recording,
             raw_text=build_labeled_transcript(updated_segments),
             speaker_segments=speaker_segments_to_json(updated_segments),
         )

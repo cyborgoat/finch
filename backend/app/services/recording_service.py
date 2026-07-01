@@ -4,8 +4,8 @@ from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
-from app.core.ids import generate_transcript_id
-from app.models.transcript import Transcript
+from app.core.ids import generate_recording_id
+from app.models.recording import Recording
 
 
 class _Unset:
@@ -15,12 +15,12 @@ class _Unset:
 UNSET = _Unset()
 
 
-class TranscriptService:
+class RecordingService:
     def __init__(self, session: Session, settings: Settings | None = None) -> None:
         self.session = session
         self.settings = settings or get_settings()
 
-    def create_transcript(
+    def create_recording(
         self,
         *,
         audio_asset_id: str,
@@ -28,10 +28,10 @@ class TranscriptService:
         raw_text: str,
         language: str | None = None,
         status: str = "draft",
-    ) -> Transcript:
+    ) -> Recording:
         now = datetime.now(UTC)
-        transcript = Transcript(
-            id=generate_transcript_id(),
+        transcript = Recording(
+            id=generate_recording_id(),
             audio_asset_id=audio_asset_id,
             title=title,
             raw_text=raw_text,
@@ -45,19 +45,19 @@ class TranscriptService:
         self.session.refresh(transcript)
         return transcript
 
-    def list_transcripts(self) -> list[Transcript]:
-        statement = select(Transcript).order_by(Transcript.created_at.desc())
+    def list_recordings(self) -> list[Recording]:
+        statement = select(Recording).order_by(Recording.created_at.desc())
         return list(self.session.exec(statement).all())
 
-    def get_transcript(self, transcript_id: str) -> Transcript:
-        transcript = self.session.get(Transcript, transcript_id)
-        if transcript is None:
-            raise AppError("TRANSCRIPT_NOT_FOUND", "Transcript not found.", 404)
-        return transcript
+    def get_recording(self, recording_id: str) -> Recording:
+        recording = self.session.get(Recording, recording_id)
+        if recording is None:
+            raise AppError("RECORDING_NOT_FOUND", "Recording not found.", 404)
+        return recording
 
-    def update_transcript(
+    def update_recording(
         self,
-        transcript: Transcript,
+        recording: Recording,
         *,
         title: str | None = None,
         raw_text: str | None = None,
@@ -67,29 +67,29 @@ class TranscriptService:
         status: str | None = None,
         error_message: str | None | _Unset = UNSET,
         processing_note: str | None | _Unset = UNSET,
-    ) -> Transcript:
+    ) -> Recording:
         if title is not None:
-            transcript.title = title
+            recording.title = title
         if raw_text is not None:
-            transcript.raw_text = raw_text
+            recording.raw_text = raw_text
         if language is not None:
-            transcript.language = language
+            recording.language = language
         if edited_text is not None:
-            transcript.edited_text = edited_text
+            recording.edited_text = edited_text
         if speaker_segments is not None:
-            transcript.speaker_segments = speaker_segments
+            recording.speaker_segments = speaker_segments
         if status is not None:
-            transcript.status = status
+            recording.status = status
         if error_message is not UNSET:
-            transcript.error_message = error_message
+            recording.error_message = error_message
         if processing_note is not UNSET:
-            transcript.processing_note = processing_note
-        transcript.updated_at = datetime.now(UTC)
-        self.session.add(transcript)
+            recording.processing_note = processing_note
+        recording.updated_at = datetime.now(UTC)
+        self.session.add(recording)
         self.session.commit()
-        self.session.refresh(transcript)
-        return transcript
+        self.session.refresh(recording)
+        return recording
 
-    def delete_transcript(self, transcript: Transcript) -> None:
-        self.session.delete(transcript)
+    def delete_recording(self, recording: Recording) -> None:
+        self.session.delete(recording)
         self.session.commit()

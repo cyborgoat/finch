@@ -7,10 +7,10 @@ const STAGE_KEYS: Record<string, string> = {
   running_diarization: "runningDiarization",
   running_asr: "runningAsr",
   calling_llm: "callingLlm",
-  saving_document: "savingDocument",
-  saving_transcript: "savingTranscript",
+  saving_note: "savingNote",
+  saving_recording: "savingRecording",
   loading_model: "loadingModel",
-  loading_transcript: "loadingTranscript",
+  loading_recording: "loadingRecording",
   completed: "completed",
   queued: "queued",
 }

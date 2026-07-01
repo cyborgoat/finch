@@ -5,7 +5,7 @@ from sqlmodel import Field, SQLModel
 from app.models.audio_asset import utc_now
 
 
-class Transcript(SQLModel, table=True):
+class Recording(SQLModel, table=True):
     id: str = Field(primary_key=True)
     audio_asset_id: str = Field(foreign_key="audioasset.id")
     title: str

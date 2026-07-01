@@ -66,7 +66,7 @@ export function TopbarActionsMenu() {
             <Button
               variant="outline"
               size="icon-sm"
-              aria-label={t("files.recordingActionsAriaLabel")}
+              aria-label={t("recordings.actionsAriaLabel")}
               disabled={busy}
             >
               <MoreHorizontal className="size-4" />
@@ -88,7 +88,7 @@ export function TopbarActionsMenu() {
             disabled={busy}
           >
             <Trash2 />
-            {t("files.deleteSession")}
+            {t("recordings.deleteRecording")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -96,9 +96,9 @@ export function TopbarActionsMenu() {
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("files.renameRecording")}</DialogTitle>
+            <DialogTitle>{t("recordings.renameTitle")}</DialogTitle>
             <DialogDescription>
-              {t("files.renameRecordingDescription")}
+              {t("recordings.renameDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="field-stack py-2">
@@ -135,9 +135,9 @@ export function TopbarActionsMenu() {
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("files.deleteSessionTitle")}</AlertDialogTitle>
+            <AlertDialogTitle>{t("recordings.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("files.deleteSessionDescription")}
+              {t("recordings.deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -150,7 +150,7 @@ export function TopbarActionsMenu() {
                 setDeleteOpen(false)
               }}
             >
-              {actions.isDeleting ? t("common.deleting") : t("files.deleteSession")}
+              {actions.isDeleting ? t("common.deleting") : t("recordings.deleteRecording")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

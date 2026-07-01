@@ -2,7 +2,7 @@ from app.schemas import CamelModel
 
 
 class CreateAiActionRequest(CamelModel):
-    transcript_id: str
+    recording_id: str
     action: str = "meeting_summary"
     source: str = "editedText"
     model: str | None = None
@@ -10,7 +10,7 @@ class CreateAiActionRequest(CamelModel):
 
 class CreateAiActionResponse(CamelModel):
     job_id: str
-    document_id: str
+    note_id: str
     status: str
 
 
@@ -18,7 +18,7 @@ class AiActionTemplate(CamelModel):
     id: str
     title: str
     description: str
-    doc_type: str
+    note_type: str
 
 
 class AiActionTemplateListResponse(CamelModel):

@@ -253,6 +253,10 @@
   .mdx-note-editor .mdxeditor-popup-container {
     z-index: 50;
   }
+
+  [data-sonner-toast] [data-icon] {
+    color: var(--popover-foreground);
+  }
 }
 
 @keyframes shimmer {

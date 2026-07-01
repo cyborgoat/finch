@@ -9,12 +9,12 @@ import app.models  # noqa: F401 — register SQLModel tables
 _engine = None
 
 _SQLITE_COLUMN_PATCHES: dict[str, dict[str, str]] = {
-    "transcript": {
+    "recording": {
         "speaker_segments": "TEXT",
         "error_message": "TEXT",
         "processing_note": "TEXT",
     },
-    "document": {
+    "note": {
         "status": "TEXT NOT NULL DEFAULT 'ready'",
         "generation_job_id": "TEXT",
     },

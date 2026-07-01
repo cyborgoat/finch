@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.core.errors import AppError
-from app.models.transcript import Transcript
+from app.models.recording import Recording
 from app.schemas.user_settings import UserSettingsResponse
 from app.services.ai_action_service import AiActionService
 from app.services.diarization_service import SpeakerSegment, speaker_segments_to_json
@@ -14,8 +14,8 @@ from tests.support.fakes import FAKE_LLM_MARKDOWN
 def test_run_meeting_summary_includes_user_preferences_in_prompt():
     service = AiActionService(MagicMock())
 
-    transcript = Transcript(
-        id="transcript_test12345678",
+    transcript = Recording(
+        id="recording_test12345678",
         audio_asset_id="audio_test1234567890",
         title="Team sync",
         raw_text="We discussed the roadmap.",
@@ -52,8 +52,8 @@ def test_run_meeting_summary_includes_user_preferences_in_prompt():
 def test_run_action_items_includes_content_language():
     service = AiActionService(MagicMock())
 
-    transcript = Transcript(
-        id="transcript_test12345678",
+    transcript = Recording(
+        id="recording_test12345678",
         audio_asset_id="audio_test1234567890",
         title="Team sync",
         raw_text="We discussed the roadmap.",
@@ -80,8 +80,8 @@ def test_run_action_items_includes_content_language():
 def test_run_action_rejects_unknown_action():
     service = AiActionService(MagicMock())
 
-    transcript = Transcript(
-        id="transcript_test12345678",
+    transcript = Recording(
+        id="recording_test12345678",
         audio_asset_id="audio_test1234567890",
         title="Team sync",
         raw_text="We discussed the roadmap.",
@@ -96,8 +96,8 @@ def test_run_action_rejects_unknown_action():
 def test_run_action_supports_legacy_markdown_summary_alias():
     service = AiActionService(MagicMock())
 
-    transcript = Transcript(
-        id="transcript_test12345678",
+    transcript = Recording(
+        id="recording_test12345678",
         audio_asset_id="audio_test1234567890",
         title="Team sync",
         raw_text="We discussed the roadmap.",
@@ -107,13 +107,13 @@ def test_run_action_supports_legacy_markdown_summary_alias():
     mock_llm = MagicMock(return_value=FAKE_LLM_MARKDOWN)
     service.llm_service.chat_completion = mock_llm
 
-    _title, doc_type, _markdown = service.run_action(
+    _title, note_type, _markdown = service.run_action(
         transcript,
         action="markdown_summary",
         source="rawText",
     )
 
-    assert doc_type == "meeting_summary"
+    assert note_type == "meeting_summary"
 
 
 def test_resolve_transcript_text_uses_voice_profile_names():
@@ -137,8 +137,8 @@ def test_resolve_transcript_text_uses_voice_profile_names():
             cluster_id="SPEAKER_01",
         ),
     ]
-    transcript = Transcript(
-        id="transcript_test12345678",
+    transcript = Recording(
+        id="recording_test12345678",
         audio_asset_id="audio_test1234567890",
         title="Team sync",
         raw_text="Speaker 1: Hello everyone.\n\nSpeaker 2: Thanks for joining.",
@@ -170,8 +170,8 @@ def test_run_action_uses_profile_names_in_prompt():
             speaker_profile_id="speaker_profile12345678",
         ),
     ]
-    transcript = Transcript(
-        id="transcript_test12345678",
+    transcript = Recording(
+        id="recording_test12345678",
         audio_asset_id="audio_test1234567890",
         title="Team sync",
         raw_text="Speaker 1: We discussed the roadmap.",

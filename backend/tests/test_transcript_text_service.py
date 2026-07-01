@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from app.models.audio_asset import AudioAsset
-from app.models.transcript import Transcript
+from app.models.recording import Recording
 from app.services.diarization_service import SpeakerSegment, speaker_segments_to_json
 from app.services.transcript_text_service import (
     build_labeled_transcript_with_profile_names,
@@ -58,8 +58,8 @@ def test_resolve_transcript_text_prefers_segments_over_raw_text(db_session):
             cluster_id="SPEAKER_00",
         ),
     ]
-    transcript = Transcript(
-        id="transcript_text",
+    transcript = Recording(
+        id="recording_text",
         audio_asset_id="audio_text",
         title="Meeting",
         raw_text="Speaker 1: Hello",
@@ -107,8 +107,8 @@ def test_propagate_profile_display_name_updates_linked_transcripts(client, db_se
         ),
     ]
     db_session.add(
-        Transcript(
-            id="transcript_propagate",
+        Recording(
+            id="recording_propagate",
             audio_asset_id="audio_propagate",
             title="Meeting",
             raw_text="Robert: Hello",
@@ -126,6 +126,6 @@ def test_propagate_profile_display_name_updates_linked_transcripts(client, db_se
     )
     assert rename.status_code == 200
 
-    transcript = client.get("/api/transcripts/transcript_propagate").json()
+    transcript = client.get("/api/recordings/recording_propagate").json()
     assert "Robert Smith: Hello" in transcript["rawText"]
     assert transcript["speakerSegments"][0]["speaker"] == "Robert Smith"
