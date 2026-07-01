@@ -259,7 +259,11 @@ class VoiceprintProfileService:
 
         audio_service = AudioService(self.session, self.settings)
         audio_asset = audio_service.get_audio(audio_asset_id)
-        audio_path = audio_asset.normalized_path or audio_asset.original_path
+        audio_path = (
+            audio_asset.original_path
+            if self.settings.diarization_use_original_audio
+            else audio_asset.normalized_path
+        ) or audio_asset.normalized_path or audio_asset.original_path
         if not audio_path:
             raise AppError(
                 "SPEAKER_ENROLL_FAILED",
@@ -294,6 +298,15 @@ class VoiceprintProfileService:
             source_recording_id=None,
             source_cluster_id="enrollment_sample",
             duration_sec=duration,
+        )
+        embedding_count = len(self.list_embeddings(profile.id))
+        logger.debug(
+            "Enrolled voiceprint profile=%s name=%r audio=%s duration=%.2fs embeddings=%d",
+            profile.id,
+            profile.display_name,
+            audio_path,
+            duration,
+            embedding_count,
         )
         return profile
 

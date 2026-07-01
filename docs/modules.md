@@ -115,7 +115,7 @@ Failed transcription jobs keep the recording with `status=failed` and `errorMess
 
 ## `tests/`
 
-72 tests covering health, upload, recordings, diarization, voiceprint profiles, transcription settings, user settings, AI actions, notes, LLM providers, DB migration, and startup diagnostics. Tests patch external services (ffmpeg, ASR, diarization, LLM) at test time.
+79 tests covering health, upload, recordings, diarization, voiceprint matching, voiceprint profiles, transcription settings, user settings, AI actions, notes, LLM providers, DB migration, and startup diagnostics. Tests patch external services (ffmpeg, ASR, diarization, LLM) at test time.
 
 ## `scripts/`
 

@@ -126,9 +126,13 @@ function SettingsPage() {
     try {
       await consentMutation.mutateAsync()
       await updateTranscriptionSettings({ speakerMemoryEnabled: true })
-      if (purpose === "auto-label") {
+      if (purpose === "auto-label" || purpose === "enrollment") {
         await toggleMemory.mutateAsync(true)
-        toast.success(t("toasts.autoLabelOn"))
+        toast.success(
+          purpose === "auto-label"
+            ? t("toasts.autoLabelOn")
+            : t("toasts.voiceprintEnrolled"),
+        )
       }
       setConsentOpen(false)
       setConsentPurpose(null)

@@ -294,6 +294,8 @@ def log_startup_summary(settings: Settings | None = None) -> None:
 
         logger.info(BANNER)
         logger.info("%s backend started (%s)", settings.app_name, settings.app_env)
+        if settings.debug_mode:
+            _log_bullet("Debug mode: ON (verbose voiceprint/diarization logs at DEBUG level)")
         logger.info(BANNER)
 
         _log_section("Configuration files")

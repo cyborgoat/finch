@@ -11,12 +11,23 @@ from app.services.diarization_service import resolve_hf_token
 
 logger = logging.getLogger(__name__)
 
+MAX_EMBED_SEGMENTS_PER_CLUSTER = 3
+
 
 def _normalize_vector(vector: np.ndarray) -> np.ndarray:
     norm = np.linalg.norm(vector)
     if norm == 0:
         return vector
     return vector / norm
+
+
+def average_embeddings(vectors: list[np.ndarray]) -> np.ndarray:
+    if not vectors:
+        raise ValueError("average_embeddings requires at least one vector")
+    if len(vectors) == 1:
+        return _normalize_vector(vectors[0])
+    stacked = np.stack(vectors, axis=0)
+    return _normalize_vector(np.mean(stacked, axis=0))
 
 
 def embedding_to_json(vector: np.ndarray) -> str:
@@ -105,7 +116,15 @@ class VoiceprintEmbeddingService:
                 "embed",
             )
             embedding = np.array(self._inference(slice_path), dtype=np.float32).reshape(-1)
-            return _normalize_vector(embedding)
+            vector = _normalize_vector(embedding)
+            logger.debug(
+                "Extracted embedding from %s [%.2f-%.2f]s norm=%.3f",
+                audio_path,
+                start_sec,
+                end_sec,
+                float(np.linalg.norm(vector)),
+            )
+            return vector
         finally:
             for path in temp_dir.glob("*.wav"):
                 path.unlink(missing_ok=True)
@@ -130,11 +149,25 @@ class VoiceprintEmbeddingService:
             ]
             if not eligible:
                 eligible = cluster_turns
-            longest = max(eligible, key=lambda turn: turn.end_sec - turn.start_sec)
-            embeddings[cluster_id] = self.extract_embedding(
+            sample_turns = sorted(
+                eligible,
+                key=lambda turn: turn.end_sec - turn.start_sec,
+                reverse=True,
+            )[:MAX_EMBED_SEGMENTS_PER_CLUSTER]
+            vectors = [
+                self.extract_embedding(audio_path, turn.start_sec, turn.end_sec)
+                for turn in sample_turns
+            ]
+            embeddings[cluster_id] = average_embeddings(vectors)
+            logger.debug(
+                "Cluster %s embedding from %d segment(s) on %s: %s",
+                cluster_id,
+                len(sample_turns),
                 audio_path,
-                longest.start_sec,
-                longest.end_sec,
+                ", ".join(
+                    f"[{turn.start_sec:.2f}-{turn.end_sec:.2f}s]"
+                    for turn in sample_turns
+                ),
             )
         return embeddings
 

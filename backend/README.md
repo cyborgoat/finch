@@ -25,6 +25,14 @@ uv sync
 uv run uvicorn app.main:app --reload
 ```
 
+Debug voiceprint matching with verbose logs:
+
+```bash
+DEBUG_MODE=true uv run uvicorn app.main:app --reload
+# or
+uv run dev-debug
+```
+
 On startup, the terminal prints a **configuration summary**: loaded env files, ASR/diarization/voiceprint/LLM mode, dependency checks, and fix hints (`app/core/startup_diagnostics.py`).
 
 API docs: http://localhost:8000/docs
@@ -35,17 +43,18 @@ API docs: http://localhost:8000/docs
 uv run pytest
 ```
 
-72 tests; patch `ffmpeg`, ASR, diarization, and LLM services at test time — no model downloads required.
+79 tests; patch `ffmpeg`, ASR, diarization, and LLM services at test time — no model downloads required.
 
 ## Environment
 
 | Variable | Description |
 |----------|-------------|
+| `DEBUG_MODE` | Verbose voiceprint/diarization logs at DEBUG level (default `false`) |
 | `HF_TOKEN` | Hugging Face token for pyannote gated models — set in `.env` only |
 | `DIARIZATION_ENABLED` | Fallback for speaker diarization toggle (prefer **Settings → Transcription**) |
 | `SPEAKER_MEMORY_ENABLED` | Fallback for voiceprint profiles toggle (prefer **Settings → Transcription**) |
 | `SPEAKER_EMBEDDING_MODEL_ID` | Embedding model (default `pyannote/embedding`) |
-| `SPEAKER_MATCH_THRESHOLD` | Cosine similarity threshold for auto-match (default `0.75`) |
+| `SPEAKER_MATCH_THRESHOLD` | Cosine similarity threshold for auto-match (default `0.65`) |
 | `SPEAKER_MIN_ENROLL_SECONDS` | Min speech duration for enrollment samples (default `2.0`) |
 | `DATABASE_URL` | SQLite connection string |
 | `MAX_UPLOAD_MB` | Maximum upload size in megabytes |

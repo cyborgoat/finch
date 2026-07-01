@@ -96,7 +96,7 @@ Advanced diarization tuning (`DIARIZATION_MIN_SEGMENT_SECONDS`, etc.) remains in
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `SPEAKER_MATCH_THRESHOLD` | `0.75` | Min cosine similarity to auto-match a profile |
+| `SPEAKER_MATCH_THRESHOLD` | `0.65` | Min cosine similarity to auto-match a profile |
 | `SPEAKER_MIN_ENROLL_SECONDS` | `2.0` | Min speech duration used for enrollment embedding |
 | `SPEAKER_EMBEDDING_MODEL_ID` | `pyannote/embedding` | Embedding model |
 
@@ -151,11 +151,18 @@ When `enrollStartSec` / `enrollEndSec` are omitted, enrollment uses the longest 
 | Issue | Fix |
 |-------|-----|
 | Save does nothing | Speaker names save immediately when you click a turn’s speaker label; transcript text is read-only on Source |
-| Still shows `Speaker 1` | Enable **auto-label** in Settings → Voiceprint profiles; ensure consent given |
-| All speakers `Unknown Speaker` | Assign speakers via pills on a transcript; lower `SPEAKER_MATCH_THRESHOLD` slightly |
+| Still shows `Speaker 1` | Matching never ran — enable diarization, voiceprint profiles, and auto-label |
+| All speakers `Unknown Speaker` | Matching ran but score below threshold — re-record voiceprint, assign manually on a turn, or lower `SPEAKER_MATCH_THRESHOLD`; re-transcribe |
 | Wrong name matched | Raise threshold; re-assign via a cleaner turn’s speaker label |
 | Consent required error | Turn on auto-label in Settings and accept consent before voiceprints can be stored |
 | Auto-label toggle disabled | Enable diarization and voiceprint profiles in **Settings → Transcription**; set `HF_TOKEN` in `.env`; check startup logs |
 | `No module named 'omegaconf'` | Run `cd backend && uv add omegaconf speechbrain` and restart the backend |
+
+## Debugging voiceprint matching
+
+1. Set `DEBUG_MODE=true` in `.env` or run `uv run dev-debug` from `backend/`.
+2. Transcribe a recording and watch backend logs for per-cluster scores and the auto-label gate flags.
+3. Check the recording API response for `matchConfidence` and `matchStatus` on each speaker segment.
+4. If all clusters show `Unknown Speaker`, inspect logged scores against `SPEAKER_MATCH_THRESHOLD` (default `0.65`).
 
 See also [diarization.md](diarization.md).

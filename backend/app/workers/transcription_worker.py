@@ -91,7 +91,7 @@ def _transcribe_with_diarization(
     audio_asset,
     language: str,
     session: Session,
-) -> tuple[str, str | None, list[SpeakerSegment]]:
+) -> tuple[str, str | None, list[SpeakerSegment], str | None]:
     settings = get_settings()
     diarization_path = (
         audio_asset.original_path
@@ -127,6 +127,7 @@ def _transcribe_with_diarization(
         ]
 
     cluster_resolutions: dict[str, "VoiceprintMatchResult"] = {}
+    voiceprint_note: str | None = None
     from app.services.app_preference_service import AppPreferenceService
     from app.services.voiceprint_embedding_service import VoiceprintEmbeddingService
     from app.services.voiceprint_matching_service import (
@@ -138,10 +139,20 @@ def _transcribe_with_diarization(
     from app.services.transcription_settings_service import TranscriptionSettingsService
 
     transcription_settings = TranscriptionSettingsService(session, settings)
+    speaker_memory_enabled = transcription_settings.is_speaker_memory_enabled()
+    auto_label_enabled = transcription_settings.is_speaker_auto_label_enabled()
+    consent_given = preference_service.has_speaker_memory_consent()
     speaker_memory_active = (
-        transcription_settings.is_speaker_memory_enabled()
-        and transcription_settings.is_speaker_auto_label_enabled()
-        and preference_service.has_speaker_memory_consent()
+        speaker_memory_enabled and auto_label_enabled and consent_given
+    )
+    logger.debug(
+        "Voiceprint auto-label gate: active=%s memory_enabled=%s auto_label=%s consent=%s diarization_path=%s clusters=%d",
+        speaker_memory_active,
+        speaker_memory_enabled,
+        auto_label_enabled,
+        consent_given,
+        diarization_path,
+        len(merged_turns),
     )
     if speaker_memory_active:
         job_service.update_job(job, progress=0.27, stage="running_voiceprint_matching")
@@ -163,6 +174,16 @@ def _transcribe_with_diarization(
                 merged_turns,
                 cluster_resolutions,
             )
+            matched_count = sum(
+                1
+                for resolution in cluster_resolutions.values()
+                if resolution.match_status == "matched"
+            )
+            if cluster_resolutions and matched_count == 0:
+                voiceprint_note = (
+                    "Voiceprint auto-label ran but no speaker matched the saved threshold. "
+                    "Try re-recording your voiceprint or assign a speaker manually on a turn."
+                )
             embedding_service.unload_model()
         except AppError as exc:
             logger.warning(
@@ -225,7 +246,7 @@ def _transcribe_with_diarization(
         temp_dir.rmdir()
 
     raw_text = build_labeled_transcript(segments)
-    return raw_text, detected_language, segments
+    return raw_text, detected_language, segments, voiceprint_note
 
 
 def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "auto") -> None:
@@ -271,7 +292,7 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
             if transcription_settings.is_diarization_enabled():
                 try:
                     diarization_service.load_pipeline()
-                    raw_text, detected_language, segments = _transcribe_with_diarization(
+                    raw_text, detected_language, segments, voiceprint_note = _transcribe_with_diarization(
                         job_service=job_service,
                         job=job,
                         asr_service=asr_service,
@@ -281,6 +302,8 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
                         language=language,
                         session=session,
                     )
+                    if voiceprint_note and not processing_note:
+                        processing_note = voiceprint_note
                 except AppError as exc:
                     diarization_service.unload_pipeline()
                     if exc.code in DIARIZATION_FALLBACK_CODES:

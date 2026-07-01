@@ -25,8 +25,8 @@ from app.storage.file_store import ensure_data_dirs
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    setup_logging()
     settings = get_settings()
+    setup_logging(debug=settings.debug_mode)
     ensure_data_dirs(settings)
     create_db_and_tables()
     log_startup_summary(settings)

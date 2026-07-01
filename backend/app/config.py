@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Finch"
     app_env: str = "development"
+    debug_mode: bool = False
 
     database_url: str = "sqlite:///./finch.db"
 
@@ -44,7 +45,7 @@ class Settings(BaseSettings):
 
     speaker_memory_enabled: bool = False
     speaker_embedding_model_id: str = "pyannote/embedding"
-    speaker_match_threshold: float = 0.75
+    speaker_match_threshold: float = 0.65
     speaker_min_enroll_seconds: float = 2.0
 
     max_upload_mb: int = 500
