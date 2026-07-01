@@ -6,10 +6,12 @@ import { SettingsRow, SettingsSection } from "@/components/settings/SettingsSect
 import { UserProfileSettings } from "@/components/settings/UserProfileSettings"
 import { LlmSettingsPanel } from "@/components/settings/LlmSettingsPanel"
 import { TranscriptionSettingsPanel } from "@/components/settings/TranscriptionSettingsPanel"
-import { SpeakerConsentDialog } from "@/components/speakers/SpeakerConsentDialog"
-import { SpeakerProfileManager } from "@/components/speakers/SpeakerProfileManager"
+import { VoiceprintConsentDialog } from "@/components/voiceprints/VoiceprintConsentDialog"
+import { VoiceprintEnrollmentDialog } from "@/components/voiceprints/VoiceprintEnrollmentDialog"
+import { VoiceprintProfileManager } from "@/components/voiceprints/VoiceprintProfileManager"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
+import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import {
   Select,
@@ -18,30 +20,32 @@ import {
   SelectTrigger,
 } from "@/components/ui/select"
 import {
-  useDeleteSpeakerProfile,
-  useRecordSpeakerConsent,
-  useSpeakerMemoryStatus,
-  useSpeakerProfiles,
-  useToggleSpeakerMemory,
-  useUpdateSpeakerProfile,
-} from "@/hooks/useSpeakerProfiles"
+  useDeleteVoiceprintProfile,
+  useRecordVoiceprintConsent,
+  useVoiceprintProfilesStatus,
+  useVoiceprintProfiles,
+  useToggleVoiceprintProfiles,
+  useUpdateVoiceprintProfile,
+} from "@/hooks/useVoiceprintProfiles"
 import { useUserPreferences } from "@/hooks/useUserPreferences"
 import { useTranscriptionSettings } from "@/hooks/useTranscriptionSettings"
 import { updateTranscriptionSettings } from "@/lib/api"
 import type { UserPreferences } from "@/lib/userPreferences"
 import {
-  speakerMemoryStatusQuery,
-  speakerProfilesListQuery,
-} from "@/lib/queries/speakers"
+  voiceprintProfilesListQuery,
+  voiceprintProfilesStatusQuery,
+} from "@/lib/queries/voiceprints"
 import { transcriptionSettingsQuery } from "@/lib/queries/transcriptionSettings"
 import { llmSettingsQuery } from "@/lib/queries/llmSettings"
 import { userSettingsQuery } from "@/lib/queries/userSettings"
 
+type ConsentPurpose = "auto-label" | "enrollment" | null
+
 export const Route = createFileRoute("/settings/")({
   loader: ({ context }) =>
     Promise.all([
-      context.queryClient.ensureQueryData(speakerProfilesListQuery()),
-      context.queryClient.ensureQueryData(speakerMemoryStatusQuery()),
+      context.queryClient.ensureQueryData(voiceprintProfilesListQuery()),
+      context.queryClient.ensureQueryData(voiceprintProfilesStatusQuery()),
       context.queryClient.ensureQueryData(userSettingsQuery()),
       context.queryClient.ensureQueryData(llmSettingsQuery()),
       context.queryClient.ensureQueryData(transcriptionSettingsQuery()),
@@ -51,20 +55,24 @@ export const Route = createFileRoute("/settings/")({
 
 function SettingsPage() {
   const { t } = useTranslation()
-  const { data: profilesData } = useSpeakerProfiles()
-  const { data: memoryStatus } = useSpeakerMemoryStatus()
+  const { data: profilesData } = useVoiceprintProfiles()
+  const { data: memoryStatus } = useVoiceprintProfilesStatus()
   const { settings: transcriptionSettings } = useTranscriptionSettings()
-  const deleteProfile = useDeleteSpeakerProfile()
-  const updateProfile = useUpdateSpeakerProfile()
-  const toggleMemory = useToggleSpeakerMemory()
-  const consentMutation = useRecordSpeakerConsent()
+  const deleteProfile = useDeleteVoiceprintProfile()
+  const updateProfile = useUpdateVoiceprintProfile()
+  const toggleMemory = useToggleVoiceprintProfiles()
+  const consentMutation = useRecordVoiceprintConsent()
   const { preferences, updatePreferences, ready, isUpdating } = useUserPreferences()
   const [consentOpen, setConsentOpen] = useState(false)
+  const [consentPurpose, setConsentPurpose] = useState<ConsentPurpose>(null)
+  const [addProfileOpen, setAddProfileOpen] = useState(false)
 
   const autoLabelEnabled = memoryStatus?.enabled ?? false
   const autoLabelReady =
     (transcriptionSettings?.speakerMemoryEnabled ?? false) &&
     (transcriptionSettings?.speakerMemoryReady ?? false)
+  const voiceprintNotReadyReason =
+    memoryStatus?.reason ?? transcriptionSettings?.speakerMemoryReason ?? null
   const togglePending = toggleMemory.isPending || consentMutation.isPending
   const settingsBusy = !ready || isUpdating
 
@@ -84,6 +92,11 @@ function SettingsPage() {
     }
   }
 
+  const requestConsent = (purpose: ConsentPurpose) => {
+    setConsentPurpose(purpose)
+    setConsentOpen(true)
+  }
+
   const handleAutoLabelChange = async (enabled: boolean) => {
     if (!enabled) {
       try {
@@ -96,7 +109,7 @@ function SettingsPage() {
     }
 
     if (!memoryStatus?.consentGiven) {
-      setConsentOpen(true)
+      requestConsent("auto-label")
       return
     }
 
@@ -109,12 +122,16 @@ function SettingsPage() {
   }
 
   const handleConsent = async () => {
+    const purpose = consentPurpose
     try {
       await consentMutation.mutateAsync()
       await updateTranscriptionSettings({ speakerMemoryEnabled: true })
-      await toggleMemory.mutateAsync(true)
+      if (purpose === "auto-label") {
+        await toggleMemory.mutateAsync(true)
+        toast.success(t("toasts.autoLabelOn"))
+      }
       setConsentOpen(false)
-      toast.success(t("toasts.autoLabelOn"))
+      setConsentPurpose(null)
     } catch {
       toast.error(t("toasts.autoLabelEnableFailed"))
     }
@@ -128,6 +145,10 @@ function SettingsPage() {
           profiles={profiles}
           ready={ready}
           disabled={settingsBusy}
+          voiceprintReady={autoLabelReady}
+          voiceprintNotReadyReason={voiceprintNotReadyReason}
+          voiceprintConsentGiven={memoryStatus?.consentGiven ?? false}
+          onVoiceprintConsentRequired={() => requestConsent("enrollment")}
           onUpdate={savePreference}
         />
 
@@ -258,13 +279,15 @@ function SettingsPage() {
             label={t("settings.notesAutoSaveLabel")}
             description={t("settings.notesAutoSaveDescription")}
           >
-            <Switch
-              checked={preferences.notesAutoSave}
-              onCheckedChange={(checked) => {
-                void savePreference({ notesAutoSave: checked })
-              }}
-              disabled={settingsBusy}
-            />
+            <div className="flex justify-end">
+              <Switch
+                checked={preferences.notesAutoSave}
+                onCheckedChange={(checked) => {
+                  void savePreference({ notesAutoSave: checked })
+                }}
+                disabled={settingsBusy}
+              />
+            </div>
           </SettingsRow>
         </SettingsSection>
 
@@ -281,9 +304,7 @@ function SettingsPage() {
             description={
               autoLabelReady
                 ? t("settings.autoLabelReadyDescription")
-                : (memoryStatus?.reason ??
-                  transcriptionSettings?.speakerMemoryReason ??
-                  t("settings.autoLabelNotReady"))
+                : (voiceprintNotReadyReason ?? t("settings.autoLabelNotReady"))
             }
           >
             <div className="flex justify-end">
@@ -295,32 +316,61 @@ function SettingsPage() {
               />
             </div>
           </SettingsRow>
-          <div className="border-t border-border px-4 py-3">
-            <SpeakerProfileManager
-              embedded
-              profiles={profiles}
-              userSpeakerProfileId={preferences.userSpeakerProfileId}
-              isDeleting={deleteProfile.isPending}
-              isRenaming={updateProfile.isPending}
-              onRename={(profileId, displayName) => {
-                void updateProfile.mutateAsync({ profileId, displayName }).then(() => {
-                  toast.success(t("toasts.speakerRenamed", { name: displayName }))
-                })
-              }}
-              onDelete={(profileId, displayName) => {
-                void deleteProfile.mutateAsync(profileId).then(() => {
-                  toast.success(t("toasts.speakerRemoved", { name: displayName }))
-                })
-              }}
-            />
-          </div>
+          <SettingsRow
+            label={t("settings.savedVoiceprintsLabel")}
+            description={t("settings.savedVoiceprintsDescription")}
+          >
+            <div className="flex w-full justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={settingsBusy || togglePending || !autoLabelReady}
+                onClick={() => setAddProfileOpen(true)}
+              >
+                {t("settings.addVoiceprintProfile")}
+              </Button>
+            </div>
+          </SettingsRow>
+          <VoiceprintProfileManager
+            embedded
+            profiles={profiles}
+            userVoiceprintProfileId={preferences.userVoiceprintProfileId}
+            isDeleting={deleteProfile.isPending}
+            isRenaming={updateProfile.isPending}
+            onRename={(voiceprintProfileId, displayName) => {
+              void updateProfile.mutateAsync({ voiceprintProfileId, displayName }).then(() => {
+                toast.success(t("toasts.speakerRenamed", { name: displayName }))
+              })
+            }}
+            onDelete={(voiceprintProfileId, displayName) => {
+              void deleteProfile.mutateAsync(voiceprintProfileId).then(() => {
+                toast.success(t("toasts.speakerRemoved", { name: displayName }))
+              })
+            }}
+          />
         </SettingsSection>
 
-        <SpeakerConsentDialog
+        <VoiceprintConsentDialog
           open={consentOpen}
-          onOpenChange={setConsentOpen}
+          onOpenChange={(open) => {
+            setConsentOpen(open)
+            if (!open) setConsentPurpose(null)
+          }}
           onConfirm={() => void handleConsent()}
           isPending={togglePending}
+        />
+
+        <VoiceprintEnrollmentDialog
+          open={addProfileOpen}
+          onOpenChange={setAddProfileOpen}
+          ready={autoLabelReady}
+          notReadyReason={voiceprintNotReadyReason}
+          consentGiven={memoryStatus?.consentGiven ?? false}
+          disabled={settingsBusy || togglePending}
+          defaultDisplayName={preferences.userName}
+          uiLanguage={preferences.uiLanguage}
+          onConsentRequired={() => requestConsent("enrollment")}
         />
       </BlurFade>
     </PageContainer>

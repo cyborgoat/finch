@@ -5,14 +5,14 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Section } from "@/components/layout/Section"
 import { SpeakerTurnDialog } from "@/components/transcripts/SpeakerTurnDialog"
 import { formatPlaybackTime, getCurrentSegmentIndex } from "@/lib/audio"
-import { resolveSpeakerDisplayName } from "@/lib/speakerMappings"
-import type { SpeakerMemoryStatus, SpeakerProfileSummary, SpeakerSegment } from "@/lib/types"
+import { resolveSpeakerDisplayName } from "@/lib/voiceprintLabels"
+import type { VoiceprintProfilesStatus, VoiceprintProfileSummary, SpeakerSegment } from "@/lib/types"
 
 type FullTranscriptPanelProps = {
   text: string
   segments?: SpeakerSegment[]
-  profiles?: SpeakerProfileSummary[]
-  memoryStatus?: SpeakerMemoryStatus
+  profiles?: VoiceprintProfileSummary[]
+  memoryStatus?: VoiceprintProfilesStatus
   currentPlaybackTime?: number
   onSeekToTime?: (seconds: number) => void
   onSegmentSpeakerSave?: (

@@ -126,10 +126,13 @@ def _transcribe_with_diarization(
             )
         ]
 
-    cluster_resolutions: dict[str, "SpeakerMatchResult"] = {}
+    cluster_resolutions: dict[str, "VoiceprintMatchResult"] = {}
     from app.services.app_preference_service import AppPreferenceService
-    from app.services.speaker_embedding_service import SpeakerEmbeddingService
-    from app.services.speaker_matching_service import SpeakerMatchingService, SpeakerMatchResult
+    from app.services.voiceprint_embedding_service import VoiceprintEmbeddingService
+    from app.services.voiceprint_matching_service import (
+        VoiceprintMatchingService,
+        VoiceprintMatchResult,
+    )
 
     preference_service = AppPreferenceService(session, settings)
     from app.services.transcription_settings_service import TranscriptionSettingsService
@@ -141,9 +144,9 @@ def _transcribe_with_diarization(
         and preference_service.has_speaker_memory_consent()
     )
     if speaker_memory_active:
-        job_service.update_job(job, progress=0.27, stage="running_speaker_matching")
+        job_service.update_job(job, progress=0.27, stage="running_voiceprint_matching")
         try:
-            embedding_service = SpeakerEmbeddingService(
+            embedding_service = VoiceprintEmbeddingService(
                 settings,
                 hf_token=transcription_settings.get_hf_token(),
             )
@@ -151,7 +154,7 @@ def _transcribe_with_diarization(
                 diarization_path,
                 merged_turns,
             )
-            matching_service = SpeakerMatchingService(session, settings)
+            matching_service = VoiceprintMatchingService(session, settings)
             cluster_resolutions = matching_service.resolve_display_names(
                 merged_turns,
                 cluster_embeddings,
@@ -208,8 +211,8 @@ def _transcribe_with_diarization(
                     end_sec=turn.end_sec,
                     text=result.text.strip(),
                     cluster_id=turn.cluster_id,
-                    speaker_profile_id=(
-                        resolution.speaker_profile_id if resolution else None
+                    voiceprint_profile_id=(
+                        resolution.voiceprint_profile_id if resolution else None
                     ),
                     match_confidence=(
                         resolution.match_confidence if resolution else None

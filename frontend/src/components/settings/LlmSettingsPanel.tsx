@@ -3,8 +3,6 @@ import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
 import { SettingsRow, SettingsSection } from "@/components/settings/SettingsSection"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -13,7 +11,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select"
 import { useLlmSettings } from "@/hooks/useLlmSettings"
-import type { LlmProviderId, LlmSettings } from "@/lib/types"
+import type { LlmProviderId, LlmSettings, UpdateLlmSettings } from "@/lib/types"
 
 type LlmSettingsPanelProps = {
   disabled?: boolean
@@ -46,7 +44,6 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
   const [apiKey, setApiKey] = useState("")
   const [baseUrl, setBaseUrl] = useState("")
   const [defaultModel, setDefaultModel] = useState("")
-  const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
     if (!settings) return
@@ -54,8 +51,18 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
     setApiKey("")
     setBaseUrl(settings.baseUrl)
     setDefaultModel(settings.defaultModel)
-    setDirty(false)
   }, [settings])
+
+  const persist = async (patch: UpdateLlmSettings) => {
+    try {
+      await saveSettings(patch)
+      if ("apiKey" in patch) {
+        setApiKey("")
+      }
+    } catch {
+      toast.error(t("toasts.failedToSaveLlmSettings"))
+    }
+  }
 
   if (isLoading || !ready || !settings) {
     return (
@@ -81,37 +88,35 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
     ) {
       return
     }
-    setProvider(value)
     const preset = settings.providers.find((item) => item.id === value)
-    if (preset) {
-      setBaseUrl(preset.defaultBaseUrl)
-      setDefaultModel(preset.defaultModel)
-    }
-    setDirty(true)
+    const nextBaseUrl = preset?.defaultBaseUrl ?? baseUrl
+    const nextModel = preset?.defaultModel ?? defaultModel
+    setProvider(value)
+    setBaseUrl(nextBaseUrl)
+    setDefaultModel(nextModel)
+    void persist({
+      provider: value,
+      baseUrl: nextBaseUrl.trim(),
+      defaultModel: nextModel.trim(),
+    })
   }
 
-  const handleSave = async () => {
-    try {
-      const patch: {
-        provider: LlmProviderId
-        apiKey?: string
-        baseUrl: string
-        defaultModel: string
-      } = {
-        provider,
-        baseUrl: baseUrl.trim(),
-        defaultModel: defaultModel.trim(),
-      }
-      if (apiKey.trim()) {
-        patch.apiKey = apiKey.trim()
-      }
-      await saveSettings(patch)
-      setApiKey("")
-      setDirty(false)
-      toast.success(t("toasts.llmSettingsSaved"))
-    } catch {
-      toast.error(t("toasts.failedToSaveLlmSettings"))
-    }
+  const commitApiKey = () => {
+    const trimmed = apiKey.trim()
+    if (!trimmed) return
+    void persist({ apiKey: trimmed })
+  }
+
+  const commitBaseUrl = () => {
+    const trimmed = baseUrl.trim()
+    if (trimmed === settings.baseUrl) return
+    void persist({ baseUrl: trimmed })
+  }
+
+  const commitDefaultModel = () => {
+    const trimmed = defaultModel.trim()
+    if (trimmed === settings.defaultModel) return
+    void persist({ defaultModel: trimmed })
   }
 
   const busy = disabled || isSaving
@@ -129,18 +134,7 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
             ? t("settings.llmStatusReady", { provider: settings.providerDisplayName })
             : t("settings.llmStatusNotReady")
         }
-      >
-        <div className="flex flex-wrap justify-end gap-2">
-          {settings.configured ? (
-            <Badge>{t("settings.llmStatusConfigured")}</Badge>
-          ) : (
-            <Badge variant="destructive">{t("settings.llmStatusNotConfigured")}</Badge>
-          )}
-          {settings.source === "stored" ? (
-            <Badge variant="outline">{t("settings.llmStatusSavedLocally")}</Badge>
-          ) : null}
-        </div>
-      </SettingsRow>
+      />
 
       <SettingsRow label={t("settings.llmProviderLabel")}>
         <Select value={provider} onValueChange={handleProviderChange} disabled={busy}>
@@ -176,9 +170,12 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
               : t("settings.llmApiKeyPlaceholderNew")
           }
           value={apiKey}
-          onChange={(event) => {
-            setApiKey(event.target.value)
-            setDirty(true)
+          onChange={(event) => setApiKey(event.target.value)}
+          onBlur={commitApiKey}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur()
+            }
           }}
           disabled={busy}
         />
@@ -190,9 +187,12 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
       >
         <Input
           value={baseUrl}
-          onChange={(event) => {
-            setBaseUrl(event.target.value)
-            setDirty(true)
+          onChange={(event) => setBaseUrl(event.target.value)}
+          onBlur={commitBaseUrl}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur()
+            }
           }}
           placeholder={selectedProvider?.defaultBaseUrl || t("settings.llmBaseUrlPlaceholder")}
           disabled={busy}
@@ -211,20 +211,17 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
       >
         <Input
           value={defaultModel}
-          onChange={(event) => {
-            setDefaultModel(event.target.value)
-            setDirty(true)
+          onChange={(event) => setDefaultModel(event.target.value)}
+          onBlur={commitDefaultModel}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur()
+            }
           }}
           placeholder={selectedProvider?.defaultModel || t("settings.llmDefaultModelPlaceholder")}
           disabled={busy}
         />
       </SettingsRow>
-
-      <div className="flex justify-end border-t border-border px-4 py-3">
-        <Button type="button" onClick={() => void handleSave()} disabled={busy || !dirty}>
-          {isSaving ? t("common.saving") : t("settings.llmSaveButton")}
-        </Button>
-      </div>
     </SettingsSection>
   )
 }

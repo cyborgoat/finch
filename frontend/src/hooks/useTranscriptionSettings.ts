@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { updateTranscriptionSettings } from "@/lib/api"
 import { healthQuery } from "@/lib/queries/health"
 import { transcriptionSettingsQuery } from "@/lib/queries/transcriptionSettings"
-import { speakerMemoryStatusQuery } from "@/lib/queries/speakers"
+import { voiceprintProfilesStatusQuery } from "@/lib/queries/voiceprints"
 import type { UpdateTranscriptionSettings } from "@/lib/types"
 
 export function useTranscriptionSettings() {
@@ -16,7 +16,7 @@ export function useTranscriptionSettings() {
       queryClient.setQueryData(transcriptionSettingsQuery().queryKey, updated)
       void queryClient.invalidateQueries({ queryKey: healthQuery().queryKey })
       void queryClient.invalidateQueries({
-        queryKey: speakerMemoryStatusQuery().queryKey,
+        queryKey: voiceprintProfilesStatusQuery().queryKey,
       })
     },
   })

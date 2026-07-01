@@ -31,16 +31,16 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import type { SpeakerProfileSummary } from "@/lib/types"
+import type { VoiceprintProfileSummary } from "@/lib/types"
 
-type SpeakerProfileManagerProps = {
-  profiles: SpeakerProfileSummary[]
-  onRename: (profileId: string, displayName: string) => void | Promise<void>
-  onDelete: (profileId: string, displayName: string) => void
+type VoiceprintProfileManagerProps = {
+  profiles: VoiceprintProfileSummary[]
+  onRename: (voiceprintProfileId: string, displayName: string) => void | Promise<void>
+  onDelete: (voiceprintProfileId: string, displayName: string) => void
   isRenaming?: boolean
   isDeleting?: boolean
   embedded?: boolean
-  userSpeakerProfileId?: string | null
+  userVoiceprintProfileId?: string | null
 }
 
 function SpeakerRow({
@@ -52,9 +52,9 @@ function SpeakerRow({
   embedded,
   isYou,
 }: {
-  profile: SpeakerProfileSummary
-  onRename: (profileId: string, displayName: string) => void | Promise<void>
-  onDelete: (profileId: string, displayName: string) => void
+  profile: VoiceprintProfileSummary
+  onRename: (voiceprintProfileId: string, displayName: string) => void | Promise<void>
+  onDelete: (voiceprintProfileId: string, displayName: string) => void
   isRenaming?: boolean
   isDeleting?: boolean
   embedded?: boolean
@@ -101,7 +101,7 @@ function SpeakerRow({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={t("speakers.actionsAriaLabel", { name: profile.displayName })}
+                aria-label={t("voiceprints.actionsAriaLabel", { name: profile.displayName })}
                 disabled={busy}
               >
                 <MoreHorizontal className="size-4" />
@@ -115,7 +115,7 @@ function SpeakerRow({
               variant="destructive"
               onClick={() => setDeleteOpen(true)}
             >
-              {t("speakers.deleteVoiceProfile")}
+              {t("voiceprints.deleteVoiceProfile")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -124,9 +124,9 @@ function SpeakerRow({
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("speakers.renameTitle")}</DialogTitle>
+            <DialogTitle>{t("voiceprints.renameTitle")}</DialogTitle>
             <DialogDescription>
-              {t("speakers.renameDescription")}
+              {t("voiceprints.renameDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="field-stack py-2">
@@ -160,10 +160,10 @@ function SpeakerRow({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t("speakers.deleteTitle", { name: profile.displayName })}
+              {t("voiceprints.deleteTitle", { name: profile.displayName })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t("speakers.deleteDescription")}
+              {t("voiceprints.deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -185,22 +185,22 @@ function SpeakerRow({
   )
 }
 
-export function SpeakerProfileManager({
+export function VoiceprintProfileManager({
   profiles,
   onRename,
   onDelete,
   isRenaming,
   isDeleting,
   embedded,
-  userSpeakerProfileId,
-}: SpeakerProfileManagerProps) {
+  userVoiceprintProfileId,
+}: VoiceprintProfileManagerProps) {
   const { t } = useTranslation()
 
   if (profiles.length === 0) {
     return (
       <EmptyState
-        title={t("speakers.emptyTitle")}
-        description={t("speakers.emptyDescription")}
+        title={t("voiceprints.emptyTitle")}
+        description={t("voiceprints.emptyDescription")}
         className="py-8"
       />
     )
@@ -223,7 +223,7 @@ export function SpeakerProfileManager({
           isRenaming={isRenaming}
           isDeleting={isDeleting}
           embedded={embedded}
-          isYou={profile.id === userSpeakerProfileId}
+          isYou={profile.id === userVoiceprintProfileId}
         />
       ))}
     </div>

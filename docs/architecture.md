@@ -52,8 +52,8 @@ Note(s)
 |--------|---------|
 | `AudioAsset` | Uploaded or recorded file metadata + paths to original/normalized WAV |
 | `Recording` | `rawText`, optional `editedText`, `speakerSegments`, `status` (`draft` / `final` / `transcribing` / `failed`) |
-| `SpeakerProfile` | Voiceprint profile identity (`displayName`, `notes`) |
-| `SpeakerEmbedding` | Local voiceprint vectors linked to a profile |
+| `VoiceprintProfile` | Voiceprint profile identity (`displayName`, `notes`) |
+| `VoiceprintEmbedding` | Local voiceprint vectors linked to a profile |
 | `AppPreference` | Key/value store (transcription settings, voiceprint consent, auto-label toggle, `user_settings` JSON) |
 | `Job` | Async work unit (`transcription`, `ai_action`) with progress/stage |
 | `Note` | LLM-generated or manual Markdown linked to a recording |
@@ -120,7 +120,7 @@ Config loads from `backend/.env` and repo root `.env`.
 | Note | `note_` + hex | `note_b2c3d4e5f6789012` |
 | Audio asset | `audio_` + hex | `audio_a1b2c3d4e5f67890` |
 | Job | `job_` + hex | `job_c3d4e5f678901234` |
-| Speaker profile | `speaker_` + hex | `speaker_d4e5f67890123456` |
+| Voiceprint profile | `voiceprint_` + hex | `voiceprint_d4e5f67890123456` |
 
 Documents store a `recording_id` foreign key pointing at the parent recording.
 
@@ -132,7 +132,7 @@ Documents store a `recording_id` foreign key pointing at the parent recording.
 | `/recordings` | Recordings library |
 | `/recordings/{id}` | Recording detail (Source / Notes tabs) |
 | `/upload`, `/record` | Ingest new audio |
-| `/settings` | User profile, language, AI prefs, speakers |
+| `/settings` | User profile, language, AI prefs, transcription, LLM, voiceprint profiles |
 
 The recording detail page accepts only `recording_` IDs. Lists show recordings only; notes appear on a recording’s **Notes** tab.
 
@@ -158,9 +158,9 @@ The recording detail page accepts only `recording_` IDs. Lists show recordings o
 | POST | `/api/ai-actions` | Generate an AI note from a template |
 | GET | `/api/ai-actions/templates` | List AI note templates |
 | GET/POST/PATCH/DELETE | `/api/notes` | Note CRUD (includes manual blank notes via POST) |
-| GET/PATCH | `/api/transcription-settings` | Diarization, voiceprint profiles, HF token (stored in SQLite) |
-| GET/POST/PATCH/DELETE | `/api/speaker-profiles/...` | Voiceprint profile CRUD + detail |
-| GET/POST/PATCH/DELETE | `/api/speaker-memory/...` | Consent, auto-label toggle, wipe voiceprint data |
+| GET/PATCH | `/api/transcription-settings` | Diarization and voiceprint profile toggles (SQLite) |
+| GET/POST/PATCH/DELETE | `/api/voiceprint-profiles/...` | Voiceprint profile CRUD + detail |
+| GET/POST/PATCH/DELETE | `/api/voiceprint-profiles/status`, `/consent`, `/data` | Consent, auto-label toggle, wipe voiceprint data |
 | GET/PATCH | `/api/user-settings` | User name, language, summarization prefs, linked voiceprint profile |
 | PATCH | `/api/recordings/{id}/speakers` | Rename/link speakers (`enroll: true` saves voiceprint; optional `enrollStartSec` / `enrollEndSec` for turn-scoped samples) |
 

@@ -5,9 +5,9 @@ import type {
   Note,
   NoteSummary,
   Job,
-  SpeakerMemoryStatus,
-  SpeakerProfileDetail,
-  SpeakerProfileSummary,
+  VoiceprintProfilesStatus,
+  VoiceprintProfileDetail,
+  VoiceprintProfileSummary,
   Recording,
   RecordingSummary,
   UserSettings,
@@ -205,49 +205,67 @@ export async function updateRecordingSpeakers(
   })
 }
 
-export async function listSpeakerProfiles(): Promise<{
-  items: SpeakerProfileSummary[]
+export async function listVoiceprintProfiles(): Promise<{
+  items: VoiceprintProfileSummary[]
 }> {
-  return request("/api/speaker-profiles")
+  return request("/api/voiceprint-profiles")
 }
 
-export async function getSpeakerProfile(id: string): Promise<SpeakerProfileDetail> {
-  return request(`/api/speaker-profiles/${id}`)
+export async function getVoiceprintProfile(id: string): Promise<VoiceprintProfileDetail> {
+  return request(`/api/voiceprint-profiles/${id}`)
 }
 
-export async function updateSpeakerProfile(
+export async function updateVoiceprintProfile(
   id: string,
   payload: { displayName?: string; notes?: string | null },
-): Promise<SpeakerProfileSummary> {
-  return request(`/api/speaker-profiles/${id}`, {
+): Promise<VoiceprintProfileSummary> {
+  return request(`/api/voiceprint-profiles/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   })
 }
 
-export async function deleteSpeakerProfile(id: string): Promise<{ ok: boolean }> {
-  return request(`/api/speaker-profiles/${id}`, { method: "DELETE" })
+export async function deleteVoiceprintProfile(id: string): Promise<{ ok: boolean }> {
+  return request(`/api/voiceprint-profiles/${id}`, { method: "DELETE" })
 }
 
-export async function getSpeakerMemoryStatus(): Promise<SpeakerMemoryStatus> {
-  return request("/api/speaker-memory/status")
+export async function enrollVoiceprintProfileSample(input: {
+  audioAssetId: string
+  displayName: string
+  profileId?: string | null
+  setAsUserProfile?: boolean
+}): Promise<{
+  profile: VoiceprintProfileSummary
+  userVoiceprintProfileId: string | null
+}> {
+  return request("/api/voiceprint-profiles/enroll-sample", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  })
 }
 
-export async function recordSpeakerMemoryConsent(): Promise<{ consentAt: string }> {
-  return request("/api/speaker-memory/consent", { method: "POST" })
+export async function getVoiceprintProfilesStatus(): Promise<VoiceprintProfilesStatus> {
+  return request("/api/voiceprint-profiles/status")
 }
 
-export async function toggleSpeakerMemory(enabled: boolean): Promise<SpeakerMemoryStatus> {
-  return request("/api/speaker-memory/status", {
+export async function recordVoiceprintProfilesConsent(): Promise<{ consentAt: string }> {
+  return request("/api/voiceprint-profiles/consent", { method: "POST" })
+}
+
+export async function toggleVoiceprintProfiles(
+  enabled: boolean,
+): Promise<VoiceprintProfilesStatus> {
+  return request("/api/voiceprint-profiles/status", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ enabled }),
   })
 }
 
-export async function deleteSpeakerMemoryData(): Promise<{ ok: boolean }> {
-  return request("/api/speaker-memory/data", { method: "DELETE" })
+export async function deleteVoiceprintProfilesData(): Promise<{ ok: boolean }> {
+  return request("/api/voiceprint-profiles/data", { method: "DELETE" })
 }
 
 export async function getUserSettings(): Promise<UserSettings> {

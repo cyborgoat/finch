@@ -5,14 +5,14 @@ from sqlmodel import Session
 
 from app.config import Settings, get_settings
 from app.services.diarization_service import DiarizationTurn
-from app.services.speaker_profile_service import SpeakerProfileService
+from app.services.voiceprint_profile_service import VoiceprintProfileService
 
 
 @dataclass(frozen=True)
-class SpeakerMatchResult:
+class VoiceprintMatchResult:
     cluster_id: str
     display_name: str
-    speaker_profile_id: str | None
+    voiceprint_profile_id: str | None
     match_confidence: float | None
     match_status: str
 
@@ -23,11 +23,11 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 
 
-class SpeakerMatchingService:
+class VoiceprintMatchingService:
     def __init__(self, session: Session, settings: Settings | None = None) -> None:
         self.session = session
         self.settings = settings or get_settings()
-        self.profile_service = SpeakerProfileService(session, self.settings)
+        self.profile_service = VoiceprintProfileService(session, self.settings)
 
     def match_embedding(self, embedding: np.ndarray) -> tuple[str | None, float]:
         best_profile_id: str | None = None
@@ -48,7 +48,7 @@ class SpeakerMatchingService:
         self,
         turns: list[DiarizationTurn],
         cluster_embeddings: dict[str, np.ndarray],
-    ) -> dict[str, SpeakerMatchResult]:
+    ) -> dict[str, VoiceprintMatchResult]:
         cluster_ids = sorted(
             {
                 turn.cluster_id or turn.speaker
@@ -60,7 +60,7 @@ class SpeakerMatchingService:
             for profile in self.profile_service.list_profiles()
         }
 
-        results: dict[str, SpeakerMatchResult] = {}
+        results: dict[str, VoiceprintMatchResult] = {}
         unknown_count = 0
 
         for cluster_id in cluster_ids:
@@ -70,10 +70,10 @@ class SpeakerMatchingService:
             )
             embedding = cluster_embeddings.get(cluster_id)
             if embedding is None:
-                results[cluster_id] = SpeakerMatchResult(
+                results[cluster_id] = VoiceprintMatchResult(
                     cluster_id=cluster_id,
                     display_name=generic_label,
-                    speaker_profile_id=None,
+                    voiceprint_profile_id=None,
                     match_confidence=None,
                     match_status="unmatched",
                 )
@@ -82,20 +82,20 @@ class SpeakerMatchingService:
             profile_id, confidence = self.match_embedding(embedding)
             if profile_id and confidence >= self.settings.speaker_match_threshold:
                 profile = profiles[profile_id]
-                results[cluster_id] = SpeakerMatchResult(
+                results[cluster_id] = VoiceprintMatchResult(
                     cluster_id=cluster_id,
                     display_name=profile.display_name,
-                    speaker_profile_id=profile_id,
+                    voiceprint_profile_id=profile_id,
                     match_confidence=confidence,
                     match_status="matched",
                 )
             else:
                 unknown_count += 1
                 suffix = "" if unknown_count == 1 else f" {unknown_count}"
-                results[cluster_id] = SpeakerMatchResult(
+                results[cluster_id] = VoiceprintMatchResult(
                     cluster_id=cluster_id,
                     display_name=f"Unknown Speaker{suffix}",
-                    speaker_profile_id=None,
+                    voiceprint_profile_id=None,
                     match_confidence=confidence if profile_id else None,
                     match_status="unknown",
                 )
@@ -105,7 +105,7 @@ class SpeakerMatchingService:
     def apply_names_to_turns(
         self,
         turns: list[DiarizationTurn],
-        resolutions: dict[str, SpeakerMatchResult],
+        resolutions: dict[str, VoiceprintMatchResult],
     ) -> list[DiarizationTurn]:
         updated: list[DiarizationTurn] = []
         for turn in turns:

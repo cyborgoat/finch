@@ -35,9 +35,9 @@ Loads settings from `backend/.env` and repo root `.env`.
 | `speaker_embedding_model_id` | `pyannote/embedding` | Voiceprint model |
 | `speaker_min_enroll_seconds` | `2.0` | Min speech for enrollment sample |
 | `speaker_match_threshold` | `0.75` | Cosine similarity threshold for auto-match |
-| `hf_token` | — | Hugging Face token for gated pyannote models (fallback; prefer Settings → Transcription) |
+| `hf_token` | — | Hugging Face token for gated pyannote models — set `HF_TOKEN` in `.env` only (not in Settings UI) |
 
-LLM and transcription settings are stored in SQLite via the frontend — not in `.env`. See `llm_settings_service.py`, `transcription_settings_service.py`, and `AppPreference` keys `llm_settings` / `transcription_settings`.
+LLM and transcription toggles are stored in SQLite via the frontend — not in `.env`. `HF_TOKEN` is read from `.env` only. See `llm_settings_service.py`, `transcription_settings_service.py`, and `AppPreference` keys `llm_settings` / `transcription_settings`.
 
 ## `api/`
 
@@ -49,17 +49,17 @@ LLM and transcription settings are stored in SQLite via the frontend — not in 
 | `routes_jobs.py` | `GET /api/jobs/{id}` |
 | `routes_ai_actions.py` | `POST /api/ai-actions`, `GET /api/ai-actions/templates` |
 | `routes_notes.py` | `GET/POST/PATCH/DELETE /api/notes` |
-| `routes_speaker_profiles.py` | Voiceprint profiles + consent/status helpers |
+| `routes_voiceprint_profiles.py` | Voiceprint profiles + consent/status helpers |
 | `routes_user_settings.py` | `GET/PATCH /api/user-settings` |
 | `routes_llm_settings.py` | `GET/PATCH /api/llm-settings` (local SQLite storage) |
-| `routes_transcription_settings.py` | `GET/PATCH /api/transcription-settings` (diarization, voiceprints, HF token) |
+| `routes_transcription_settings.py` | `GET/PATCH /api/transcription-settings` (diarization, voiceprint toggles) |
 
 ## `core/`
 
 | Module | Role |
 |--------|------|
 | `errors.py` | `AppError` + JSON error handler |
-| `ids.py` | Prefixed IDs: `recording_`, `note_`, `audio_`, `job_`, `speaker_`, `semb_` |
+| `ids.py` | Prefixed IDs: `recording_`, `note_`, `audio_`, `job_`, `voiceprint_`, `semb_` |
 | `logging.py` | stdout logging setup |
 | `startup_diagnostics.py` | Startup config summary, dependency checks, error remediation hints |
 
@@ -69,8 +69,8 @@ LLM and transcription settings are stored in SQLite via the frontend — not in 
 |-------|------------|
 | `AudioAsset` | `source`, `filename`, `mime_type`, `original_path`, `normalized_path` |
 | `Recording` | `raw_text`, `edited_text`, `speaker_segments`, `error_message`, `processing_note`, `status` |
-| `SpeakerProfile` | `display_name`, `notes` |
-| `SpeakerEmbedding` | `embedding` JSON vector, `model_id`, source transcript/cluster |
+| `VoiceprintProfile` | `display_name`, `notes` |
+| `VoiceprintEmbedding` | `embedding` JSON vector, `model_id`, source transcript/cluster |
 | `AppPreference` | Key/value store (transcription settings, voiceprint consent, auto-label toggle, `user_settings` JSON) |
 | `Job` | `type`, `status`, `progress`, `stage`, `result_id`, `error` |
 | `Note` | `recording_id`, `markdown`, `type`, `model` |
@@ -82,12 +82,12 @@ LLM and transcription settings are stored in SQLite via the frontend — not in 
 | `audio_service.py` | Upload validation, ffmpeg normalization, duration |
 | `asr_service.py` | Qwen3-ASR, chunking for long audio |
 | `diarization_service.py` | pyannote speaker diarization, segment slicing, labeled transcript builder |
-| `speaker_embedding_service.py` | pyannote/embedding extraction |
-| `speaker_profile_service.py` | Profile CRUD, enrollment, centroid computation |
-| `speaker_matching_service.py` | Cosine match embeddings → display names |
-| `speaker_recording_service.py` | Speaker rename on transcripts; optional turn-scoped voiceprint enrollment |
+| `voiceprint_embedding_service.py` | pyannote/embedding extraction |
+| `voiceprint_profile_service.py` | Profile CRUD, enrollment, centroid computation |
+| `voiceprint_matching_service.py` | Cosine match embeddings → display names |
+| `recording_speaker_service.py` | Speaker rename on transcripts; optional turn-scoped voiceprint enrollment |
 | `app_preference_service.py` | Legacy preference helpers (prefer `TranscriptionSettingsService`) |
-| `transcription_settings_service.py` | Diarization, voiceprint profiles, HF token (SQLite) |
+| `transcription_settings_service.py` | Diarization and voiceprint profile toggles (SQLite); reads `HF_TOKEN` from env |
 | `user_settings_service.py` | User profile, language, summarization prefs, linked speaker |
 | `recording_service.py` | Recording CRUD |
 | `note_service.py` | Note CRUD |
@@ -115,7 +115,7 @@ Failed transcription jobs keep the recording with `status=failed` and `errorMess
 
 ## `tests/`
 
-73 tests covering health, upload, recordings, diarization, voiceprint profiles, transcription settings, user settings, AI actions, notes, LLM providers, DB migration, and startup diagnostics. Tests patch external services (ffmpeg, ASR, diarization, LLM) at test time.
+72 tests covering health, upload, recordings, diarization, voiceprint profiles, transcription settings, user settings, AI actions, notes, LLM providers, DB migration, and startup diagnostics. Tests patch external services (ffmpeg, ASR, diarization, LLM) at test time.
 
 ## `scripts/`
 

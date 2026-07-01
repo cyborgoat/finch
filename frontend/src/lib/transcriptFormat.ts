@@ -1,4 +1,4 @@
-import type { SpeakerProfileSummary, SpeakerSegment, Recording } from "@/lib/types"
+import type { VoiceprintProfileSummary, SpeakerSegment, Recording } from "@/lib/types"
 
 const SPEAKER_BLOCK_PATTERN =
   /(?:^|\n\n)([^:]+):\s*([\s\S]*?)(?=(?:\n\n[^:]+:)|$)/g
@@ -6,7 +6,7 @@ const SPEAKER_BLOCK_PATTERN =
 export type ProfileNameLookup = Record<string, string>
 
 export function profileNameById(
-  profiles: Pick<SpeakerProfileSummary, "id" | "displayName">[],
+  profiles: Pick<VoiceprintProfileSummary, "id" | "displayName">[],
 ): ProfileNameLookup {
   return Object.fromEntries(profiles.map((profile) => [profile.id, profile.displayName]))
 }
@@ -15,8 +15,8 @@ export function resolveSegmentSpeaker(
   segment: SpeakerSegment,
   profileNames: ProfileNameLookup = {},
 ): string {
-  if (segment.speakerProfileId) {
-    return profileNames[segment.speakerProfileId] ?? segment.speaker
+  if (segment.voiceprintProfileId) {
+    return profileNames[segment.voiceprintProfileId] ?? segment.speaker
   }
   return segment.speaker
 }

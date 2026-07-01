@@ -1,40 +1,26 @@
 from datetime import datetime
 
 from app.schemas import CamelModel
-from app.schemas.recording import SpeakerSegmentSchema
 
 
-class SpeakerMappingItem(CamelModel):
-    cluster_id: str
-    display_name: str
-    profile_id: str | None = None
-    enroll: bool = False
-    enroll_start_sec: float | None = None
-    enroll_end_sec: float | None = None
-
-
-class UpdateRecordingSpeakersRequest(CamelModel):
-    mappings: list[SpeakerMappingItem]
-
-
-class UpdateRecordingSpeakersResponse(CamelModel):
-    id: str
-    speaker_segments: list[SpeakerSegmentSchema]
-    raw_text: str
-    updated_at: datetime
-
-
-class CreateSpeakerProfileRequest(CamelModel):
+class CreateVoiceprintProfileRequest(CamelModel):
     display_name: str
     notes: str | None = None
 
 
-class UpdateSpeakerProfileRequest(CamelModel):
+class EnrollVoiceprintProfileFromAudioRequest(CamelModel):
+    audio_asset_id: str
+    display_name: str
+    profile_id: str | None = None
+    set_as_user_profile: bool = False
+
+
+class UpdateVoiceprintProfileRequest(CamelModel):
     display_name: str | None = None
     notes: str | None = None
 
 
-class SpeakerProfileSummary(CamelModel):
+class VoiceprintProfileSummary(CamelModel):
     id: str
     display_name: str
     notes: str | None = None
@@ -44,7 +30,7 @@ class SpeakerProfileSummary(CamelModel):
     updated_at: datetime
 
 
-class SpeakerEmbeddingSummary(CamelModel):
+class VoiceprintEmbeddingSummary(CamelModel):
     id: str
     model_id: str
     source_recording_id: str | None = None
@@ -61,23 +47,23 @@ class RelatedRecordingSummary(CamelModel):
     updated_at: datetime
 
 
-class SpeakerProfileDetailResponse(CamelModel):
+class VoiceprintProfileDetailResponse(CamelModel):
     id: str
     display_name: str
     notes: str | None = None
     embedding_count: int = 0
     embedding_description: str
-    embeddings: list[SpeakerEmbeddingSummary]
+    embeddings: list[VoiceprintEmbeddingSummary]
     related_recordings: list[RelatedRecordingSummary]
     created_at: datetime
     updated_at: datetime
 
 
-class SpeakerProfileListResponse(CamelModel):
-    items: list[SpeakerProfileSummary]
+class VoiceprintProfileListResponse(CamelModel):
+    items: list[VoiceprintProfileSummary]
 
 
-class SpeakerProfileResponse(CamelModel):
+class VoiceprintProfileResponse(CamelModel):
     id: str
     display_name: str
     notes: str | None = None
@@ -86,7 +72,12 @@ class SpeakerProfileResponse(CamelModel):
     updated_at: datetime
 
 
-class SpeakerMemoryStatusResponse(CamelModel):
+class EnrollVoiceprintProfileFromAudioResponse(CamelModel):
+    profile: VoiceprintProfileResponse
+    user_voiceprint_profile_id: str | None = None
+
+
+class VoiceprintProfilesStatusResponse(CamelModel):
     enabled: bool
     consent_given: bool
     consent_at: datetime | None = None
@@ -95,9 +86,9 @@ class SpeakerMemoryStatusResponse(CamelModel):
     reason: str | None = None
 
 
-class SpeakerMemoryConsentResponse(CamelModel):
+class VoiceprintProfilesConsentResponse(CamelModel):
     consent_at: datetime
 
 
-class SpeakerMemoryToggleRequest(CamelModel):
+class VoiceprintProfilesToggleRequest(CamelModel):
     enabled: bool

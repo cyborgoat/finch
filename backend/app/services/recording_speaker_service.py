@@ -9,16 +9,16 @@ from app.services.diarization_service import (
     speaker_segments_from_json,
     speaker_segments_to_json,
 )
-from app.services.speaker_profile_service import SpeakerProfileService
+from app.services.voiceprint_profile_service import VoiceprintProfileService
 from app.services.recording_service import RecordingService
 
 
-class SpeakerRecordingService:
+class RecordingSpeakerService:
     def __init__(self, session: Session, settings: Settings | None = None) -> None:
         self.session = session
         self.settings = settings or get_settings()
         self.recording_service = RecordingService(session, self.settings)
-        self.profile_service = SpeakerProfileService(session, self.settings)
+        self.profile_service = VoiceprintProfileService(session, self.settings)
         self.preference_service = AppPreferenceService(session, self.settings)
         from app.services.transcription_settings_service import TranscriptionSettingsService
 
@@ -84,7 +84,7 @@ class SpeakerRecordingService:
                     end_sec=segment.end_sec,
                     text=segment.text,
                     cluster_id=segment.cluster_id or cluster_id,
-                    speaker_profile_id=mapping.get("profile_id"),
+                    voiceprint_profile_id=mapping.get("profile_id"),
                     match_confidence=segment.match_confidence,
                     match_status="manual",
                 )

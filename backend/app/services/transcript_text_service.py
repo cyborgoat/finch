@@ -18,8 +18,8 @@ def resolve_segment_speaker_labels(
     resolved: list[SpeakerSegment] = []
     for segment in segments:
         speaker = segment.speaker
-        if segment.speaker_profile_id:
-            speaker = profile_name_by_id.get(segment.speaker_profile_id, speaker)
+        if segment.voiceprint_profile_id:
+            speaker = profile_name_by_id.get(segment.voiceprint_profile_id, speaker)
         resolved.append(segment.model_copy(update={"speaker": speaker}))
     return resolved
 
@@ -38,12 +38,12 @@ def load_profile_display_names(
     segments: list[SpeakerSegment],
     settings: Settings | None = None,
 ) -> dict[str, str]:
-    from app.services.speaker_profile_service import SpeakerProfileService
+    from app.services.voiceprint_profile_service import VoiceprintProfileService
 
-    profile_service = SpeakerProfileService(session, settings or get_settings())
+    profile_service = VoiceprintProfileService(session, settings or get_settings())
     names: dict[str, str] = {}
     for segment in segments:
-        profile_id = segment.speaker_profile_id
+        profile_id = segment.voiceprint_profile_id
         if not profile_id or profile_id in names:
             continue
         try:
@@ -91,7 +91,7 @@ def propagate_profile_display_name(
         changed = False
         updated_segments: list[SpeakerSegment] = []
         for segment in segments:
-            if segment.speaker_profile_id != profile_id:
+            if segment.voiceprint_profile_id != profile_id:
                 updated_segments.append(segment)
                 continue
             if segment.speaker != trimmed_name:

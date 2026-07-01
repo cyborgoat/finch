@@ -1,6 +1,6 @@
-import type { SpeakerProfileSummary, SpeakerSegment } from "@/lib/types"
+import type { VoiceprintProfileSummary, SpeakerSegment } from "@/lib/types"
 
-const INTERNAL_SPEAKER_ID = /^(speaker_|semb_|SPEAKER_)/i
+const INTERNAL_SPEAKER_ID = /^(voiceprint_|speaker_|semb_|SPEAKER_)/i
 
 function isInternalSpeakerId(value: string): boolean {
   return INTERNAL_SPEAKER_ID.test(value.trim())
@@ -10,16 +10,16 @@ export function resolveSpeakerDisplayName(
   _clusterId: string,
   options: {
     segment?: SpeakerSegment
-    profiles?: SpeakerProfileSummary[]
+    profiles?: VoiceprintProfileSummary[]
     fallback?: string
   },
 ): string {
   const { segment, profiles = [], fallback = "Unknown Speaker" } = options
 
-  const profileId = segment?.speakerProfileId?.trim() || ""
+  const voiceprintProfileId = segment?.voiceprintProfileId?.trim() || ""
 
-  if (profileId) {
-    const profile = profiles.find((item) => item.id === profileId)
+  if (voiceprintProfileId) {
+    const profile = profiles.find((item) => item.id === voiceprintProfileId)
     if (profile?.displayName) {
       return profile.displayName
     }

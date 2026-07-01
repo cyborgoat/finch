@@ -1,23 +1,23 @@
 import { useEffect, useState } from "react"
+import { AudioLines } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { SettingsRow, SettingsSection } from "@/components/settings/SettingsSection"
+import { VoiceprintEnrollmentDialog } from "@/components/voiceprints/VoiceprintEnrollmentDialog"
+import { SettingsWarningBadge } from "@/components/settings/settingsBadges"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select"
 import type { UserPreferences } from "@/lib/userPreferences"
-import type { SpeakerProfileSummary } from "@/lib/types"
-
-const NO_SPEAKER_VALUE = "__none__"
+import type { VoiceprintProfileSummary } from "@/lib/types"
 
 type UserProfileSettingsProps = {
   preferences: UserPreferences
-  profiles: SpeakerProfileSummary[]
+  profiles: VoiceprintProfileSummary[]
   ready: boolean
   disabled?: boolean
+  voiceprintReady: boolean
+  voiceprintNotReadyReason?: string | null
+  voiceprintConsentGiven: boolean
+  onVoiceprintConsentRequired: () => void
   onUpdate: (
     patch: Partial<UserPreferences>,
     successMessage?: string,
@@ -29,29 +29,34 @@ export function UserProfileSettings({
   profiles,
   ready,
   disabled,
+  voiceprintReady,
+  voiceprintNotReadyReason,
+  voiceprintConsentGiven,
+  onVoiceprintConsentRequired,
   onUpdate,
 }: UserProfileSettingsProps) {
   const { t } = useTranslation()
   const [nameDraft, setNameDraft] = useState(preferences.userName)
+  const [enrollOpen, setEnrollOpen] = useState(false)
 
   useEffect(() => {
     setNameDraft(preferences.userName)
   }, [preferences.userName])
 
   useEffect(() => {
-    if (!preferences.userSpeakerProfileId) return
+    if (!preferences.userVoiceprintProfileId) return
     const exists = profiles.some(
-      (profile) => profile.id === preferences.userSpeakerProfileId,
+      (profile) => profile.id === preferences.userVoiceprintProfileId,
     )
     if (!exists) {
-      void onUpdate({ userSpeakerProfileId: null })
+      void onUpdate({ userVoiceprintProfileId: null })
     }
-  }, [onUpdate, preferences.userSpeakerProfileId, profiles])
+  }, [onUpdate, preferences.userVoiceprintProfileId, profiles])
 
-  const selectedSpeakerValue = preferences.userSpeakerProfileId ?? NO_SPEAKER_VALUE
-  const selectedSpeaker = profiles.find(
-    (profile) => profile.id === preferences.userSpeakerProfileId,
+  const linkedProfile = profiles.find(
+    (profile) => profile.id === preferences.userVoiceprintProfileId,
   )
+  const hasLinkedProfile = Boolean(linkedProfile)
 
   const commitName = () => {
     const trimmed = nameDraft.trim()
@@ -60,64 +65,75 @@ export function UserProfileSettings({
   }
 
   const controlsDisabled = !ready || disabled
+  const enrollDisabled = controlsDisabled || !voiceprintReady
 
   return (
-    <SettingsSection
-      title={t("settings.youTitle")}
-      description={t("settings.youDescription")}
-    >
-      <SettingsRow
-        label={t("settings.yourNameLabel")}
-        description={t("settings.yourNameDescription")}
+    <>
+      <SettingsSection
+        title={t("settings.youTitle")}
+        description={t("settings.youDescription")}
       >
-        <Input
-          value={nameDraft}
-          onChange={(event) => setNameDraft(event.target.value)}
-          onBlur={commitName}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.currentTarget.blur()
-            }
-          }}
-          placeholder={t("settings.yourNamePlaceholder")}
-          disabled={controlsDisabled}
-          autoComplete="name"
-        />
-      </SettingsRow>
-      <SettingsRow
-        label={t("settings.yourSpeakerLabel")}
-        description={
-          profiles.length > 0
-            ? t("settings.yourSpeakerDescriptionLinked")
-            : t("settings.yourSpeakerDescriptionUnlinked")
-        }
-      >
-        <Select
-          value={selectedSpeakerValue}
-          onValueChange={(value) => {
-            void onUpdate({
-              userSpeakerProfileId: value === NO_SPEAKER_VALUE ? null : value,
-            })
-          }}
-          disabled={controlsDisabled || profiles.length === 0}
+        <SettingsRow
+          label={t("settings.yourNameLabel")}
+          description={t("settings.yourNameDescription")}
         >
-          <SelectTrigger className="w-full">
-            <span className="truncate">
-              {selectedSpeaker?.displayName ?? t("settings.yourSpeakerNotLinked")}
-            </span>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={NO_SPEAKER_VALUE}>
-              {t("settings.yourSpeakerNotLinked")}
-            </SelectItem>
-            {profiles.map((profile) => (
-              <SelectItem key={profile.id} value={profile.id}>
-                {profile.displayName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </SettingsRow>
-    </SettingsSection>
+          <Input
+            value={nameDraft}
+            onChange={(event) => setNameDraft(event.target.value)}
+            onBlur={commitName}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.currentTarget.blur()
+              }
+            }}
+            placeholder={t("settings.yourNamePlaceholder")}
+            disabled={controlsDisabled}
+            autoComplete="name"
+          />
+        </SettingsRow>
+        <SettingsRow
+          label={t("settings.yourSpeakerLabel")}
+          labelAdornment={
+            !hasLinkedProfile ? (
+              <SettingsWarningBadge>{t("settings.voiceprintNotRecorded")}</SettingsWarningBadge>
+            ) : null
+          }
+          description={
+            hasLinkedProfile
+              ? t("settings.yourSpeakerDescriptionLinked")
+              : t("settings.yourSpeakerDescriptionUnlinked")
+          }
+        >
+          <div className="flex w-full justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={enrollDisabled}
+              onClick={() => setEnrollOpen(true)}
+            >
+              <AudioLines />
+              {t("settings.recordVoiceprint")}
+            </Button>
+          </div>
+        </SettingsRow>
+      </SettingsSection>
+
+      <VoiceprintEnrollmentDialog
+        open={enrollOpen}
+        onOpenChange={setEnrollOpen}
+        ready={voiceprintReady}
+        notReadyReason={voiceprintNotReadyReason}
+        consentGiven={voiceprintConsentGiven}
+        disabled={controlsDisabled}
+        defaultDisplayName={preferences.userName}
+        uiLanguage={preferences.uiLanguage}
+        forUserProfile
+        onConsentRequired={onVoiceprintConsentRequired}
+        onEnrolled={(voiceprintProfileId) => {
+          void onUpdate({ userVoiceprintProfileId: voiceprintProfileId })
+        }}
+      />
+    </>
   )
 }

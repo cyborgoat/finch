@@ -52,6 +52,9 @@ class AppPreferenceService:
         self.set(SPEAKER_MEMORY_CONSENT_KEY, now.isoformat())
         return now
 
+    def record_voiceprint_profiles_consent(self) -> datetime:
+        return self.record_speaker_memory_consent()
+
     def is_speaker_memory_enabled(self) -> bool:
         """Legacy auto-label preference (prefer TranscriptionSettingsService)."""
         return self.is_speaker_auto_label_enabled()

@@ -24,7 +24,7 @@ See [docs/features.md](docs/features.md) for the full feature list and roadmap.
 | [docs/README.md](docs/README.md) | Documentation index |
 | [docs/quickstart.md](docs/quickstart.md) | Install, configure, run, transcribe |
 | [docs/diarization.md](docs/diarization.md) | Speaker labels: setup, validation, tuning |
-| [docs/speaker-memory.md](docs/speaker-memory.md) | Voiceprint profiles: persistent speaker names |
+| [docs/voiceprint-profiles.md](docs/voiceprint-profiles.md) | Voiceprint profiles: persistent speaker names |
 | [docs/architecture.md](docs/architecture.md) | System design and data flow |
 | [docs/modules.md](docs/modules.md) | Backend module reference |
 | [docs/features.md](docs/features.md) | Implemented features and planned work |
@@ -77,12 +77,12 @@ cd backend && uv run python scripts/validate_diarization.py
 
 | Variable | Purpose |
 |----------|---------|
-| `DIARIZATION_ENABLED` | Fallback for speaker diarization (prefer **Settings → Transcription**) |
-| `HF_TOKEN` | Fallback Hugging Face token for pyannote models |
-| `SPEAKER_MEMORY_ENABLED` | Fallback for voiceprint profiles (prefer **Settings → Transcription**) |
+| `HF_TOKEN` | Hugging Face token for pyannote diarization and voiceprint embeddings (backend `.env` only) |
+| `DIARIZATION_ENABLED` | Fallback for speaker diarization toggle (prefer **Settings → Transcription**) |
+| `SPEAKER_MEMORY_ENABLED` | Fallback for voiceprint profiles toggle (prefer **Settings → Transcription**) |
 | `SPEAKER_MATCH_THRESHOLD` | Auto-match similarity threshold (default `0.75`) |
 
-Diarization, voiceprint profiles, and HF token can be configured in **Settings → Transcription** and are stored locally in SQLite. `.env` values apply only when nothing is stored yet.
+Diarization and voiceprint **toggles** are configured in **Settings → Transcription** and stored locally in SQLite. The Hugging Face token is **not** in Settings — set `HF_TOKEN` in `.env`.
 
 LLM provider credentials are **not** configured via `.env`. Use **Settings → LLM provider** in the frontend; values are stored locally in SQLite.
 

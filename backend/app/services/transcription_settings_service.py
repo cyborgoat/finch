@@ -8,6 +8,7 @@ from app.core.startup_diagnostics import (
     get_diarization_status,
     get_speaker_memory_status_for_preferences,
 )
+from app.services.diarization_service import resolve_hf_token
 from app.schemas.transcription_settings import (
     TranscriptionSettingsResponse,
     UpdateTranscriptionSettingsRequest,
@@ -28,7 +29,7 @@ class TranscriptionSettingsService:
         diarization_enabled = bool(stored.get("diarization_enabled"))
         speaker_memory_enabled = bool(stored.get("speaker_memory_enabled"))
         speaker_auto_label_enabled = self._resolve_auto_label_enabled(stored)
-        hf_token = self._resolve_hf_token(stored)
+        hf_token = resolve_hf_token(self.settings)
 
         diarization_ready, diarization_reason = self._diarization_status(
             diarization_enabled,
@@ -49,7 +50,6 @@ class TranscriptionSettingsService:
             speaker_memory_ready=memory_status.ready and speaker_memory_enabled,
             speaker_memory_reason=memory_status.reason,
             speaker_auto_label_enabled=speaker_auto_label_enabled,
-            hf_token_configured=bool(hf_token and hf_token.strip()),
             source="stored" if stored else "unset",
         )
 
@@ -71,11 +71,6 @@ class TranscriptionSettingsService:
             current["speaker_auto_label_enabled"] = enabled
             self.preferences.set_speaker_auto_label_enabled(enabled)
 
-        if "hf_token" in patch:
-            token = patch["hf_token"]
-            if token is not None:
-                current["hf_token"] = token.strip()
-
         self._save_raw(current)
         return self.get_settings()
 
@@ -96,20 +91,12 @@ class TranscriptionSettingsService:
         return self._resolve_auto_label_enabled(stored)
 
     def get_hf_token(self) -> str | None:
-        return self._resolve_hf_token(self._load_raw())
+        return resolve_hf_token(self.settings)
 
     def _resolve_auto_label_enabled(self, stored: dict[str, Any]) -> bool:
         if "speaker_auto_label_enabled" in stored:
             return bool(stored["speaker_auto_label_enabled"])
         return self.preferences.is_speaker_auto_label_enabled()
-
-    def _resolve_hf_token(self, stored: dict[str, Any]) -> str | None:
-        token = stored.get("hf_token")
-        if isinstance(token, str) and token.strip():
-            return token.strip()
-        if self.settings.hf_token:
-            return self.settings.hf_token
-        return None
 
     def _diarization_status(
         self,

@@ -4,7 +4,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
@@ -100,9 +100,18 @@ class SpeakerSegment(BaseModel):
     end_sec: float
     text: str = ""
     cluster_id: str | None = None
-    speaker_profile_id: str | None = None
+    voiceprint_profile_id: str | None = None
     match_confidence: float | None = None
     match_status: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_profile_id(cls, data: object) -> object:
+        if not isinstance(data, dict):
+            return data
+        if data.get("voiceprint_profile_id") is None and data.get("speaker_profile_id") is not None:
+            data = {**data, "voiceprint_profile_id": data["speaker_profile_id"]}
+        return data
 
 
 class DiarizationService:
@@ -139,7 +148,7 @@ class DiarizationService:
                 "DIARIZATION_MODEL_LOAD_FAILED",
                 (
                     "Hugging Face token is required for pyannote speaker diarization. "
-                    "Add it in Settings → Transcription or run: huggingface-cli login"
+                    "Set HF_TOKEN in .env or run: huggingface-cli login"
                 ),
                 500,
             )

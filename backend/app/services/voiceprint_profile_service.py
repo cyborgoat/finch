@@ -5,15 +5,15 @@ from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
-from app.core.ids import generate_speaker_embedding_id, generate_speaker_profile_id
-from app.models.speaker_profile import SpeakerEmbedding, SpeakerProfile
+from app.core.ids import generate_voiceprint_embedding_id, generate_voiceprint_profile_id
+from app.models.voiceprint_profile import VoiceprintEmbedding, VoiceprintProfile
 from app.services.app_preference_service import AppPreferenceService
 from app.services.audio_service import AudioService
 from app.services.diarization_service import (
     speaker_segments_from_json,
 )
-from app.services.speaker_embedding_service import (
-    SpeakerEmbeddingService,
+from app.services.voiceprint_embedding_service import (
+    VoiceprintEmbeddingService,
     embedding_from_json,
     embedding_to_json,
 )
@@ -21,35 +21,35 @@ from app.services.speaker_embedding_service import (
 logger = logging.getLogger(__name__)
 
 
-class SpeakerProfileService:
+class VoiceprintProfileService:
     def __init__(self, session: Session, settings: Settings | None = None) -> None:
         self.session = session
         self.settings = settings or get_settings()
-        self.embedding_service = SpeakerEmbeddingService(self.settings)
+        self.embedding_service = VoiceprintEmbeddingService(self.settings)
 
-    def list_profiles(self) -> list[SpeakerProfile]:
-        statement = select(SpeakerProfile).order_by(SpeakerProfile.display_name)
+    def list_profiles(self) -> list[VoiceprintProfile]:
+        statement = select(VoiceprintProfile).order_by(VoiceprintProfile.display_name)
         return list(self.session.exec(statement).all())
 
-    def get_profile(self, profile_id: str) -> SpeakerProfile:
-        profile = self.session.get(SpeakerProfile, profile_id)
+    def get_profile(self, profile_id: str) -> VoiceprintProfile:
+        profile = self.session.get(VoiceprintProfile, profile_id)
         if profile is None:
-            raise AppError("SPEAKER_PROFILE_NOT_FOUND", "Voiceprint profile not found.", 404)
+            raise AppError("VOICEPRINT_PROFILE_NOT_FOUND", "Voiceprint profile not found.", 404)
         return profile
 
     def count_profiles(self) -> int:
         return len(self.list_profiles())
 
     def count_embeddings(self, profile_id: str) -> int:
-        statement = select(SpeakerEmbedding).where(SpeakerEmbedding.profile_id == profile_id)
+        statement = select(VoiceprintEmbedding).where(VoiceprintEmbedding.profile_id == profile_id)
         return len(list(self.session.exec(statement).all()))
 
-    def create_profile(self, display_name: str, notes: str | None = None) -> SpeakerProfile:
+    def create_profile(self, display_name: str, notes: str | None = None) -> VoiceprintProfile:
         from datetime import UTC, datetime
 
         now = datetime.now(UTC)
-        profile = SpeakerProfile(
-            id=generate_speaker_profile_id(),
+        profile = VoiceprintProfile(
+            id=generate_voiceprint_profile_id(),
             display_name=display_name.strip(),
             notes=notes,
             created_at=now,
@@ -62,11 +62,11 @@ class SpeakerProfileService:
 
     def update_profile(
         self,
-        profile: SpeakerProfile,
+        profile: VoiceprintProfile,
         *,
         display_name: str | None = None,
         notes: str | None = None,
-    ) -> SpeakerProfile:
+    ) -> VoiceprintProfile:
         from datetime import UTC, datetime
 
         if display_name is not None:
@@ -88,9 +88,9 @@ class SpeakerProfileService:
             )
         return profile
 
-    def delete_profile(self, profile: SpeakerProfile) -> None:
+    def delete_profile(self, profile: VoiceprintProfile) -> None:
         embeddings = self.session.exec(
-            select(SpeakerEmbedding).where(SpeakerEmbedding.profile_id == profile.id)
+            select(VoiceprintEmbedding).where(VoiceprintEmbedding.profile_id == profile.id)
         ).all()
         for embedding in embeddings:
             self.session.delete(embedding)
@@ -98,17 +98,17 @@ class SpeakerProfileService:
         self.session.commit()
 
     def delete_all_data(self) -> None:
-        for embedding in self.session.exec(select(SpeakerEmbedding)).all():
+        for embedding in self.session.exec(select(VoiceprintEmbedding)).all():
             self.session.delete(embedding)
-        for profile in self.session.exec(select(SpeakerProfile)).all():
+        for profile in self.session.exec(select(VoiceprintProfile)).all():
             self.session.delete(profile)
         self.session.commit()
         AppPreferenceService(self.session, self.settings).clear_speaker_memory_preferences()
 
-    def list_embeddings(self, profile_id: str | None = None) -> list[SpeakerEmbedding]:
-        statement = select(SpeakerEmbedding)
+    def list_embeddings(self, profile_id: str | None = None) -> list[VoiceprintEmbedding]:
+        statement = select(VoiceprintEmbedding)
         if profile_id is not None:
-            statement = statement.where(SpeakerEmbedding.profile_id == profile_id)
+            statement = statement.where(VoiceprintEmbedding.profile_id == profile_id)
         return list(self.session.exec(statement).all())
 
     def compute_centroid(self, profile_id: str) -> np.ndarray | None:
@@ -130,11 +130,11 @@ class SpeakerProfileService:
         source_recording_id: str | None = None,
         source_cluster_id: str | None = None,
         duration_sec: float | None = None,
-    ) -> SpeakerEmbedding:
+    ) -> VoiceprintEmbedding:
         from datetime import UTC, datetime
 
-        record = SpeakerEmbedding(
-            id=generate_speaker_embedding_id(),
+        record = VoiceprintEmbedding(
+            id=generate_voiceprint_embedding_id(),
             profile_id=profile_id,
             embedding=embedding_to_json(vector),
             model_id=self.settings.speaker_embedding_model_id,
@@ -157,7 +157,7 @@ class SpeakerProfileService:
         *,
         start_sec: float | None = None,
         end_sec: float | None = None,
-    ) -> SpeakerProfile:
+    ) -> VoiceprintProfile:
         from app.services.recording_service import RecordingService
 
         preference_service = AppPreferenceService(self.session, self.settings)
@@ -233,6 +233,70 @@ class SpeakerProfileService:
         )
         return profile
 
+    def enroll_from_audio_asset(
+        self,
+        audio_asset_id: str,
+        display_name: str,
+        profile_id: str | None = None,
+    ) -> VoiceprintProfile:
+        from app.services.transcription_settings_service import TranscriptionSettingsService
+
+        preference_service = AppPreferenceService(self.session, self.settings)
+        if not preference_service.has_speaker_memory_consent():
+            raise AppError(
+                "SPEAKER_MEMORY_CONSENT_REQUIRED",
+                "Voiceprint profile consent is required before saving voiceprint samples.",
+                400,
+            )
+
+        transcription_settings = TranscriptionSettingsService(self.session, self.settings)
+        if not transcription_settings.is_speaker_memory_enabled():
+            raise AppError(
+                "SPEAKER_MEMORY_DISABLED",
+                "Voiceprint profiles are disabled. Enable them in Settings → Transcription.",
+                400,
+            )
+
+        audio_service = AudioService(self.session, self.settings)
+        audio_asset = audio_service.get_audio(audio_asset_id)
+        audio_path = audio_asset.normalized_path or audio_asset.original_path
+        if not audio_path:
+            raise AppError(
+                "SPEAKER_ENROLL_FAILED",
+                "Audio file is not available for enrollment.",
+                400,
+            )
+
+        duration = audio_asset.duration_seconds
+        if duration is None:
+            duration = audio_service.get_duration(audio_path)
+        if duration is None or duration < self.settings.speaker_min_enroll_seconds:
+            minimum = self.settings.speaker_min_enroll_seconds
+            raise AppError(
+                "SPEAKER_ENROLL_FAILED",
+                f"Recording must be at least {minimum:g} seconds for voiceprint enrollment.",
+                400,
+            )
+
+        hf_token = transcription_settings.get_hf_token()
+        embedding_service = VoiceprintEmbeddingService(self.settings, hf_token=hf_token)
+        vector = embedding_service.extract_embedding(audio_path, 0.0, duration)
+
+        if profile_id:
+            profile = self.get_profile(profile_id)
+            profile = self.update_profile(profile, display_name=display_name)
+        else:
+            profile = self.create_profile(display_name)
+
+        self.add_embedding(
+            profile.id,
+            vector,
+            source_recording_id=None,
+            source_cluster_id="enrollment_sample",
+            duration_sec=duration,
+        )
+        return profile
+
     def count_related_recordings(self, profile_id: str) -> int:
         from app.models.recording import Recording
         from app.services.diarization_service import speaker_segments_from_json
@@ -240,7 +304,7 @@ class SpeakerProfileService:
         count = 0
         for transcript in self.session.exec(select(Recording)).all():
             segments = speaker_segments_from_json(transcript.speaker_segments)
-            if any(segment.speaker_profile_id == profile_id for segment in segments):
+            if any(segment.voiceprint_profile_id == profile_id for segment in segments):
                 count += 1
         return count
 
@@ -269,7 +333,7 @@ class SpeakerProfileService:
         for transcript in self.session.exec(select(Recording)).all():
             segments = speaker_segments_from_json(transcript.speaker_segments)
             count = sum(
-                1 for segment in segments if segment.speaker_profile_id == profile_id
+                1 for segment in segments if segment.voiceprint_profile_id == profile_id
             )
             if count:
                 related[transcript.id] = {
@@ -289,9 +353,8 @@ class SpeakerProfileService:
             )
         else:
             embedding_description = (
-                "No voiceprints enrolled yet. Assign this profile on a transcript "
-                "by clicking a speaker pill; with speaker memory enabled in Settings, "
-                "the voiceprint is stored from that turn."
+                "No voiceprints enrolled yet. Read the example passage in Settings "
+                "to create a profile, or assign a speaker on a recording transcript."
             )
 
         return {

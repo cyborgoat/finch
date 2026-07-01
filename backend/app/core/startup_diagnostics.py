@@ -131,7 +131,7 @@ def get_diarization_status(
 
     if not hf_token:
         diarization_reason = (
-            "Hugging Face token is not configured. Add it in Settings → Transcription."
+            "Hugging Face token is not configured. Set HF_TOKEN in .env."
         )
     elif not pyannote_installed:
         diarization_reason = "pyannote-audio is not installed."
@@ -163,7 +163,7 @@ def get_speaker_memory_status_for_preferences(
     elif not diarization_enabled:
         reason = "Voiceprint profiles require speaker diarization to be enabled in Settings."
     elif not hf_token:
-        reason = "Hugging Face token is not configured. Add it in Settings → Transcription."
+        reason = "Hugging Face token is not configured. Set HF_TOKEN in .env."
     elif not pyannote_installed:
         reason = "pyannote-audio is not installed."
     elif not _dependency_installed("omegaconf"):
@@ -401,9 +401,9 @@ def log_startup_summary(settings: Settings | None = None) -> None:
             _log_bullet(f"Quickstart: {quickstart}")
         if diarization_doc.is_file():
             _log_bullet(f"Diarization guide: {diarization_doc}")
-        speaker_memory_doc = repo_root / "docs" / "speaker-memory.md"
-        if speaker_memory_doc.is_file():
-            _log_bullet(f"Speaker memory guide: {speaker_memory_doc}")
+        voiceprint_profiles_doc = repo_root / "docs" / "voiceprint-profiles.md"
+        if voiceprint_profiles_doc.is_file():
+            _log_bullet(f"Voiceprint profiles guide: {voiceprint_profiles_doc}")
         if env_example.is_file():
             _log_bullet(f"Environment reference: {env_example}")
         _log_bullet("Validate diarization: cd backend && uv run python scripts/validate_diarization.py")

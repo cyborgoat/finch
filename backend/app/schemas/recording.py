@@ -9,7 +9,7 @@ class SpeakerSegmentSchema(CamelModel):
     end_sec: float
     text: str = ""
     cluster_id: str | None = None
-    speaker_profile_id: str | None = None
+    voiceprint_profile_id: str | None = None
     match_confidence: float | None = None
     match_status: str | None = None
 

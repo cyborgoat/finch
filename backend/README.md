@@ -2,7 +2,7 @@
 
 Local ASR transcription API for Finch — optional speaker diarization, voiceprint profiles, and configurable LLM AI actions.
 
-**Project docs:** [../docs/README.md](../docs/README.md) · **Diarization:** [../docs/diarization.md](../docs/diarization.md) · **Voiceprint profiles:** [../docs/speaker-memory.md](../docs/speaker-memory.md)
+**Project docs:** [../docs/README.md](../docs/README.md) · **Diarization:** [../docs/diarization.md](../docs/diarization.md) · **Voiceprint profiles:** [../docs/voiceprint-profiles.md](../docs/voiceprint-profiles.md)
 
 ## Prerequisites
 
@@ -35,20 +35,15 @@ API docs: http://localhost:8000/docs
 uv run pytest
 ```
 
-73 tests; patch `ffmpeg`, ASR, diarization, and LLM services at test time — no model downloads required.
+72 tests; patch `ffmpeg`, ASR, diarization, and LLM services at test time — no model downloads required.
 
 ## Environment
 
 | Variable | Description |
 |----------|-------------|
-| `DIARIZATION_ENABLED` | Fallback for speaker diarization (prefer **Settings → Transcription**) |
-| `DIARIZATION_USE_ORIGINAL_AUDIO` | Diarize original upload instead of normalized WAV |
-| `DIARIZATION_USE_EXCLUSIVE` | Use pyannote exclusive diarization (recommended for ASR) |
-| `DIARIZATION_MIN_SEGMENT_SECONDS` | Drop segments shorter than this after merge (default `0.3`) |
-| `DIARIZATION_MERGE_GAP_SECONDS` | Merge same-speaker turns within this gap (default `0.5`) |
-| `DIARIZATION_MAX_SEGMENTS` | Cap segment count (`0` = unlimited) |
-| `HF_TOKEN` | Fallback Hugging Face token for pyannote gated models |
-| `SPEAKER_MEMORY_ENABLED` | Fallback for voiceprint profiles (prefer **Settings → Transcription**) |
+| `HF_TOKEN` | Hugging Face token for pyannote gated models — set in `.env` only |
+| `DIARIZATION_ENABLED` | Fallback for speaker diarization toggle (prefer **Settings → Transcription**) |
+| `SPEAKER_MEMORY_ENABLED` | Fallback for voiceprint profiles toggle (prefer **Settings → Transcription**) |
 | `SPEAKER_EMBEDDING_MODEL_ID` | Embedding model (default `pyannote/embedding`) |
 | `SPEAKER_MATCH_THRESHOLD` | Cosine similarity threshold for auto-match (default `0.75`) |
 | `SPEAKER_MIN_ENROLL_SECONDS` | Min speech duration for enrollment samples (default `2.0`) |
@@ -75,7 +70,7 @@ The model is loaded lazily on the first transcription request.
 
 ## Speaker diarization
 
-Requires pyannote-audio and Hugging Face access to [pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1). Enable in **Settings → Transcription** or set `DIARIZATION_ENABLED=true` in `.env` as a fallback. See [../docs/diarization.md](../docs/diarization.md).
+Requires pyannote-audio and Hugging Face access to [pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1). Set `HF_TOKEN` in `.env` and enable in **Settings → Transcription** (or `DIARIZATION_ENABLED=true` as fallback). See [../docs/diarization.md](../docs/diarization.md).
 
 Validate setup:
 
@@ -86,7 +81,7 @@ uv run python scripts/validate_diarization.py --audio path/to/sample.wav
 
 ## Voiceprint profiles
 
-Optional local voiceprint storage for persistent speaker names. Requires diarization. Enable in **Settings → Transcription** or set `SPEAKER_MEMORY_ENABLED=true` in `.env` as a fallback. See [../docs/speaker-memory.md](../docs/speaker-memory.md).
+Optional local voiceprint storage for persistent speaker names. Requires diarization. Enable in **Settings → Transcription** or set `SPEAKER_MEMORY_ENABLED=true` in `.env` as a fallback. See [../docs/voiceprint-profiles.md](../docs/voiceprint-profiles.md).
 
 If diarization or speaker matching is unavailable, the worker falls back gracefully and stores a `processingNote` when relevant.
 
@@ -101,9 +96,9 @@ If diarization or speaker matching is unavailable, the worker falls back gracefu
 - `POST /api/ai-actions` — generate AI note (`action`: `meeting_summary`, `action_items`, `key_decisions`, `follow_up_email`; legacy alias `markdown_summary`)
 - `GET /api/ai-actions/templates` — list AI note templates
 - `GET/POST/PATCH/DELETE /api/notes` — note CRUD (POST creates blank manual notes)
-- `GET/PATCH /api/transcription-settings` — diarization, voiceprint profiles, HF token (stored in SQLite)
-- `GET/POST/PATCH/DELETE /api/speaker-profiles` · `GET /api/speaker-profiles/{id}`
-- `GET/PATCH/DELETE /api/speaker-memory/status` · `POST /api/speaker-memory/consent` · `DELETE /api/speaker-memory/data`
+- `GET/PATCH /api/transcription-settings` — diarization and voiceprint profile toggles (SQLite)
+- `GET/POST/PATCH/DELETE /api/voiceprint-profiles` · `GET /api/voiceprint-profiles/{id}`
+- `GET/PATCH/DELETE /api/voiceprint-profiles/status` · `POST /api/voiceprint-profiles/consent` · `DELETE /api/voiceprint-profiles/data`
 - `GET/PATCH /api/user-settings` — user name, ui/content language, summarization prefs, linked voiceprint profile
 - `GET/PATCH /api/llm-settings` — LLM provider credentials (stored locally in SQLite; API keys never returned)
 

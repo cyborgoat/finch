@@ -97,7 +97,7 @@ export function RecordingRowActions({
             variant="destructive"
             onClick={() => setDeleteOpen(true)}
           >
-            {t("common.delete")}
+            {t("recordings.deleteRecording")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -161,7 +161,7 @@ export function RecordingRowActions({
                 setDeleteOpen(false)
               }}
             >
-              {isDeleting ? t("common.deleting") : t("common.delete")}
+              {isDeleting ? t("common.deleting") : t("recordings.deleteRecording")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

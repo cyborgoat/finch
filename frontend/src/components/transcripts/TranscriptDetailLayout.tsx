@@ -11,7 +11,7 @@ import { FullTranscriptPanel } from "@/components/transcripts/FullTranscriptPane
 import { useAudioAsset } from "@/hooks/useAudioAsset"
 import { useNote } from "@/hooks/useNotes"
 import { useRecordingPlayback } from "@/hooks/useRecordingPlayback"
-import type { NoteSummary, SpeakerMemoryStatus, SpeakerProfileSummary, Recording } from "@/lib/types"
+import type { NoteSummary, VoiceprintProfilesStatus, VoiceprintProfileSummary, Recording } from "@/lib/types"
 import type { SpeakerSegment } from "@/lib/types"
 import {
   recordingDetailTabSearch,
@@ -24,8 +24,8 @@ type RecordingDetailLayoutProps = {
   title: string
   text: string
   segments: SpeakerSegment[]
-  profiles: SpeakerProfileSummary[]
-  memoryStatus?: SpeakerMemoryStatus
+  profiles: VoiceprintProfileSummary[]
+  memoryStatus?: VoiceprintProfilesStatus
   notes: NoteSummary[]
   llmReady?: boolean
   speakerSavePending: boolean

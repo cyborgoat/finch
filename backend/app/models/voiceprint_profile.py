@@ -5,7 +5,7 @@ from sqlmodel import Field, SQLModel
 from app.models.audio_asset import utc_now
 
 
-class SpeakerProfile(SQLModel, table=True):
+class VoiceprintProfile(SQLModel, table=True):
     id: str = Field(primary_key=True)
     display_name: str
     notes: str | None = None
@@ -13,9 +13,9 @@ class SpeakerProfile(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utc_now)
 
 
-class SpeakerEmbedding(SQLModel, table=True):
+class VoiceprintEmbedding(SQLModel, table=True):
     id: str = Field(primary_key=True)
-    profile_id: str = Field(foreign_key="speakerprofile.id")
+    profile_id: str = Field(foreign_key="voiceprintprofile.id")
     embedding: str
     model_id: str
     source_recording_id: str | None = None

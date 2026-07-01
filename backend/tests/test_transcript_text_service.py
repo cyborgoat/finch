@@ -17,7 +17,7 @@ def test_build_labeled_transcript_with_profile_names():
             start_sec=0.0,
             end_sec=1.0,
             text="Hello",
-            speaker_profile_id="profile_a",
+            voiceprint_profile_id="profile_a",
         ),
         SpeakerSegment(
             speaker="Speaker 2",
@@ -91,7 +91,7 @@ def test_propagate_profile_display_name_updates_linked_transcripts(client, db_se
         )
     )
     create = client.post(
-        "/api/speaker-profiles",
+        "/api/voiceprint-profiles",
         json={"displayName": "Robert"},
     )
     profile_id = create.json()["id"]
@@ -103,7 +103,7 @@ def test_propagate_profile_display_name_updates_linked_transcripts(client, db_se
             end_sec=2.0,
             text="Hello",
             cluster_id="SPEAKER_00",
-            speaker_profile_id=profile_id,
+            voiceprint_profile_id=profile_id,
         ),
     ]
     db_session.add(
@@ -121,7 +121,7 @@ def test_propagate_profile_display_name_updates_linked_transcripts(client, db_se
     db_session.commit()
 
     rename = client.patch(
-        f"/api/speaker-profiles/{profile_id}",
+        f"/api/voiceprint-profiles/{profile_id}",
         json={"displayName": "Robert Smith"},
     )
     assert rename.status_code == 200

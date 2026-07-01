@@ -42,6 +42,9 @@ def test_capability_status_llm_not_configured_by_default():
 
 
 def test_log_startup_summary_emits_configuration(caplog_info):
+    from app.storage.database import create_db_and_tables
+
+    create_db_and_tables()
     settings = Settings(diarization_enabled=False)
     log_startup_summary(settings)
     output = caplog_info.text

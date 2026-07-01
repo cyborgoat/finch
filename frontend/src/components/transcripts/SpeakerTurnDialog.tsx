@@ -17,11 +17,11 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select"
-import { SpeakerConsentDialog } from "@/components/speakers/SpeakerConsentDialog"
-import { useRecordSpeakerConsent } from "@/hooks/useSpeakerProfiles"
-import { resolveSpeakerDisplayName } from "@/lib/speakerMappings"
+import { VoiceprintConsentDialog } from "@/components/voiceprints/VoiceprintConsentDialog"
+import { useRecordVoiceprintConsent } from "@/hooks/useVoiceprintProfiles"
+import { resolveSpeakerDisplayName } from "@/lib/voiceprintLabels"
 import { updateTranscriptionSettings } from "@/lib/api"
-import type { SpeakerMemoryStatus, SpeakerProfileSummary, SpeakerSegment } from "@/lib/types"
+import type { VoiceprintProfilesStatus, VoiceprintProfileSummary, SpeakerSegment } from "@/lib/types"
 
 type SpeakerSavePayload = {
   displayName: string
@@ -34,8 +34,8 @@ type SpeakerTurnDialogProps = {
   onOpenChange: (open: boolean) => void
   segment: SpeakerSegment
   clusterId: string
-  profiles: SpeakerProfileSummary[]
-  memoryStatus?: SpeakerMemoryStatus
+  profiles: VoiceprintProfileSummary[]
+  memoryStatus?: VoiceprintProfilesStatus
   isPending?: boolean
   onSave: (payload: SpeakerSavePayload) => Promise<void>
 }
@@ -51,7 +51,7 @@ export function SpeakerTurnDialog({
   onSave,
 }: SpeakerTurnDialogProps) {
   const { t } = useTranslation()
-  const consentMutation = useRecordSpeakerConsent()
+  const consentMutation = useRecordVoiceprintConsent()
   const initialName = resolveSpeakerDisplayName(clusterId, {
     segment,
     profiles,
@@ -60,7 +60,7 @@ export function SpeakerTurnDialog({
         ? t("recording.unknownSpeaker")
         : segment.speaker,
   })
-  const initialProfileId = segment.speakerProfileId ?? ""
+  const initialProfileId = segment.voiceprintProfileId ?? ""
 
   const [profileId, setProfileId] = useState(initialProfileId || "__new__")
   const [displayName, setDisplayName] = useState(initialName)
@@ -77,7 +77,7 @@ export function SpeakerTurnDialog({
           ? t("recording.unknownSpeaker")
           : segment.speaker,
     })
-    setProfileId(segment.speakerProfileId || "__new__")
+    setProfileId(segment.voiceprintProfileId || "__new__")
     setDisplayName(name)
   }, [open, clusterId, segment, profiles, t])
 
@@ -216,7 +216,7 @@ export function SpeakerTurnDialog({
         </DialogContent>
       </Dialog>
 
-      <SpeakerConsentDialog
+      <VoiceprintConsentDialog
         open={consentOpen}
         onOpenChange={(nextOpen) => {
           setConsentOpen(nextOpen)

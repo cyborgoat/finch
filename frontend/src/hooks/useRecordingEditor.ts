@@ -4,9 +4,9 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
-  useSpeakerMemoryStatus,
-  useSpeakerProfiles,
-} from "@/hooks/useSpeakerProfiles"
+  useVoiceprintProfilesStatus,
+  useVoiceprintProfiles,
+} from "@/hooks/useVoiceprintProfiles"
 import {
   useDeleteRecording,
   useUpdateRecording,
@@ -26,8 +26,8 @@ export function useRecordingEditor(recording: Recording) {
   const queryClient = useQueryClient()
   const updateMutation = useUpdateRecording(recording.id)
   const deleteMutation = useDeleteRecording()
-  const { data: memoryStatus } = useSpeakerMemoryStatus()
-  const { data: profilesData } = useSpeakerProfiles()
+  const { data: memoryStatus } = useVoiceprintProfilesStatus()
+  const { data: profilesData } = useVoiceprintProfiles()
   const profiles = useMemo(
     () => profilesData?.items ?? [],
     [profilesData?.items],
@@ -65,8 +65,8 @@ export function useRecordingEditor(recording: Recording) {
     const formatted = formatSpeakerTranscript(updatedSegments, profileNames) || rawText
     setText(formatted)
     void queryClient.invalidateQueries({ queryKey: ["recordings", recording.id] })
-    void queryClient.invalidateQueries({ queryKey: ["speaker-profiles"] })
-    void queryClient.invalidateQueries({ queryKey: ["speaker-memory-status"] })
+    void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles"] })
+    void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles-status"] })
   }
 
   const applySegmentSpeaker = async (
@@ -113,20 +113,20 @@ export function useRecordingEditor(recording: Recording) {
       queryClient.setQueryData<Recording>(["recordings", recording.id], (current) =>
         current ? { ...current, title: nextTitle } : current,
       )
-      toast.success("Recording renamed")
+      toast.success(t("toasts.recordingRenamed"))
     } catch {
-      toast.error("Failed to rename recording")
-      throw new Error("Failed to rename recording")
+      toast.error(t("toasts.recordingRenameFailed"))
+      throw new Error(t("toasts.recordingRenameFailed"))
     }
   }
 
   const handleDelete = async () => {
     try {
       await deleteMutation.mutateAsync(recording.id)
-      toast.success("Session deleted")
+      toast.success(t("toasts.recordingDeleted"))
       void navigate({ to: "/recordings" })
     } catch {
-      toast.error("Failed to delete session")
+      toast.error(t("toasts.recordingDeleteFailed"))
     }
   }
 

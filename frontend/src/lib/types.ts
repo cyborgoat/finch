@@ -14,12 +14,12 @@ export type SpeakerSegment = {
   endSec: number
   text: string
   clusterId?: string | null
-  speakerProfileId?: string | null
+  voiceprintProfileId?: string | null
   matchConfidence?: number | null
   matchStatus?: "matched" | "unknown" | "manual" | "unmatched" | null
 }
 
-export type SpeakerProfileSummary = {
+export type VoiceprintProfileSummary = {
   id: string
   displayName: string
   notes?: string | null
@@ -29,7 +29,7 @@ export type SpeakerProfileSummary = {
   updatedAt: string
 }
 
-export type SpeakerEmbeddingSummary = {
+export type VoiceprintEmbeddingSummary = {
   id: string
   modelId: string
   sourceRecordingId?: string | null
@@ -46,19 +46,19 @@ export type RelatedRecordingSummary = {
   updatedAt: string
 }
 
-export type SpeakerProfileDetail = {
+export type VoiceprintProfileDetail = {
   id: string
   displayName: string
   notes?: string | null
   embeddingCount: number
   embeddingDescription: string
-  embeddings: SpeakerEmbeddingSummary[]
+  embeddings: VoiceprintEmbeddingSummary[]
   relatedRecordings: RelatedRecordingSummary[]
   createdAt: string
   updatedAt: string
 }
 
-export type SpeakerMemoryStatus = {
+export type VoiceprintProfilesStatus = {
   enabled: boolean
   consentGiven: boolean
   consentAt?: string | null
@@ -73,7 +73,7 @@ export type UserSettings = {
   summaryStyle: "concise" | "balanced" | "detailed"
   summaryFormat: "paragraphs" | "bullets"
   userName: string
-  userSpeakerProfileId: string | null
+  userVoiceprintProfileId: string | null
   notesAutoSave: boolean
 }
 
@@ -128,7 +128,6 @@ export type TranscriptionSettings = {
   speakerMemoryReady: boolean
   speakerMemoryReason?: string | null
   speakerAutoLabelEnabled: boolean
-  hfTokenConfigured: boolean
   source: "stored" | "unset"
 }
 
@@ -136,7 +135,6 @@ export type UpdateTranscriptionSettings = {
   diarizationEnabled?: boolean
   speakerMemoryEnabled?: boolean
   speakerAutoLabelEnabled?: boolean
-  hfToken?: string
 }
 
 export type Recording = {

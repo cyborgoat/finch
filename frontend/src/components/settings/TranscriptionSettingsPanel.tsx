@@ -1,12 +1,9 @@
-import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { SettingsRow, SettingsSection } from "@/components/settings/SettingsSection"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { useTranscriptionSettings } from "@/hooks/useTranscriptionSettings"
+import type { UpdateTranscriptionSettings } from "@/lib/types"
 
 type TranscriptionSettingsPanelProps = {
   disabled?: boolean
@@ -18,18 +15,14 @@ export function TranscriptionSettingsPanel({
   const { t } = useTranslation()
   const { settings, saveSettings, ready, isLoading, isSaving } =
     useTranscriptionSettings()
-  const [diarizationEnabled, setDiarizationEnabled] = useState(false)
-  const [speakerMemoryEnabled, setSpeakerMemoryEnabled] = useState(false)
-  const [hfToken, setHfToken] = useState("")
-  const [dirty, setDirty] = useState(false)
 
-  useEffect(() => {
-    if (!settings) return
-    setDiarizationEnabled(settings.diarizationEnabled)
-    setSpeakerMemoryEnabled(settings.speakerMemoryEnabled)
-    setHfToken("")
-    setDirty(false)
-  }, [settings])
+  const persist = async (patch: UpdateTranscriptionSettings) => {
+    try {
+      await saveSettings(patch)
+    } catch {
+      toast.error(t("toasts.transcriptionSettingsFailed"))
+    }
+  }
 
   if (isLoading || !ready || !settings) {
     return (
@@ -42,22 +35,7 @@ export function TranscriptionSettingsPanel({
     )
   }
 
-  const handleSave = async () => {
-    try {
-      await saveSettings({
-        diarizationEnabled,
-        speakerMemoryEnabled,
-        ...(hfToken.trim() ? { hfToken: hfToken.trim() } : {}),
-      })
-      toast.success(t("toasts.transcriptionSettingsSaved"))
-      setHfToken("")
-      setDirty(false)
-    } catch {
-      toast.error(t("toasts.transcriptionSettingsFailed"))
-    }
-  }
-
-  const markDirty = () => setDirty(true)
+  const busy = disabled || isSaving
 
   return (
     <SettingsSection
@@ -67,89 +45,42 @@ export function TranscriptionSettingsPanel({
       <SettingsRow
         label={t("settings.diarizationLabel")}
         description={
-          settings.diarizationReady || !diarizationEnabled
+          settings.diarizationReady || !settings.diarizationEnabled
             ? t("settings.diarizationReadyDescription")
             : (settings.diarizationReason ?? t("settings.diarizationNotReady"))
         }
       >
-        <div className="flex items-center justify-end gap-2">
-          {diarizationEnabled ? (
-            settings.diarizationReady ? (
-              <Badge>{t("settings.statusReady")}</Badge>
-            ) : (
-              <Badge variant="destructive">{t("settings.statusNotReady")}</Badge>
-            )
-          ) : null}
+        <div className="flex justify-end">
           <Switch
-            checked={diarizationEnabled}
+            checked={settings.diarizationEnabled}
             onCheckedChange={(checked) => {
-              setDiarizationEnabled(checked)
-              markDirty()
+              void persist({ diarizationEnabled: checked })
             }}
-            disabled={disabled || isSaving}
+            disabled={busy}
             aria-label={t("settings.diarizationAriaLabel")}
           />
         </div>
       </SettingsRow>
 
       <SettingsRow
-        label={t("settings.hfTokenLabel")}
-        description={t("settings.hfTokenDescription")}
-      >
-        <Input
-          type="password"
-          value={hfToken}
-          onChange={(event) => {
-            setHfToken(event.target.value)
-            markDirty()
-          }}
-          placeholder={
-            settings.hfTokenConfigured
-              ? t("settings.hfTokenPlaceholderSaved")
-              : t("settings.hfTokenPlaceholderNew")
-          }
-          disabled={disabled || isSaving}
-          autoComplete="off"
-        />
-      </SettingsRow>
-
-      <SettingsRow
         label={t("settings.speakerMemoryFeatureLabel")}
         description={
-          settings.speakerMemoryReady || !speakerMemoryEnabled
+          settings.speakerMemoryReady || !settings.speakerMemoryEnabled
             ? t("settings.speakerMemoryFeatureReadyDescription")
             : (settings.speakerMemoryReason ?? t("settings.speakerMemoryFeatureNotReady"))
         }
       >
-        <div className="flex items-center justify-end gap-2">
-          {speakerMemoryEnabled ? (
-            settings.speakerMemoryReady ? (
-              <Badge>{t("settings.statusReady")}</Badge>
-            ) : (
-              <Badge variant="destructive">{t("settings.statusNotReady")}</Badge>
-            )
-          ) : null}
+        <div className="flex justify-end">
           <Switch
-            checked={speakerMemoryEnabled}
+            checked={settings.speakerMemoryEnabled}
             onCheckedChange={(checked) => {
-              setSpeakerMemoryEnabled(checked)
-              markDirty()
+              void persist({ speakerMemoryEnabled: checked })
             }}
-            disabled={disabled || isSaving}
+            disabled={busy}
             aria-label={t("settings.speakerMemoryFeatureAriaLabel")}
           />
         </div>
       </SettingsRow>
-
-      <div className="border-t border-border px-4 py-3">
-        <Button
-          type="button"
-          onClick={() => void handleSave()}
-          disabled={disabled || isSaving || !dirty}
-        >
-          {isSaving ? t("common.saving") : t("settings.transcriptionSaveButton")}
-        </Button>
-      </div>
     </SettingsSection>
   )
 }

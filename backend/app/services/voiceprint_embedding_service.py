@@ -27,7 +27,7 @@ def embedding_from_json(raw: str) -> np.ndarray:
     return np.array(json.loads(raw), dtype=np.float32)
 
 
-class SpeakerEmbeddingService:
+class VoiceprintEmbeddingService:
     def __init__(
         self,
         settings: Settings | None = None,
@@ -59,7 +59,7 @@ class SpeakerEmbeddingService:
         if not token:
             raise AppError(
                 "SPEAKER_EMBEDDING_MODEL_LOAD_FAILED",
-                "Hugging Face token is required for speaker embeddings. Add it in Settings → Transcription.",
+                "Hugging Face token is required for speaker embeddings. Set HF_TOKEN in .env.",
                 500,
             )
 
@@ -137,3 +137,7 @@ class SpeakerEmbeddingService:
                 longest.end_sec,
             )
         return embeddings
+
+
+# Backward-compatible alias for diarization internals.
+SpeakerEmbeddingService = VoiceprintEmbeddingService

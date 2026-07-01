@@ -6,7 +6,7 @@ from sqlmodel import Session
 from app.core.errors import AppError
 from app.schemas.user_settings import UpdateUserSettingsRequest, UserSettingsResponse
 from app.services.app_preference_service import AppPreferenceService
-from app.services.speaker_profile_service import SpeakerProfileService
+from app.services.voiceprint_profile_service import VoiceprintProfileService
 
 USER_SETTINGS_KEY = "user_settings"
 
@@ -16,7 +16,7 @@ DEFAULT_USER_SETTINGS: dict[str, Any] = {
     "summary_style": "balanced",
     "summary_format": "paragraphs",
     "user_name": "",
-    "user_speaker_profile_id": None,
+    "user_voiceprint_profile_id": None,
     "notes_auto_save": True,
 }
 
@@ -33,10 +33,10 @@ class UserSettingsService:
         current = self._load_raw()
         patch = payload.model_dump(exclude_unset=True)
 
-        if "user_speaker_profile_id" in patch:
-            profile_id = patch["user_speaker_profile_id"]
+        if "user_voiceprint_profile_id" in patch:
+            profile_id = patch["user_voiceprint_profile_id"]
             if profile_id is not None:
-                SpeakerProfileService(self.session).get_profile(profile_id)
+                VoiceprintProfileService(self.session).get_profile(profile_id)
 
         if "user_name" in patch and patch["user_name"] is not None:
             name = patch["user_name"].strip()
@@ -67,18 +67,18 @@ class UserSettingsService:
         self._save_raw(current)
         return UserSettingsResponse.model_validate(current)
 
-    def clear_user_speaker_profile(self, profile_id: str) -> None:
+    def clear_user_voiceprint_profile(self, profile_id: str) -> None:
         current = self._load_raw()
-        if current.get("user_speaker_profile_id") != profile_id:
+        if current.get("user_voiceprint_profile_id") != profile_id:
             return
-        current["user_speaker_profile_id"] = None
+        current["user_voiceprint_profile_id"] = None
         self._save_raw(current)
 
-    def clear_user_speaker_profile_if_set(self) -> None:
+    def clear_user_voiceprint_profile_if_set(self) -> None:
         current = self._load_raw()
-        if not current.get("user_speaker_profile_id"):
+        if not current.get("user_voiceprint_profile_id"):
             return
-        current["user_speaker_profile_id"] = None
+        current["user_voiceprint_profile_id"] = None
         self._save_raw(current)
 
     def _load_raw(self) -> dict[str, Any]:
@@ -106,6 +106,9 @@ class UserSettingsService:
                     merged["ui_language"] = legacy
                 if "content_language" not in parsed:
                     merged["content_language"] = legacy
+
+        if merged.get("user_voiceprint_profile_id") is None and parsed.get("user_speaker_profile_id"):
+            merged["user_voiceprint_profile_id"] = parsed["user_speaker_profile_id"]
 
         return merged
 

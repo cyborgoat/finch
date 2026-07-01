@@ -13,7 +13,7 @@ class UserSettingsResponse(CamelModel):
     summary_style: SummaryStyle = "balanced"
     summary_format: SummaryFormat = "paragraphs"
     user_name: str = ""
-    user_speaker_profile_id: str | None = None
+    user_voiceprint_profile_id: str | None = None
     notes_auto_save: bool = True
 
 
@@ -23,5 +23,5 @@ class UpdateUserSettingsRequest(CamelModel):
     summary_style: SummaryStyle | None = None
     summary_format: SummaryFormat | None = None
     user_name: str | None = None
-    user_speaker_profile_id: str | None = None
+    user_voiceprint_profile_id: str | None = None
     notes_auto_save: bool | None = None

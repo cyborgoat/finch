@@ -7,7 +7,7 @@ def test_user_settings_defaults(client):
     assert body["summaryStyle"] == "balanced"
     assert body["summaryFormat"] == "paragraphs"
     assert body["userName"] == ""
-    assert body["userSpeakerProfileId"] is None
+    assert body["userVoiceprintProfileId"] is None
     assert body["notesAutoSave"] is True
 
 
@@ -56,30 +56,30 @@ def test_user_settings_migrates_legacy_language(client, db_session):
     assert body["contentLanguage"] == "zh"
 
 
-def test_user_settings_links_speaker_profile(client):
+def test_user_settings_links_voiceprint_profile(client):
     create = client.post(
-        "/api/speaker-profiles",
+        "/api/voiceprint-profiles",
         json={"displayName": "Alex"},
     )
     profile_id = create.json()["id"]
 
     linked = client.patch(
         "/api/user-settings",
-        json={"userSpeakerProfileId": profile_id},
+        json={"userVoiceprintProfileId": profile_id},
     )
     assert linked.status_code == 200
-    assert linked.json()["userSpeakerProfileId"] == profile_id
+    assert linked.json()["userVoiceprintProfileId"] == profile_id
 
-    deleted = client.delete(f"/api/speaker-profiles/{profile_id}")
+    deleted = client.delete(f"/api/voiceprint-profiles/{profile_id}")
     assert deleted.status_code == 200
 
     settings = client.get("/api/user-settings")
-    assert settings.json()["userSpeakerProfileId"] is None
+    assert settings.json()["userVoiceprintProfileId"] is None
 
 
-def test_user_settings_rejects_unknown_speaker(client):
+def test_user_settings_rejects_unknown_voiceprint_profile(client):
     response = client.patch(
         "/api/user-settings",
-        json={"userSpeakerProfileId": "profile_missing"},
+        json={"userVoiceprintProfileId": "profile_missing"},
     )
     assert response.status_code == 404

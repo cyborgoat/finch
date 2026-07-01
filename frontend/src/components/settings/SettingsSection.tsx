@@ -32,20 +32,26 @@ export function SettingsSection({
 
 type SettingsRowProps = {
   label: string
+  labelAdornment?: React.ReactNode
   description?: string
-  children: React.ReactNode
+  children?: React.ReactNode
 }
 
-export function SettingsRow({ label, description, children }: SettingsRowProps) {
+export function SettingsRow({ label, labelAdornment, description, children }: SettingsRowProps) {
   return (
     <div className="flex flex-col gap-3 border-b border-border px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-foreground">{label}</p>
+      <div className={children == null ? "min-w-0 flex-1" : "min-w-0"}>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          {labelAdornment}
+        </div>
         {description ? (
           <p className="text-xs text-muted-foreground">{description}</p>
         ) : null}
       </div>
-      <div className="w-full shrink-0 sm:w-52">{children}</div>
+      {children != null ? (
+        <div className="w-full shrink-0 sm:w-56">{children}</div>
+      ) : null}
     </div>
   )
 }

@@ -21,9 +21,9 @@ def generate_note_id() -> str:
     return _generate_id("note_")
 
 
-def generate_speaker_profile_id() -> str:
-    return _generate_id("speaker_")
+def generate_voiceprint_profile_id() -> str:
+    return _generate_id("voiceprint_")
 
 
-def generate_speaker_embedding_id() -> str:
+def generate_voiceprint_embedding_id() -> str:
     return _generate_id("semb_")

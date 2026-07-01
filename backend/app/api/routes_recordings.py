@@ -14,7 +14,7 @@ from app.schemas.recording import (
     UpdateRecordingRequest,
     UpdateRecordingResponse,
 )
-from app.schemas.speaker import (
+from app.schemas.recording_speakers import (
     UpdateRecordingSpeakersRequest,
     UpdateRecordingSpeakersResponse,
 )
@@ -23,7 +23,7 @@ from app.services.diarization_service import speaker_segments_from_json
 from app.services.note_service import NoteService
 from app.services.job_service import JobService
 from app.services.recording_service import RecordingService
-from app.services.speaker_recording_service import SpeakerRecordingService
+from app.services.recording_speaker_service import RecordingSpeakerService
 from app.storage.database import get_session
 from app.workers.transcription_worker import run_transcription_job
 
@@ -55,7 +55,7 @@ def _segment_to_schema(segment) -> SpeakerSegmentSchema:
         end_sec=segment.end_sec,
         text=segment.text,
         cluster_id=segment.cluster_id,
-        speaker_profile_id=segment.speaker_profile_id,
+        voiceprint_profile_id=segment.voiceprint_profile_id,
         match_confidence=segment.match_confidence,
         match_status=segment.match_status,
     )
@@ -176,7 +176,7 @@ def update_recording_speakers(
     payload: UpdateRecordingSpeakersRequest,
     session: Session = Depends(get_session),
 ) -> UpdateRecordingSpeakersResponse:
-    service = SpeakerRecordingService(session)
+    service = RecordingSpeakerService(session)
     mappings = [
         {
             "cluster_id": item.cluster_id,

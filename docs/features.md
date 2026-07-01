@@ -23,7 +23,7 @@ What Finch does today and what is intentionally out of scope.
 - Per-speaker ASR → labeled output (`Speaker 1: …`, `Speaker 2: …`)
 - Falls back to full-file ASR if diarization is unavailable
 - Tunable segment merge and audio source — see [diarization.md](diarization.md)
-- Enable in **Settings → Transcription** (stored locally in SQLite)
+- Enable diarization in **Settings → Transcription** (or `DIARIZATION_ENABLED=true` in `.env` as fallback); set `HF_TOKEN` in `.env`
 
 ### Voiceprint profiles (optional)
 
@@ -32,8 +32,8 @@ What Finch does today and what is intentionally out of scope.
 - Clickable speaker names on each transcript turn to assign or update labels
 - Voiceprint enrollment when you edit a speaker (when auto-label is on and consent given)
 - Auto-match known speakers on future transcripts (when auto-label is enabled in Settings)
-- Profile management in **Settings → Voiceprint profiles** (rename, delete, map **You**)
-- Consent-gated auto-label toggle — see [speaker-memory.md](speaker-memory.md)
+- Profile management in **Settings → Voiceprint profiles** (rename, delete); record your voiceprint under **Settings → About you**
+- Consent-gated auto-label toggle — see [voiceprint-profiles.md](voiceprint-profiles.md)
 
 ### Recordings library
 
@@ -54,7 +54,7 @@ What Finch does today and what is intentionally out of scope.
 ### Notes (optional)
 
 - Configurable LLM providers: OpenRouter (default), OpenAI, Anthropic, custom OpenAI-compatible (Ollama, LM Studio, vLLM)
-- Provider selection and API keys in **Settings → LLM provider** (stored locally in SQLite)
+- Provider selection and API keys in **Settings → LLM provider** (auto-save; stored locally in SQLite)
 - **Notes** tab on each recording: create multiple markdown notes via AI templates or blank note
 - AI templates: meeting summary, action items, key decisions, follow-up email
 - MDXEditor for in-app note editing; auto-save toggle (default on) or manual Save
@@ -64,12 +64,14 @@ What Finch does today and what is intentionally out of scope.
 
 ### User settings
 
-- **You:** display name and link to your voiceprint profile (applied to meeting summary prompts when set)
-- **Language & region:** interface language (English / 中文) and AI note content language (separate settings)
-- **AI notes:** style (concise / balanced / detailed) and format (paragraphs / bullets) — applied when generating meeting summaries; auto-save toggle for note editing
-- **Transcription:** diarization, voiceprint profiles, Hugging Face token (stored locally in SQLite)
+- **About you:** display name and voiceprint enrollment (warning when not recorded — recordings cannot recognize your voice until set)
+- **Language & region:** interface language (English / 中文) and AI note content language
+- **AI notes:** style (concise / balanced / detailed), format (paragraphs / bullets), note auto-save toggle
+- **Transcription:** diarization and voiceprint profile toggles (auto-save)
+- **LLM provider:** provider, API key, base URL, model (auto-save on change or blur)
 - **Voiceprint profiles:** auto-label toggle, saved profile list (rename / delete)
-- Persisted via `GET/PATCH /api/user-settings`, `/api/transcription-settings`, and related APIs (stored in `AppPreference`)
+- All settings auto-save — no Save buttons. `HF_TOKEN` is backend `.env` only.
+- Persisted via `GET/PATCH /api/user-settings`, `/api/transcription-settings`, `/api/llm-settings`, and voiceprint APIs (stored in `AppPreference`)
 
 ### Internationalization
 

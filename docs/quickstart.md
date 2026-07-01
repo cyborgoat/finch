@@ -23,7 +23,7 @@ uv sync
 uv add torch qwen-asr
 ```
 
-Diarization and voiceprint profiles are off by default. Configure them in **Settings → Transcription** after starting the frontend, or set `DIARIZATION_ENABLED=false` and `SPEAKER_MEMORY_ENABLED=false` in `.env` as fallbacks.
+Diarization and voiceprint profiles are off by default. Enable toggles in **Settings → Transcription** after starting the frontend, or set `DIARIZATION_ENABLED` / `SPEAKER_MEMORY_ENABLED` in `.env` as fallbacks. Set `HF_TOKEN` in `.env` when using diarization or voiceprints.
 
 ## 2. Run the backend
 
@@ -109,11 +109,11 @@ First run downloads the model from Hugging Face. On Apple Silicon, `ASR_DEVICE=a
 
 See **[diarization.md](diarization.md)** for full setup. Summary:
 
-Enable in **Settings → Transcription**, or set fallbacks in `.env`:
+Set `HF_TOKEN` in `.env`, then enable in **Settings → Transcription** (or set fallbacks in `.env`):
 
 ```env
-DIARIZATION_ENABLED=true
 HF_TOKEN=hf_...
+DIARIZATION_ENABLED=true
 ```
 
 Validate before transcribing:
@@ -128,15 +128,9 @@ uv run python scripts/validate_diarization.py
 
 Optional persistent speaker names via local voiceprints. Requires diarization.
 
-Enable in **Settings → Transcription**, or set a fallback in `.env`:
+In the UI: **Settings → Voiceprint profiles → Auto-label speaker names** (consent on first enable). On a transcript, **click a speaker name** on any turn to assign or update a label (voiceprints update from that turn when auto-label is on).
 
-```env
-SPEAKER_MEMORY_ENABLED=true
-```
-
-In the UI: **Settings → Voiceprint profiles → Auto-label speaker names** (consent on first enable). On a transcript, **click a speaker name** on any turn to assign or update a label (voiceprints update from that turn when auto-label is on). Link your profile under **Settings → You**.
-
-See **[speaker-memory.md](speaker-memory.md)** for full setup.
+See **[voiceprint-profiles.md](voiceprint-profiles.md)** for full setup.
 
 ## 9. AI notes
 

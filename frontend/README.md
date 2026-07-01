@@ -34,7 +34,7 @@ Run the backend in a separate terminal (`cd backend && uv run uvicorn app.main:a
 | `VITE_API_BASE_URL` | `http://localhost:8000` | Finch API base URL (browser) |
 | `API_BASE_URL` | `http://localhost:8000` | Finch API base URL (SSR loaders) |
 
-Transcription settings (diarization, voiceprint profiles, HF token) and LLM provider credentials are configured in **Settings** and stored locally in SQLite. `.env` fallbacks apply on the backend when nothing is stored yet.
+Transcription toggles and LLM credentials are configured in **Settings** (auto-save) and stored locally in SQLite. Set `HF_TOKEN` in backend `.env` for pyannote models.
 
 ## Scripts
 
@@ -94,17 +94,19 @@ Transcription settings (diarization, voiceprint profiles, HF token) and LLM prov
 
 ### Settings
 
-- **You:** display name and linked voiceprint profile (`GET/PATCH /api/user-settings`)
+All settings auto-save — no Save buttons.
+
+- **About you:** display name; record voiceprint via enrollment dialog (warning badge when not recorded)
 - **Language & region:** interface language and AI note content language (English or 中文)
-- **AI notes:** summary style/format and auto-save toggle
-- **Transcription:** diarization, voiceprint profiles, Hugging Face token (`GET/PATCH /api/transcription-settings`)
-- **Voiceprint profiles:** auto-label toggle (consent on first enable), rename/delete profiles
-- **LLM provider:** configurable provider credentials (stored locally in SQLite)
+- **AI notes:** summary style/format and note auto-save toggle
+- **Transcription:** diarization and voiceprint profile toggles (`GET/PATCH /api/transcription-settings`)
+- **LLM provider:** provider, API key, base URL, model — text fields save on blur (`GET/PATCH /api/llm-settings`)
+- **Voiceprint profiles:** auto-label toggle (consent on first enable), saved profile list (rename/delete)
 - **Backend capabilities** (ASR): startup logs and `/api/health`
 
 ## IDs
 
-Recording IDs use the `recording_` prefix in URLs. Notes use `note_` IDs in the API and are opened on a recording’s **Notes** tab (`?tab=notes&noteId=…`). Other resources use their own prefixes (`audio_`, `job_`, `speaker_`, etc.).
+Recording IDs use the `recording_` prefix in URLs. Notes use `note_` IDs in the API and are opened on a recording’s **Notes** tab (`?tab=notes&noteId=…`). Other resources use their own prefixes (`audio_`, `job_`, `voiceprint_`, etc.).
 
 ## Stack
 

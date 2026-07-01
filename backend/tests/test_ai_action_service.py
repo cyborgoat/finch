@@ -127,7 +127,7 @@ def test_resolve_transcript_text_uses_voice_profile_names():
             end_sec=2.0,
             text="Hello everyone.",
             cluster_id="SPEAKER_00",
-            speaker_profile_id="speaker_profile12345678",
+            voiceprint_profile_id="voiceprint_12345678",
         ),
         SpeakerSegment(
             speaker="Speaker 2",
@@ -149,7 +149,7 @@ def test_resolve_transcript_text_uses_voice_profile_names():
     with patch.object(
         transcript_text_service,
         "load_profile_display_names",
-        return_value={"speaker_profile12345678": "Robert"},
+        return_value={"voiceprint_12345678": "Robert"},
     ):
         text = service.resolve_transcript_text(transcript, "editedText")
 
@@ -167,7 +167,7 @@ def test_run_action_uses_profile_names_in_prompt():
             end_sec=2.0,
             text="We discussed the roadmap.",
             cluster_id="SPEAKER_00",
-            speaker_profile_id="speaker_profile12345678",
+            voiceprint_profile_id="voiceprint_12345678",
         ),
     ]
     transcript = Recording(
@@ -185,7 +185,7 @@ def test_run_action_uses_profile_names_in_prompt():
     with patch.object(
         transcript_text_service,
         "load_profile_display_names",
-        return_value={"speaker_profile12345678": "Robert"},
+        return_value={"voiceprint_12345678": "Robert"},
     ):
         service.run_action(
             transcript,
