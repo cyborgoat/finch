@@ -26,10 +26,22 @@ export function Sidebar() {
 
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-card/50 p-4">
-      <div className="mb-8 px-2">
-        <p className="text-lg font-semibold tracking-tight">{t("nav.appName")}</p>
-        <p className="text-xs text-muted-foreground">{t("nav.tagline")}</p>
-      </div>
+      <Link
+        to="/"
+        className="mb-8 flex items-center gap-3 rounded-md px-2 py-1 transition-colors hover:bg-muted/60"
+      >
+        <img
+          src="/logo.png"
+          alt=""
+          width={36}
+          height={36}
+          className="size-9 shrink-0 rounded-lg object-contain"
+        />
+        <div className="min-w-0">
+          <p className="text-lg font-semibold tracking-tight">{t("nav.appName")}</p>
+          <p className="truncate text-xs text-muted-foreground">{t("nav.tagline")}</p>
+        </div>
+      </Link>
 
       <DropdownMenu>
         <DropdownMenuTrigger
