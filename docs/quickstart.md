@@ -10,7 +10,7 @@ Get the Finch backend running and transcribe your first audio file.
 | [ffmpeg](https://ffmpeg.org/) | Audio normalization (16 kHz mono WAV) |
 | [Node.js](https://nodejs.org/) 20+ | Frontend (optional) |
 
-For real ASR (not mock mode), allow disk space and RAM for [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B).
+For local ASR, allow disk space and RAM for [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B).
 
 ## 1. Clone and configure
 
@@ -20,9 +20,10 @@ Copy [`.env.example`](../.env.example) to **repo root `.env`** or `backend/.env`
 cp .env.example .env
 cd backend
 uv sync
+uv add torch qwen-asr
 ```
 
-Default dev config uses mock ASR and mock diarization — no model downloads required.
+Diarization and speaker memory are off by default (`DIARIZATION_ENABLED=false`, `SPEAKER_MEMORY_ENABLED=false`).
 
 ## 2. Run the backend
 
@@ -94,17 +95,11 @@ Open http://localhost:3000 — **New** (Record / Upload), **Files**, **Settings*
 
 If you have an old local database from before the ID format change, delete `backend/finch.db` and restart the backend.
 
-## 6. Real ASR
+## 6. ASR
 
-```bash
-cd backend
-uv add torch qwen-asr
-```
-
-In `.env`:
+ASR dependencies are installed in step 1. Optional cache path in `.env`:
 
 ```env
-ASR_MOCK=false
 HF_HOME=./data/hf_cache
 ```
 
@@ -116,7 +111,6 @@ See **[diarization.md](diarization.md)** for full setup. Summary:
 
 ```env
 DIARIZATION_ENABLED=true
-DIARIZATION_MOCK=false
 HF_TOKEN=hf_...
 ```
 
@@ -134,21 +128,26 @@ Optional persistent speaker names via local voiceprints. Requires diarization.
 
 ```env
 SPEAKER_MEMORY_ENABLED=true
-SPEAKER_MEMORY_MOCK=false
 ```
 
 In the UI: **Settings → Speakers → Auto-label speaker names** (consent on first enable). On a transcript, **click a speaker name** on any turn to assign or update a label (voiceprints update from that turn when auto-label is on). Link your profile under **Settings → You**.
 
 See **[speaker-memory.md](speaker-memory.md)** for full setup.
 
-## 9. AI actions
+## 9. Transcript summarization
 
-```env
-LLM_MOCK=false
-OPENROUTER_API_KEY=sk-or-...
-```
+Configure your LLM provider in the frontend: **Settings → LLM provider**.
 
-Run actions from the **AI** tab on a recording detail page (`/files/{id}?tab=ai`), or via `POST /api/ai-actions`.
+Supported providers:
+
+- **OpenRouter** (default) — API key + optional base URL/model override
+- **OpenAI** — API key + optional base URL/model override
+- **Anthropic** — API key + optional base URL/model override
+- **Custom** — local OpenAI-compatible servers (Ollama, LM Studio, vLLM): base URL + model name; API key optional
+
+Credentials are stored locally in the Finch SQLite database. The API never returns saved API keys — only an `apiKeyConfigured` flag.
+
+Run summarization from the **Summary** tab on a recording detail page (`/files/{id}?tab=summary`), or via `POST /api/ai-actions` with `"action": "markdown_summary"`. User language and summarization preferences from **Settings** are applied to prompts automatically.
 
 ## 10. Tests
 
@@ -157,7 +156,7 @@ cd backend
 uv run pytest
 ```
 
-Tests mock ffmpeg and use `ASR_MOCK` / `DIARIZATION_MOCK` — no model download required.
+Tests patch external services (ffmpeg, ASR, diarization, LLM) at test time — no model downloads required.
 
 ## Troubleshooting
 

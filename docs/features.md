@@ -12,7 +12,7 @@ What Finch does today and what is intentionally out of scope.
 
 ### Transcription
 
-- Local ASR with [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) (or `ASR_MOCK` for dev)
+- Local ASR with [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B)
 - Background jobs with progress stages in the UI
 - Long audio chunked automatically (~45s segments)
 - Failed jobs kept visible with `errorMessage` (not deleted)
@@ -39,35 +39,35 @@ What Finch does today and what is intentionally out of scope.
 - Unified **Files** browser at `/files` — voice recordings only; generated documents and artifacts belong to each recording
 - Home shows recent voice recordings sorted by last updated
 - Title search on the Files page (filters by recording name)
-- Recording detail at `/files/{id}` with three tabs:
+- Recording detail at `/files/{id}` with two tabs:
   - **Source** — audio player and compact scrollable transcript (speaker, timestamp, text per turn)
-  - **Summary** — placeholder for a future LLM-generated overview
-  - **AI** — action templates, job progress, and generated documents linked to the recording
+  - **Summary** — LLM-generated overview from the transcript (uses Settings preferences)
 - Prefixed IDs in URLs (e.g. `/files/transcript_a1b2c3d4e5f67890`, `/files/doc_b2c3d4e5f6789012`)
-- **Topbar** on recording detail: breadcrumb navigation, download menu (audio, transcript `.txt`, summary coming soon), and actions menu (rename, delete session)
+- **Topbar** on recording detail: breadcrumb navigation, download menu (audio, transcript `.txt`, summary `.md`), and actions menu (rename, delete session)
 - Rename and delete from the topbar actions menu or the Files list ellipsis menu; list API includes audio duration (`durationSeconds`)
 - Built-in audio player (seek, ±15s skip, playback speed)
 - Transcript auto-scrolls to the active turn during playback; click timestamps to seek
 - Read-only transcript on Source (no manual text editing)
 - In-progress (`transcribing`) and failed states in the UI
 
-### AI actions (optional)
+### Transcript summarization (optional)
 
-- OpenRouter integration (`LLM_MOCK` for dev)
-- Templates: Markdown summary, action items, meeting notes, clean transcript, study notes
-- Custom prompt support
-- Generated documents linked to source transcript
+- Configurable LLM providers: OpenRouter (default), OpenAI, Anthropic, custom OpenAI-compatible (Ollama, LM Studio, vLLM)
+- Provider selection and API keys in **Settings → LLM provider** (stored locally in SQLite) or `.env`
+- **Summary** tab on each recording: generate or regenerate a Markdown summary from the transcript
+- User language, summary style/format, and display name applied to prompts
+- Summary stored as a linked document (`markdown_summary`)
 
 ### Documents
 
-- Markdown library with editor, preview, and export
-- Created manually or via AI actions from a transcript
+- Markdown summaries linked to source transcripts
+- Document detail editor at `/files/doc_*` with preview and export
 
 ### User settings
 
-- **You:** display name and link to your speaker profile (persisted; not yet used in LLM prompts)
-- **Language:** English or 中文 (Chinese) — persisted; UI localization not implemented yet
-- **AI summarization:** style (concise / balanced / detailed) and format (paragraphs / bullets) — persisted; not yet applied to Summary tab or AI actions
+- **You:** display name and link to your speaker profile (applied to summary prompts when set)
+- **Language:** English or 中文 (Chinese) — applied to summary output language
+- **AI summarization:** style (concise / balanced / detailed) and format (paragraphs / bullets) — applied when generating summaries
 - **Speakers:** auto-label toggle, saved speaker list (rename / delete)
 - Persisted via `GET/PATCH /api/user-settings` (stored in `AppPreference`)
 
@@ -81,23 +81,19 @@ What Finch does today and what is intentionally out of scope.
 
 | Area | Notes |
 |------|--------|
-| **Summary tab** | Empty placeholder; no LLM-generated recording overview on the detail page |
-| **Summary download** | Topbar menu item shows “coming soon” |
-| **User prefs in AI** | Language, summary style/format, and display name are stored but not passed to prompts yet |
 | **UI localization** | Language setting does not translate the app |
 | **Transcript editing** | Source transcript is read-only (rename title via topbar only) |
 | **Full-text search** | Files search filters by title only |
-| **Rich exports** | PDF, DOCX, HTML, Obsidian, Notion (audio + transcript `.txt` and document `.md` exist today) |
+| **Rich exports** | PDF, DOCX, HTML, Obsidian, Notion (audio + transcript `.txt` and summary `.md` exist today) |
 
 ## Planned (post-MVP)
 
 | Area | Examples |
 |------|----------|
 | Waveform | Visual waveform and finer scrubbing beyond click-to-seek |
-| Summary tab | LLM-generated recording overview wired to user summarization prefs |
 | Search | Full-text over transcripts and documents; later semantic search |
 | Export | PDF, DOCX, HTML, Obsidian vault, Notion Markdown |
-| Local LLM | Ollama, llama.cpp, LM Studio, vLLM for fully local summaries |
+| Local LLM | Configure via Settings → LLM provider with `custom` (Ollama, LM Studio, vLLM) |
 | Real-time ASR | Streaming microphone → partial transcript updates |
 | Production | Auth, deployment, observability, cloud sync |
 | Mobile / plugins | Mobile app, Obsidian plugin |
@@ -116,4 +112,4 @@ What Finch does today and what is intentionally out of scope.
 | Diarization | `pyannote-audio`, pyannote community-1 |
 | Audio | ffmpeg, librosa |
 | Frontend | TanStack Start, Tailwind v4, shadcn/ui, TanStack Query |
-| LLM | OpenRouter |
+| LLM | Configurable providers (OpenRouter, OpenAI, Anthropic, custom) |

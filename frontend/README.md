@@ -1,6 +1,6 @@
 # Finch Frontend
 
-TanStack Start app for Finch: upload, record, transcripts, speaker labels, speaker memory, AI actions, and documents.
+TanStack Start app for Finch: upload, record, transcripts, speaker labels, speaker memory, summarization, and documents.
 
 **Project docs:** [../docs/README.md](../docs/README.md)
 
@@ -34,7 +34,7 @@ Run the backend in a separate terminal (`cd backend && uv run uvicorn app.main:a
 | `VITE_API_BASE_URL` | `http://localhost:8000` | Finch API base URL (browser) |
 | `API_BASE_URL` | `http://localhost:8000` | Finch API base URL (SSR loaders) |
 
-Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env` or `backend/.env` — not in the frontend.
+Backend config (ASR, diarization, speaker memory) lives in repo root `.env` or `backend/.env`. LLM provider credentials are configured in **Settings → LLM provider** and stored locally in SQLite.
 
 ## Scripts
 
@@ -51,7 +51,7 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 |-------|---------|
 | `/` | Recent voice recordings, sorted by last updated |
 | `/files` | Voice recordings library |
-| `/files/$id` | Recording detail (Source, Summary, AI tabs) or document editor |
+| `/files/$id` | Recording detail (Source, Summary tabs) or document editor |
 | `/upload` | Upload audio and transcribe |
 | `/record` | Browser recording with live waveform |
 | `/settings` | User profile, language, AI summarization prefs, speakers |
@@ -67,22 +67,21 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 ### Files and home
 
 - **Home:** recent voice recordings, sorted by last updated
-- **Files browser:** voice recordings only; AI documents live under each recording’s **AI** tab
+- **Files browser:** voice recordings only; summaries live under each recording’s **Summary** tab
 - **Search:** filters recordings by title (client-side)
 - **List actions:** ellipsis menu — rename and delete
 - **Transcribing / failed:** list and detail pages poll while `status=transcribing`; failed jobs stay visible with `errorMessage`
 
 ### Recording detail (`/files/transcript_*`)
 
-- **Topbar download menu:** audio file, transcript `.txt`, summary (coming soon dialog)
+- **Topbar download menu:** audio file, transcript `.txt`, summary `.md` (when generated)
 - **Topbar actions menu:** rename recording, delete session
 - **Source tab:** audio player, then compact scrollable transcript
   - Each turn: speaker name, timestamp range, text (typography distinguishes the three)
   - Active turn highlighted; list auto-scrolls during playback
   - Click timestamp to seek; click speaker name to assign/rename (when diarization data exists)
   - Transcript text is read-only
-- **Summary tab:** placeholder for future LLM-generated overview
-- **AI tab:** action templates, job progress, linked documents; open documents at `/files/doc_*`
+- **Summary tab:** generate or regenerate an LLM summary; uses language and summarization prefs from Settings
 
 ### Document detail (`/files/doc_*`)
 
@@ -91,9 +90,10 @@ Backend config (ASR, diarization, speaker memory, LLM) lives in repo root `.env`
 ### Settings
 
 - **You:** display name and linked speaker profile (`GET/PATCH /api/user-settings`)
-- **Language / AI summarization:** preferences persisted on the backend (not yet applied to UI or LLM prompts)
+- **Language / AI summarization:** preferences persisted on the backend and applied to summary prompts
 - **Speakers:** auto-label toggle (consent on first enable), rename/delete profiles
-- **Backend capabilities** (ASR, diarization, LLM): configured in `.env` only — startup logs and `/api/health`; not on the settings page
+- **Backend capabilities** (ASR, diarization): configured in `.env` — startup logs and `/api/health`
+- **LLM provider**: configurable in **Settings → LLM provider** or `.env`
 
 ## IDs
 

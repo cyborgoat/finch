@@ -19,7 +19,6 @@ def caplog_info(caplog):
 def test_capability_status_diarization_not_ready_without_token():
     settings = Settings(
         diarization_enabled=True,
-        diarization_mock=False,
         hf_token=None,
     )
     status = get_capability_status(settings)
@@ -27,25 +26,29 @@ def test_capability_status_diarization_not_ready_without_token():
     assert status.diarization_reason is not None
 
 
-def test_capability_status_diarization_mock_is_ready():
-    settings = Settings(
-        diarization_enabled=True,
-        diarization_mock=True,
-        hf_token=None,
-    )
+def test_capability_status_diarization_disabled_is_ready():
+    settings = Settings(diarization_enabled=False)
     status = get_capability_status(settings)
     assert status.diarization_ready is True
 
 
+def test_capability_status_llm_not_configured_by_default():
+    settings = Settings()
+    status = get_capability_status(settings)
+    assert status.llm_provider == "openrouter"
+    assert status.llm_configured is False
+    assert status.openrouter_configured is False
+
+
 def test_log_startup_summary_emits_configuration(caplog_info):
-    settings = Settings(asr_mock=True, diarization_enabled=False, llm_mock=True)
+    settings = Settings(diarization_enabled=False)
     log_startup_summary(settings)
     output = caplog_info.text
     assert "Finch backend started" in output
     assert "Transcription (ASR)" in output
     assert "Speaker diarization" in output
     assert "Speaker memory" in output
-    assert "AI actions (LLM)" in output
+    assert "Transcript summarization (LLM)" in output
     assert "Dependencies" in output
 
 

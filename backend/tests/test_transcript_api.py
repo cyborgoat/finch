@@ -3,19 +3,12 @@ from unittest.mock import patch
 
 import pytest
 
-from app.services.asr_service import AsrResult
+from tests.support.fakes import FAKE_TRANSCRIPT_TEXT, fake_diarization_turns, fake_ffmpeg_run
 
 
 @patch("app.services.audio_service.subprocess.run")
 def test_transcription_flow(mock_run, client, sample_wav_bytes):
-    from pathlib import Path
-
-    def fake_ffmpeg(cmd, check, capture_output):
-        output_path = Path(cmd[-1])
-        output_path.write_bytes(sample_wav_bytes)
-        return type("Result", (), {"returncode": 0})()
-
-    mock_run.side_effect = fake_ffmpeg
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
     upload_response = client.post(
         "/api/audio/upload",
@@ -25,14 +18,10 @@ def test_transcription_flow(mock_run, client, sample_wav_bytes):
     assert upload_response.status_code == 200
     audio_id = upload_response.json()["id"]
 
-    with patch(
-        "app.workers.transcription_worker.AsrService.transcribe",
-        return_value=AsrResult(text="Mock transcript text", language="en"),
-    ):
-        job_response = client.post(
-            "/api/transcripts",
-            json={"audioAssetId": audio_id, "language": "auto"},
-        )
+    job_response = client.post(
+        "/api/transcripts",
+        json={"audioAssetId": audio_id, "language": "auto"},
+    )
 
     assert job_response.status_code == 200
     job_body = job_response.json()
@@ -47,7 +36,7 @@ def test_transcription_flow(mock_run, client, sample_wav_bytes):
     transcript_response = client.get(f"/api/transcripts/{job['resultId']}")
     assert transcript_response.status_code == 200
     transcript = transcript_response.json()
-    assert transcript["rawText"] == "Mock transcript text"
+    assert transcript["rawText"] == FAKE_TRANSCRIPT_TEXT
     assert transcript["audioAssetId"] == audio_id
 
     patch_response = client.patch(
@@ -77,14 +66,7 @@ def test_create_transcript_job_adds_transcribing_placeholder(
     client,
     sample_wav_bytes,
 ):
-    from pathlib import Path
-
-    def fake_ffmpeg(cmd, check, capture_output):
-        output_path = Path(cmd[-1])
-        output_path.write_bytes(sample_wav_bytes)
-        return type("Result", (), {"returncode": 0})()
-
-    mock_run.side_effect = fake_ffmpeg
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
     upload_response = client.post(
         "/api/audio/upload",
@@ -120,18 +102,10 @@ def test_diarization_fallback_when_hf_token_missing(
     sample_wav_bytes,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    from pathlib import Path
-
     from app.config import get_settings
     from app.core.errors import AppError
 
-    def fake_ffmpeg(cmd, check, capture_output):
-        output_path = Path(cmd[-1])
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_bytes(sample_wav_bytes)
-        return type("Result", (), {"returncode": 0})()
-
-    mock_run.side_effect = fake_ffmpeg
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
     mock_load_pipeline.side_effect = AppError(
         "DIARIZATION_MODEL_LOAD_FAILED",
         "HF_TOKEN is required for pyannote speaker diarization.",
@@ -139,7 +113,6 @@ def test_diarization_fallback_when_hf_token_missing(
     )
 
     monkeypatch.setenv("DIARIZATION_ENABLED", "true")
-    monkeypatch.setenv("DIARIZATION_MOCK", "false")
     get_settings.cache_clear()
 
     upload_response = client.post(
@@ -163,27 +136,23 @@ def test_diarization_fallback_when_hf_token_missing(
     assert transcript["rawText"]
 
 
+@patch("app.workers.transcription_worker.DiarizationService.load_pipeline")
+@patch("app.workers.transcription_worker.DiarizationService.diarize")
 @patch("app.services.audio_service.subprocess.run")
 def test_diarization_produces_speaker_labeled_transcript(
     mock_run,
+    mock_diarize,
+    mock_load_pipeline,
     client,
     sample_wav_bytes,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    from pathlib import Path
-
     from app.config import get_settings
 
-    def fake_ffmpeg(cmd, check, capture_output):
-        output_path = Path(cmd[-1])
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_bytes(sample_wav_bytes)
-        return type("Result", (), {"returncode": 0})()
-
-    mock_run.side_effect = fake_ffmpeg
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+    mock_diarize.return_value = fake_diarization_turns()
 
     monkeypatch.setenv("DIARIZATION_ENABLED", "true")
-    monkeypatch.setenv("DIARIZATION_MOCK", "true")
     get_settings.cache_clear()
 
     upload_response = client.post(
@@ -217,17 +186,9 @@ def test_failed_transcription_keeps_transcript_with_error(
     client,
     sample_wav_bytes,
 ):
-    from pathlib import Path
-
     from app.core.errors import AppError
 
-    def fake_ffmpeg(cmd, check, capture_output):
-        output_path = Path(cmd[-1])
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_bytes(sample_wav_bytes)
-        return type("Result", (), {"returncode": 0})()
-
-    mock_run.side_effect = fake_ffmpeg
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
     upload_response = client.post(
         "/api/audio/upload",

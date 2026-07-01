@@ -25,22 +25,19 @@ Loads settings from `backend/.env` and repo root `.env`.
 
 | Setting | Default | Notes |
 |---------|---------|-------|
-| `asr_mock` | `true` in `.env.example` | Skip model load when true |
 | `asr_model_id` | `Qwen/Qwen3-ASR-1.7B` | HF repo or local path |
 | `diarization_enabled` | `false` | Speaker labels via pyannote |
-| `diarization_mock` | `true` | Fake two-speaker segments for CI |
 | `diarization_use_exclusive` | `true` | pyannote exclusive diarization (recommended) |
 | `diarization_min_segment_seconds` | `0.3` | Drop merged segments shorter than this |
 | `diarization_merge_gap_seconds` | `0.5` | Merge same-speaker turns within this gap |
 | `diarization_max_segments` | `0` | Cap segments (`0` = unlimited) |
 | `speaker_memory_enabled` | `false` | Remember speaker names across transcripts |
-| `speaker_memory_mock` | `true` | Mock embeddings for CI |
 | `speaker_embedding_model_id` | `pyannote/embedding` | Voiceprint model |
 | `speaker_min_enroll_seconds` | `2.0` | Min speech for enrollment sample |
 | `speaker_match_threshold` | `0.75` | Cosine similarity threshold for auto-match |
 | `hf_token` | — | Hugging Face token for gated pyannote models |
-| `llm_mock` | `true` | Mock AI action output |
-| `openrouter_api_key` | — | Required when `LLM_MOCK=false` |
+
+LLM provider settings (API keys, base URL, model) are stored in SQLite via **Settings → LLM provider** — not in `.env`. See `llm_settings_service.py` and `AppPreference` key `llm_settings`.
 
 ## `api/`
 
@@ -50,10 +47,11 @@ Loads settings from `backend/.env` and repo root `.env`.
 | `routes_audio.py` | `POST /api/audio/upload`, `GET /api/audio/{id}/stream`, `GET/DELETE /api/audio/{id}` |
 | `routes_transcripts.py` | CRUD + `POST /api/transcripts` + `PATCH /api/transcripts/{id}/speakers` |
 | `routes_jobs.py` | `GET /api/jobs/{id}` |
-| `routes_ai_actions.py` | Templates + `POST /api/ai-actions` |
+| `routes_ai_actions.py` | `POST /api/ai-actions` (transcript summary) |
 | `routes_documents.py` | Document CRUD |
 | `routes_speaker_profiles.py` | Speaker profiles + speaker memory status/consent |
 | `routes_user_settings.py` | `GET/PATCH /api/user-settings` |
+| `routes_llm_settings.py` | `GET/PATCH /api/llm-settings` (local SQLite storage) |
 
 ## `core/`
 
@@ -81,9 +79,9 @@ Loads settings from `backend/.env` and repo root `.env`.
 | Service | Role |
 |---------|------|
 | `audio_service.py` | Upload validation, ffmpeg normalization, duration |
-| `asr_service.py` | Qwen3-ASR (mock or real), chunking for long audio |
+| `asr_service.py` | Qwen3-ASR, chunking for long audio |
 | `diarization_service.py` | pyannote speaker diarization, segment slicing, labeled transcript builder |
-| `speaker_embedding_service.py` | pyannote/embedding extraction (mock or real) |
+| `speaker_embedding_service.py` | pyannote/embedding extraction |
 | `speaker_profile_service.py` | Profile CRUD, enrollment, centroid computation |
 | `speaker_matching_service.py` | Cosine match embeddings → display names |
 | `speaker_transcript_service.py` | Speaker rename on transcripts; optional turn-scoped voiceprint enrollment |
@@ -91,8 +89,11 @@ Loads settings from `backend/.env` and repo root `.env`.
 | `user_settings_service.py` | User profile, language, summarization prefs, linked speaker |
 | `transcript_service.py` | Transcript CRUD |
 | `document_service.py` | Document CRUD |
-| `llm_service.py` | OpenRouter chat completions (mock or real) |
-| `ai_action_service.py` | Prompt templates + document generation |
+| `llm_service.py` | LLM facade (configured provider) |
+| `llm/` | Provider adapters: OpenAI-compatible, Anthropic, factory, presets |
+| `llm_settings_service.py` | LLM provider settings in SQLite (`AppPreference`) |
+| `prompt_context.py` | User preference block injected into summary prompts |
+| `ai_action_service.py` | Transcript summary prompt + LLM call |
 | `job_service.py` | Job lifecycle |
 
 ## `workers/`
@@ -111,7 +112,7 @@ Failed transcription jobs keep the transcript with `status=failed` and `errorMes
 
 ## `tests/`
 
-40 tests covering health, upload, transcripts, diarization, speaker memory, user settings, AI actions, DB migration, and startup diagnostics.
+57 tests covering health, upload, transcripts, diarization, speaker memory, user settings, AI actions, LLM providers, DB migration, and startup diagnostics. Tests patch external services (ffmpeg, ASR, diarization, LLM) at test time.
 
 ## `scripts/`
 

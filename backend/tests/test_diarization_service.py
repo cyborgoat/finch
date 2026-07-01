@@ -1,23 +1,13 @@
 import pytest
 
+from app.config import Settings
 from app.services.diarization_service import (
-    DiarizationService,
     DiarizationTurn,
     SpeakerSegment,
     build_labeled_transcript,
     format_diarization_load_error,
     merge_adjacent_turns,
 )
-from app.config import Settings
-
-
-@pytest.fixture
-def diarization_settings() -> Settings:
-    return Settings(
-        diarization_enabled=True,
-        diarization_mock=True,
-        asr_mock=True,
-    )
 
 
 def test_merge_adjacent_turns():
@@ -81,16 +71,6 @@ def test_resolve_hf_token_prefers_settings():
 
     settings = Settings(hf_token="from-settings")
     assert resolve_hf_token(settings) == "from-settings"
-
-
-def test_mock_diarization_returns_two_speakers(diarization_settings: Settings):
-    service = DiarizationService(diarization_settings)
-    turns = service.diarize("unused.wav", duration_seconds=10.0)
-    assert len(turns) == 2
-    assert turns[0].speaker == "Speaker 1"
-    assert turns[0].cluster_id == "SPEAKER_00"
-    assert turns[1].speaker == "Speaker 2"
-    assert turns[1].cluster_id == "SPEAKER_01"
 
 
 def test_format_diarization_load_error_detects_gated_repo():

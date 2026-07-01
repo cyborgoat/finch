@@ -1,6 +1,6 @@
 # Finch Documentation
 
-Finch is a local-first voice transcription app. Audio is transcribed on your machine; optional LLM features run on transcript text only via OpenRouter.
+Finch is a local-first voice transcription app. Audio is transcribed on your machine; optional LLM summarization runs on transcript text only via a provider you configure in Settings.
 
 ## Guides
 
@@ -21,10 +21,10 @@ Finch is a local-first voice transcription app. Audio is transcribed on your mac
 ## Core model
 
 ```txt
-AudioAsset → Transcript (recording) → Document(s)
+AudioAsset → Transcript (recording) → Summary document (optional)
 ```
 
-The transcript is the durable artifact. AI-generated Markdown documents are optional derivatives nested under their source recording.
+The transcript is the durable artifact. LLM-generated Markdown summaries are optional derivatives stored as documents linked to the source recording.
 
 ## Frontend routes
 
@@ -32,14 +32,16 @@ The transcript is the durable artifact. AI-generated Markdown documents are opti
 |-------|---------|
 | `/` | Recent voice recordings |
 | `/files` | Full recordings library (title search) |
-| `/files/{id}` | Recording detail (Source / Summary / AI) or document editor |
+| `/files/{id}` | Recording detail (Source / Summary) or document editor |
 | `/upload`, `/record` | Create new recordings |
-| `/settings` | User profile, language, AI prefs, speakers (auto-label) |
+| `/settings` | User profile, language, summarization prefs, LLM provider, speakers |
 
-Recording detail uses a **topbar** with breadcrumbs, a download menu (audio, transcript, summary placeholder), and actions (rename, delete). The **Source** tab shows the audio player and a compact auto-scrolling transcript.
+Recording detail uses a **topbar** with breadcrumbs, a download menu (audio, transcript, summary `.md` when generated), and actions (rename, delete). The **Source** tab shows the audio player and a compact auto-scrolling transcript. The **Summary** tab generates an LLM overview using your Settings preferences.
+
+LLM provider credentials are configured in **Settings → LLM provider** and stored locally in SQLite — not in `.env`.
 
 Recording and document IDs use type prefixes (`transcript_`, `doc_`) so routes can infer file kind from the URL. Other resources use their own prefixes (`audio_`, `job_`, etc.).
 
 ## Privacy
 
-Audio stays on your machine for ASR and diarization. LLM actions send **transcript text** to OpenRouter only when you explicitly run them — never audio.
+Audio stays on your machine for ASR and diarization. Summarization sends **transcript text** to your configured provider only when you explicitly generate a summary — never audio.

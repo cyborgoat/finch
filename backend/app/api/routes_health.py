@@ -15,7 +15,6 @@ def health(session: Session = Depends(get_session)) -> dict:
     diarization_reason: str | None = capabilities.diarization_reason
     if (
         capabilities.diarization_enabled
-        and not capabilities.diarization_mock
         and not capabilities.diarization_ready
         and diarization_reason
     ):
@@ -28,14 +27,12 @@ def health(session: Session = Depends(get_session)) -> dict:
         "app": settings.app_name,
         "capabilities": {
             "diarizationEnabled": capabilities.diarization_enabled,
-            "diarizationMock": capabilities.diarization_mock,
             "diarizationReady": capabilities.diarization_ready,
             "diarizationReason": diarization_reason,
-            "asrMock": capabilities.asr_mock,
-            "llmMock": capabilities.llm_mock,
+            "llmProvider": capabilities.llm_provider,
+            "llmConfigured": capabilities.llm_configured,
             "openrouterConfigured": capabilities.openrouter_configured,
             "speakerMemoryEnabled": capabilities.speaker_memory_enabled,
-            "speakerMemoryMock": capabilities.speaker_memory_mock,
             "speakerMemoryReady": capabilities.speaker_memory_ready,
             "speakerMemoryReason": capabilities.speaker_memory_reason,
             "speakerMemoryConsentGiven": capabilities.speaker_memory_consent_given,

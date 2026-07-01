@@ -1,7 +1,7 @@
-export type FileDetailTab = "source" | "summary" | "ai"
+export type FileDetailTab = "source" | "summary"
 
 export function parseFileDetailTab(value: unknown): FileDetailTab {
-  if (value === "summary" || value === "ai") return value
+  if (value === "summary" || value === "ai") return "summary"
   return "source"
 }
 

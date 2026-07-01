@@ -1,6 +1,8 @@
 import wave
 from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,6 +11,30 @@ from sqlmodel import SQLModel, Session
 from app.config import Settings, get_settings
 from app.main import create_app
 from app.storage import database
+from tests.support.fakes import FAKE_LLM_MARKDOWN, fake_asr_result
+
+
+@contextmanager
+def patch_external_services():
+    """Patch heavy external dependencies for integration tests only."""
+    mock_llm_client = MagicMock()
+    mock_llm_client.chat.return_value = FAKE_LLM_MARKDOWN
+    with (
+        patch(
+            "app.workers.transcription_worker.AsrService.transcribe",
+            return_value=fake_asr_result(),
+        ),
+        patch(
+            "app.services.asr_service.AsrService.transcribe",
+            return_value=fake_asr_result(),
+        ),
+        patch("app.services.asr_service.AsrService.load_model"),
+        patch(
+            "app.services.llm_service.build_llm_client",
+            return_value=mock_llm_client,
+        ),
+    ):
+        yield mock_llm_client
 
 
 @pytest.fixture
@@ -27,12 +53,8 @@ def test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
         original_audio_dir=str(original_dir),
         normalized_audio_dir=str(normalized_dir),
         export_dir=str(export_dir),
-        asr_mock=True,
-        llm_mock=True,
         diarization_enabled=False,
-        diarization_mock=True,
         speaker_memory_enabled=False,
-        speaker_memory_mock=True,
     )
 
     monkeypatch.setenv("DATABASE_URL", settings.database_url)
@@ -40,12 +62,8 @@ def test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.setenv("ORIGINAL_AUDIO_DIR", settings.original_audio_dir)
     monkeypatch.setenv("NORMALIZED_AUDIO_DIR", settings.normalized_audio_dir)
     monkeypatch.setenv("EXPORT_DIR", settings.export_dir)
-    monkeypatch.setenv("ASR_MOCK", "true")
-    monkeypatch.setenv("LLM_MOCK", "true")
     monkeypatch.setenv("DIARIZATION_ENABLED", "false")
-    monkeypatch.setenv("DIARIZATION_MOCK", "true")
     monkeypatch.setenv("SPEAKER_MEMORY_ENABLED", "false")
-    monkeypatch.setenv("SPEAKER_MEMORY_MOCK", "true")
     get_settings.cache_clear()
     database.reset_engine(settings.database_url)
     return settings
@@ -53,9 +71,10 @@ def test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
 
 @pytest.fixture
 def client(test_settings: Settings) -> Generator[TestClient]:
-    app = create_app()
-    with TestClient(app) as test_client:
-        yield test_client
+    with patch_external_services():
+        app = create_app()
+        with TestClient(app) as test_client:
+            yield test_client
     get_settings.cache_clear()
     database.reset_engine()
     SQLModel.metadata.drop_all(database.get_engine())

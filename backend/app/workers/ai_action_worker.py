@@ -8,6 +8,8 @@ from app.core.startup_diagnostics import log_error_guidance
 from app.services.ai_action_service import AiActionService
 from app.services.document_service import DocumentService
 from app.services.job_service import JobService
+from app.services.llm.config import resolve_llm_config
+from app.services.llm_settings_service import LlmSettingsService
 from app.services.transcript_service import TranscriptService
 from app.storage.database import get_engine
 
@@ -20,7 +22,6 @@ def run_ai_action_job(
     action: str,
     source: str,
     model: str | None = None,
-    custom_prompt: str | None = None,
 ) -> None:
     settings = get_settings()
 
@@ -28,7 +29,7 @@ def run_ai_action_job(
         job_service = JobService(session, settings)
         transcript_service = TranscriptService(session, settings)
         document_service = DocumentService(session, settings)
-        ai_action_service = AiActionService(settings)
+        ai_action_service = AiActionService(session, settings)
 
         job = job_service.get_job(job_id)
 
@@ -40,11 +41,12 @@ def run_ai_action_job(
                 action,
                 source,
             )
-            if settings.llm_mock:
-                logger.info("LLM mock mode (LLM_MOCK=true) — returning sample Markdown")
-            elif not settings.openrouter_api_key:
+            runtime = LlmSettingsService(session).get_runtime_settings()
+            if resolve_llm_config(runtime) is None:
+                provider = (runtime.provider or "openrouter").strip().lower()
                 logger.warning(
-                    "OPENROUTER_API_KEY is not set — job will fail unless LLM_MOCK=true"
+                    "LLM is not configured for provider=%s — job will fail",
+                    provider,
                 )
 
             job_service.update_job(job, status="processing", progress=0.2, stage="loading_transcript")
@@ -56,8 +58,10 @@ def run_ai_action_job(
                 action=action,
                 source=source,
                 model=model,
-                custom_prompt=custom_prompt,
+                session=session,
             )
+
+            resolved_model = model or ai_action_service.llm_service.resolve_default_model()
 
             job_service.update_job(job, progress=0.8, stage="saving_document")
             document = document_service.create_document(
@@ -65,7 +69,7 @@ def run_ai_action_job(
                 title=title,
                 doc_type=doc_type,
                 markdown=markdown,
-                model=model or settings.openrouter_default_model,
+                model=resolved_model,
             )
 
             job_service.update_job(

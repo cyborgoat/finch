@@ -35,9 +35,7 @@ In repo root `.env` or `backend/.env`:
 
 ```env
 DIARIZATION_ENABLED=true
-DIARIZATION_MOCK=false
 SPEAKER_MEMORY_ENABLED=true
-SPEAKER_MEMORY_MOCK=false
 HF_TOKEN=hf_...
 ```
 
@@ -49,12 +47,6 @@ Install dependencies:
 
 ```bash
 cd backend && uv add pyannote-audio
-```
-
-For development without real embeddings:
-
-```env
-SPEAKER_MEMORY_MOCK=true
 ```
 
 ## User flow (UI)
@@ -85,10 +77,10 @@ SPEAKER_MEMORY_MOCK=true
 |---------|---------|
 | **You** | Your display name; map one saved speaker profile as yourself |
 | **Language** | App / AI content language (English or 中文) |
-| **AI summarization** | Summary style and format (for future Summary tab and AI actions) |
+| **AI summarization** | Summary style and format on the Summary tab |
 | **Speakers** | Auto-label toggle; list of saved speakers (rename / delete) |
 
-ASR, diarization, and LLM configuration are **backend-only** (`.env` and startup logs) — not on the settings page.
+ASR and diarization configuration are **backend-only** (`.env` and startup logs). LLM provider settings can be configured in **Settings → LLM provider** or via `.env`.
 
 ## Tuning
 

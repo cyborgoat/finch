@@ -4,11 +4,11 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
 import { useRegisterTopbarActions } from "@/components/layout/TopbarActionsContext"
-import { TranscriptAiTab } from "@/components/transcripts/TranscriptAiTab"
 import { TranscriptSummaryTab } from "@/components/transcripts/TranscriptSummaryTab"
 import { TranscriptAudioPlayer } from "@/components/transcripts/TranscriptAudioPlayer"
 import { FullTranscriptPanel } from "@/components/transcripts/FullTranscriptPanel"
 import { useAudioAsset } from "@/hooks/useAudioAsset"
+import { useDocument } from "@/hooks/useDocuments"
 import { useTranscriptPlayback } from "@/hooks/useTranscriptPlayback"
 import type { DocumentSummary, SpeakerMemoryStatus, SpeakerProfileSummary, Transcript } from "@/lib/types"
 import type { SpeakerSegment } from "@/lib/types"
@@ -64,6 +64,16 @@ export function TranscriptDetailLayout({
     audioAsset?.durationSeconds,
   )
 
+  const summaryDocumentSummary = useMemo(
+    () =>
+      documents
+        .filter((document) => document.type === "markdown_summary")
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null,
+    [documents],
+  )
+
+  const { data: summaryDocument } = useDocument(summaryDocumentSummary?.id ?? "")
+
   const setTab = useCallback(
     (value: string) => {
       void navigate({
@@ -80,6 +90,7 @@ export function TranscriptDetailLayout({
       audioFilename: audioAsset?.filename,
       title,
       transcriptText: text,
+      summaryMarkdown: summaryDocument?.markdown ?? null,
       onRename,
       onDelete,
       isRenaming: renamePending,
@@ -90,6 +101,7 @@ export function TranscriptDetailLayout({
       audioAsset?.filename,
       title,
       text,
+      summaryDocument?.markdown,
       onRename,
       onDelete,
       renamePending,
@@ -98,6 +110,8 @@ export function TranscriptDetailLayout({
   )
 
   useRegisterTopbarActions(topbarActions, [topbarActions])
+
+  const hasSummary = !!summaryDocumentSummary
 
   return (
     <div className="section-stack">
@@ -108,12 +122,9 @@ export function TranscriptDetailLayout({
           </TabsTrigger>
           <TabsTrigger value="summary" className="px-4 pb-3">
             Summary
-          </TabsTrigger>
-          <TabsTrigger value="ai" className="px-4 pb-3">
-            AI
-            {documents.length > 0 ? (
+            {hasSummary ? (
               <Badge variant="outline" className="ml-1.5 h-5 px-1.5 text-xs">
-                {documents.length}
+                Ready
               </Badge>
             ) : null}
           </TabsTrigger>
@@ -158,11 +169,7 @@ export function TranscriptDetailLayout({
         </TabsContent>
 
         <TabsContent value="summary" className="mt-0 pt-6">
-          <TranscriptSummaryTab />
-        </TabsContent>
-
-        <TabsContent value="ai" className="mt-0 pt-6">
-          <TranscriptAiTab
+          <TranscriptSummaryTab
             transcriptId={transcript.id}
             documents={documents}
             llmReady={llmReady}

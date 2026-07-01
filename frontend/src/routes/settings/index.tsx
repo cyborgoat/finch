@@ -3,6 +3,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { SettingsRow, SettingsSection } from "@/components/settings/SettingsSection"
 import { UserProfileSettings } from "@/components/settings/UserProfileSettings"
+import { LlmSettingsPanel } from "@/components/settings/LlmSettingsPanel"
 import { SpeakerConsentDialog } from "@/components/speakers/SpeakerConsentDialog"
 import { SpeakerProfileManager } from "@/components/speakers/SpeakerProfileManager"
 import { PageContainer } from "@/components/layout/PageContainer"
@@ -28,6 +29,7 @@ import {
   speakerMemoryStatusQuery,
   speakerProfilesQuery,
 } from "@/lib/queries/speakers"
+import { llmSettingsQuery } from "@/lib/queries/llmSettings"
 import { userSettingsQuery } from "@/lib/queries/userSettings"
 
 export const Route = createFileRoute("/settings/")({
@@ -36,6 +38,7 @@ export const Route = createFileRoute("/settings/")({
       context.queryClient.ensureQueryData(speakerProfilesQuery()),
       context.queryClient.ensureQueryData(speakerMemoryStatusQuery()),
       context.queryClient.ensureQueryData(userSettingsQuery()),
+      context.queryClient.ensureQueryData(llmSettingsQuery()),
     ]),
   component: SettingsPage,
 })
@@ -148,11 +151,11 @@ function SettingsPage() {
 
         <SettingsSection
           title="AI summarization"
-          description="How Finch summarizes recordings and runs AI actions."
+          description="How Finch summarizes recordings on the Summary tab."
         >
           <SettingsRow
             label="Summary style"
-            description="Will apply to the Summary tab and AI actions."
+            description="Applied when generating a transcript summary."
           >
             <Select
               value={preferences.summaryStyle}
@@ -206,6 +209,8 @@ function SettingsPage() {
             </Select>
           </SettingsRow>
         </SettingsSection>
+
+        <LlmSettingsPanel disabled={settingsBusy} />
 
         <SettingsSection
           title="Speakers"

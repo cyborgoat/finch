@@ -1,5 +1,4 @@
 import type {
-  AiActionTemplate,
   ApiError,
   AudioAsset,
   Document,
@@ -11,6 +10,8 @@ import type {
   Transcript,
   TranscriptSummary,
   UserSettings,
+  LlmSettings,
+  UpdateLlmSettings,
 } from "@/lib/types"
 
 import { getApiBaseUrl } from "@/lib/api-base"
@@ -52,14 +53,11 @@ export async function getHealth(): Promise<{
   app: string
   capabilities?: {
     diarizationEnabled: boolean
-    diarizationMock: boolean
     diarizationReady: boolean
     diarizationReason: string | null
-    asrMock: boolean
-    llmMock: boolean
+    llmProvider?: string
+    llmConfigured?: boolean
     openrouterConfigured: boolean
-    speakerMemoryEnabled?: boolean
-    speakerMemoryMock?: boolean
     speakerMemoryReady?: boolean
     speakerMemoryReason?: string | null
     speakerMemoryConsentGiven?: boolean
@@ -120,21 +118,20 @@ export async function deleteTranscript(id: string): Promise<{ ok: boolean }> {
   return request(`/api/transcripts/${id}`, { method: "DELETE" })
 }
 
-export async function listAiActionTemplates(): Promise<{ items: AiActionTemplate[] }> {
-  return request("/api/ai-actions/templates")
-}
-
-export async function createAiActionJob(input: {
+export async function createTranscriptSummary(input: {
   transcriptId: string
-  action: string
   source?: "rawText" | "editedText"
   model?: string
-  customPrompt?: string
 }): Promise<{ jobId: string; status: string }> {
   return request("/api/ai-actions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+    body: JSON.stringify({
+      transcriptId: input.transcriptId,
+      action: "markdown_summary",
+      source: input.source ?? "editedText",
+      model: input.model,
+    }),
   })
 }
 
@@ -240,6 +237,20 @@ export async function updateUserSettings(
   patch: Partial<UserSettings>,
 ): Promise<UserSettings> {
   return request("/api/user-settings", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  })
+}
+
+export async function getLlmSettings(): Promise<LlmSettings> {
+  return request("/api/llm-settings")
+}
+
+export async function updateLlmSettings(
+  patch: UpdateLlmSettings,
+): Promise<LlmSettings> {
+  return request("/api/llm-settings", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(patch),

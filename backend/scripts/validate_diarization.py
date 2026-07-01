@@ -36,7 +36,6 @@ def validate_config() -> list[str]:
 
     _print_header("Configuration")
     print(f"  DIARIZATION_ENABLED={settings.diarization_enabled}")
-    print(f"  DIARIZATION_MOCK={settings.diarization_mock}")
     print(f"  DIARIZATION_USE_ORIGINAL_AUDIO={settings.diarization_use_original_audio}")
     print(f"  DIARIZATION_USE_EXCLUSIVE={settings.diarization_use_exclusive}")
     print(
@@ -48,8 +47,6 @@ def validate_config() -> list[str]:
 
     if not settings.diarization_enabled:
         issues.append("DIARIZATION_ENABLED is false — enable it in .env to use speaker labels.")
-    if settings.diarization_mock:
-        issues.append("DIARIZATION_MOCK is true — real pyannote will not run.")
 
     return issues
 
@@ -166,14 +163,14 @@ def main() -> int:
     issues.extend(validate_dependencies())
 
     settings = get_settings()
-    if settings.diarization_enabled and not settings.diarization_mock:
+    if settings.diarization_enabled:
         issues.extend(validate_hf_access())
         issues.extend(validate_capabilities())
         if args.audio:
             issues.extend(run_diarization_probe(args.audio))
     else:
         _print_header("Skipping HF and probe checks")
-        print("  Enable DIARIZATION_ENABLED=true and DIARIZATION_MOCK=false for full validation.")
+        print("  Enable DIARIZATION_ENABLED=true for full validation.")
 
     _print_header("Result")
     if issues:

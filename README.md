@@ -1,17 +1,17 @@
 # Finch
 
-Finch is a local-first voice transcription app. Audio is transcribed on your machine; optional LLM features run on transcript text only via OpenRouter.
+Finch is a local-first voice transcription app. Audio is transcribed on your machine; optional LLM features run on transcript text only via a configurable provider (OpenRouter, OpenAI, Anthropic, or custom OpenAI-compatible endpoints such as Ollama).
 
 ## Features
 
 - Upload audio files (`.wav`, `.mp3`, `.m4a`, `.webm`, `.ogg`, `.flac`)
 - Browser recording with live waveform visualization
-- Local ASR with [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) (or mock mode)
+- Local ASR with [Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B)
 - Optional speaker diarization via [pyannote-audio](https://github.com/pyannote/pyannote-audio)
 - Optional speaker memory — persistent names via local voiceprints
 - Background transcription jobs with in-progress status in the UI
-- Transcript library: **Files** at `/files` (voice recordings); detail page with **Source**, **Summary** (placeholder), and **AI** tabs; topbar download/actions; documents live under each recording’s AI tab
-- AI actions (summaries, action items, meeting notes) via OpenRouter (`LLM_MOCK` for dev)
+- Transcript library: **Files** at `/files` (voice recordings); detail page with **Source** and **Summary** tabs; topbar download/actions
+- AI actions (summaries, action items, meeting notes) via configurable LLM providers
 - Document library: Markdown editor + preview + export
 
 See [docs/features.md](docs/features.md) for the full feature list and roadmap.
@@ -76,20 +76,18 @@ cd backend && uv run python scripts/validate_diarization.py
 
 | Variable | Purpose |
 |----------|---------|
-| `ASR_MOCK` | Mock local transcription |
 | `DIARIZATION_ENABLED` | Enable speaker diarization pipeline |
-| `DIARIZATION_MOCK` | Mock diarization (CI/dev) |
 | `HF_TOKEN` | Hugging Face token for pyannote models |
 | `SPEAKER_MEMORY_ENABLED` | Remember speaker names across transcripts |
 | `SPEAKER_MATCH_THRESHOLD` | Auto-match similarity threshold (default `0.75`) |
-| `LLM_MOCK` | Mock OpenRouter responses |
-| `OPENROUTER_API_KEY` | Real LLM actions |
+
+LLM provider credentials are **not** configured via `.env`. Use **Settings → LLM provider** in the frontend; values are stored locally in SQLite.
 
 See [`.env.example`](.env.example) and [backend/.env.example](backend/.env.example) for all options.
 
 ## Privacy
 
-Audio stays on your machine for ASR and diarization. LLM actions send transcript text to OpenRouter only when you explicitly run them—not audio.
+Audio stays on your machine for ASR and diarization. LLM actions send transcript text to your configured provider only when you explicitly run them—not audio.
 
 ## Repository layout
 

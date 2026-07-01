@@ -12,7 +12,7 @@ Speaker 2: Happy to be here.
 
 ## Prerequisites
 
-1. Real ASR enabled (`ASR_MOCK=false`) — diarization runs ASR per speaker segment
+1. Qwen3-ASR installed (`uv add torch qwen-asr`) — diarization runs ASR per speaker segment
 2. `pyannote-audio` installed: `cd backend && uv add pyannote-audio`
 3. Hugging Face account with access to [pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1)
 
@@ -34,7 +34,6 @@ Add to repo root `.env` or `backend/.env`:
 
 ```env
 DIARIZATION_ENABLED=true
-DIARIZATION_MOCK=false
 HF_TOKEN=hf_...
 ```
 
@@ -103,15 +102,6 @@ Use the validation probe to inspect segment boundaries before running a full tra
 ```bash
 uv run python scripts/validate_diarization.py --audio path/to/file.wav
 ```
-
-## Development without pyannote
-
-```env
-DIARIZATION_ENABLED=true
-DIARIZATION_MOCK=true
-```
-
-Returns two fake speakers for UI and test coverage without model downloads.
 
 ## Troubleshooting
 

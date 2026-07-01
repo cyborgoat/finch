@@ -29,19 +29,11 @@ class Settings(BaseSettings):
     normalized_audio_dir: str = "./data/audio/normalized"
     export_dir: str = "./data/exports"
 
-    openrouter_api_key: str | None = None
-    openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    openrouter_default_model: str = "openai/gpt-4.1-mini"
-
     asr_model_id: str = "Qwen/Qwen3-ASR-1.7B"
     asr_device: str = "auto"
     asr_dtype: str = "auto"
-    asr_mock: bool = True
-
-    llm_mock: bool = True
 
     diarization_enabled: bool = False
-    diarization_mock: bool = True
     diarization_pipeline_id: str = "pyannote/speaker-diarization-community-1"
     diarization_use_original_audio: bool = False
     diarization_use_exclusive: bool = True
@@ -51,7 +43,6 @@ class Settings(BaseSettings):
     hf_token: str | None = None
 
     speaker_memory_enabled: bool = False
-    speaker_memory_mock: bool = True
     speaker_embedding_model_id: str = "pyannote/embedding"
     speaker_match_threshold: float = 0.75
     speaker_min_enroll_seconds: float = 2.0

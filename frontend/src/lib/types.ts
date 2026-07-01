@@ -75,6 +75,33 @@ export type UserSettings = {
   userSpeakerProfileId: string | null
 }
 
+export type LlmProviderId = "openrouter" | "openai" | "anthropic" | "custom"
+
+export type LlmProviderInfo = {
+  id: LlmProviderId
+  displayName: string
+  defaultBaseUrl: string
+  defaultModel: string
+}
+
+export type LlmSettings = {
+  provider: LlmProviderId
+  providerDisplayName: string
+  apiKeyConfigured: boolean
+  baseUrl: string
+  defaultModel: string
+  configured: boolean
+  source: "stored" | "unset"
+  providers: LlmProviderInfo[]
+}
+
+export type UpdateLlmSettings = {
+  provider?: LlmProviderId
+  apiKey?: string
+  baseUrl?: string
+  defaultModel?: string
+}
+
 export type Transcript = {
   id: string
   audioAssetId: string
@@ -116,24 +143,12 @@ export type Document = {
   id: string
   transcriptId: string
   title: string
-  type:
-    | "markdown_summary"
-    | "meeting_notes"
-    | "action_items"
-    | "clean_transcript"
-    | "study_notes"
-    | "custom"
+  type: "markdown_summary" | string
   markdown: string
   model: string
   promptVersion: string
   createdAt: string
   updatedAt: string
-}
-
-export type AiActionTemplate = {
-  id: string
-  name: string
-  description: string
 }
 
 export type Job = {

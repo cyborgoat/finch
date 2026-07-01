@@ -253,8 +253,7 @@ def run_transcription_job(job_id: str, audio_asset_id: str, language: str = "aut
 
             if settings.diarization_enabled:
                 try:
-                    if not settings.diarization_mock:
-                        diarization_service.load_pipeline()
+                    diarization_service.load_pipeline()
                     raw_text, detected_language, segments = _transcribe_with_diarization(
                         job_service=job_service,
                         job=job,

@@ -1,6 +1,6 @@
 # Finch Backend
 
-Local ASR transcription API for Finch — optional speaker diarization, speaker memory, and OpenRouter AI actions.
+Local ASR transcription API for Finch — optional speaker diarization, speaker memory, and configurable LLM AI actions.
 
 **Project docs:** [../docs/README.md](../docs/README.md) · **Diarization:** [../docs/diarization.md](../docs/diarization.md) · **Speaker memory:** [../docs/speaker-memory.md](../docs/speaker-memory.md)
 
@@ -35,16 +35,13 @@ API docs: http://localhost:8000/docs
 uv run pytest
 ```
 
-40 tests; mock `ffmpeg`, `ASR_MOCK`, `DIARIZATION_MOCK`, and `SPEAKER_MEMORY_MOCK` by default.
+57 tests; patch `ffmpeg`, ASR, diarization, and LLM services at test time — no model downloads required.
 
 ## Environment
 
 | Variable | Description |
 |----------|-------------|
-| `ASR_MOCK` | When `true`, returns a mock transcript without loading Qwen3-ASR |
-| `LLM_MOCK` | When `true`, returns mock Markdown without OpenRouter |
 | `DIARIZATION_ENABLED` | Enable speaker diarization in transcription jobs |
-| `DIARIZATION_MOCK` | Mock diarization segments (no pyannote download) |
 | `DIARIZATION_USE_ORIGINAL_AUDIO` | Diarize original upload instead of normalized WAV |
 | `DIARIZATION_USE_EXCLUSIVE` | Use pyannote exclusive diarization (recommended for ASR) |
 | `DIARIZATION_MIN_SEGMENT_SECONDS` | Drop segments shorter than this after merge (default `0.3`) |
@@ -52,7 +49,6 @@ uv run pytest
 | `DIARIZATION_MAX_SEGMENTS` | Cap segment count (`0` = unlimited) |
 | `HF_TOKEN` | Hugging Face token for pyannote gated models (or use `huggingface-cli login`) |
 | `SPEAKER_MEMORY_ENABLED` | Remember speaker names across transcripts |
-| `SPEAKER_MEMORY_MOCK` | Mock voiceprint embeddings for CI/dev |
 | `SPEAKER_EMBEDDING_MODEL_ID` | Embedding model (default `pyannote/embedding`) |
 | `SPEAKER_MATCH_THRESHOLD` | Cosine similarity threshold for auto-match (default `0.75`) |
 | `SPEAKER_MIN_ENROLL_SECONDS` | Min speech duration for enrollment samples (default `2.0`) |
@@ -61,18 +57,17 @@ uv run pytest
 
 See [`.env.example`](.env.example) and [../.env.example](../.env.example) for the full list.
 
-## Real ASR
+## ASR
 
-To use Qwen3-ASR-1.7B locally:
+Local transcription uses Qwen3-ASR-1.7B:
 
 ```bash
 uv add torch qwen-asr
 ```
 
-Set in `.env`:
+Optional in `.env`:
 
 ```env
-ASR_MOCK=false
 HF_HOME=./data/hf_cache
 ```
 
@@ -103,10 +98,11 @@ If diarization or speaker matching is unavailable, the worker falls back gracefu
 - `GET/PATCH/DELETE /api/transcripts/{id}`
 - `PATCH /api/transcripts/{id}/speakers` — rename/link speakers on a transcript
 - `GET /api/jobs/{id}`
-- `GET/POST /api/ai-actions` · `GET /api/ai-actions/templates`
+- `POST /api/ai-actions` — generate transcript summary (`action: markdown_summary`)
 - `GET/PATCH/DELETE /api/documents/{id}` · `GET /api/documents`
 - `GET/POST/PATCH/DELETE /api/speaker-profiles` · `GET /api/speaker-profiles/{id}`
 - `GET/PATCH/DELETE /api/speaker-memory/status` · `POST /api/speaker-memory/consent` · `DELETE /api/speaker-memory/data`
 - `GET/PATCH /api/user-settings` — user name, language, summarization prefs, linked speaker profile
+- `GET/PATCH /api/llm-settings` — LLM provider credentials (stored locally in SQLite; API keys never returned)
 
 Transcripts may include `speakerSegments`, `processingNote`, or `errorMessage` when diarization is skipped or a job fails.

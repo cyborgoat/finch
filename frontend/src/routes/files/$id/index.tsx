@@ -58,10 +58,7 @@ function TranscriptDetailEditor({ transcript }: { transcript: Transcript }) {
   const { data: documentsData } = useDocuments(transcript.id)
   const { data: health } = useQuery(healthQuery())
   const editor = useTranscriptEditor(transcript)
-  const llmReady =
-    health?.capabilities?.llmMock ||
-    health?.capabilities?.openrouterConfigured ||
-    true
+  const llmReady = health?.capabilities?.llmConfigured ?? false
 
   return (
     <TranscriptDetailLayout

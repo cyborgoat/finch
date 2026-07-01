@@ -4,9 +4,13 @@ from sqlmodel import Session
 
 from app.config import Settings
 from app.services.diarization_service import DiarizationTurn
-from app.services.speaker_embedding_service import SpeakerEmbeddingService
 from app.services.speaker_matching_service import SpeakerMatchingService, cosine_similarity
 from app.services.speaker_profile_service import SpeakerProfileService
+
+
+def _unit_vector(values: tuple[float, ...]) -> np.ndarray:
+    vector = np.array(values, dtype=np.float32)
+    return vector / np.linalg.norm(vector)
 
 
 def test_cosine_similarity_identical_vectors():
@@ -14,25 +18,18 @@ def test_cosine_similarity_identical_vectors():
     assert cosine_similarity(vector, vector) == pytest.approx(1.0)
 
 
-def test_mock_embedding_is_deterministic():
-    service = SpeakerEmbeddingService(Settings(speaker_memory_mock=True))
-    first = service._mock_embedding("cluster-a")
-    second = service._mock_embedding("cluster-a")
-    assert np.allclose(first, second)
-
-
 def test_speaker_matching_assigns_known_profile(db_session: Session):
-    settings = Settings(speaker_memory_mock=True, speaker_match_threshold=0.99)
+    settings = Settings(speaker_match_threshold=0.99)
     profile_service = SpeakerProfileService(db_session, settings)
     matching_service = SpeakerMatchingService(db_session, settings)
 
     profile = profile_service.create_profile("Robert")
-    vector = SpeakerEmbeddingService(settings)._mock_embedding("robert-voice")
+    vector = _unit_vector((1.0, 0.0, 0.0))
     profile_service.add_embedding(profile.id, vector)
 
     cluster_embeddings = {
         "SPEAKER_00": vector,
-        "SPEAKER_01": SpeakerEmbeddingService(settings)._mock_embedding("other-voice"),
+        "SPEAKER_01": _unit_vector((0.0, 1.0, 0.0)),
     }
     turns = [
         DiarizationTurn("Speaker 1", 0.0, 2.0, cluster_id="SPEAKER_00"),
@@ -53,7 +50,7 @@ def test_speaker_profile_requires_consent_for_enroll(db_session: Session):
     from app.services.diarization_service import SpeakerSegment, speaker_segments_to_json
     from app.services.speaker_profile_service import SpeakerProfileService
 
-    settings = Settings(speaker_memory_mock=True)
+    settings = Settings()
     profile_service = SpeakerProfileService(db_session, settings)
 
     now = datetime.now(UTC)

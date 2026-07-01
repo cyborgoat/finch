@@ -1,19 +1,21 @@
 from io import BytesIO
 from unittest.mock import patch
 
-from app.services.asr_service import AsrResult
+from tests.support.fakes import fake_ffmpeg_run
 
 
 @patch("app.services.audio_service.subprocess.run")
 def test_ai_action_flow(mock_run, client, sample_wav_bytes):
-    from pathlib import Path
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    def fake_ffmpeg(cmd, check, capture_output):
-        output_path = Path(cmd[-1])
-        output_path.write_bytes(sample_wav_bytes)
-        return type("Result", (), {"returncode": 0})()
-
-    mock_run.side_effect = fake_ffmpeg
+    client.patch(
+        "/api/llm-settings",
+        json={
+            "provider": "openai",
+            "apiKey": "sk-test",
+            "defaultModel": "gpt-4.1-mini",
+        },
+    )
 
     upload_response = client.post(
         "/api/audio/upload",
@@ -22,18 +24,11 @@ def test_ai_action_flow(mock_run, client, sample_wav_bytes):
     )
     audio_id = upload_response.json()["id"]
 
-    with patch(
-        "app.workers.transcription_worker.AsrService.transcribe",
-        return_value=AsrResult(text="Team discussed roadmap priorities.", language="en"),
-    ):
-        job_response = client.post(
-            "/api/transcripts",
-            json={"audioAssetId": audio_id, "language": "auto"},
-        )
+    job_response = client.post(
+        "/api/transcripts",
+        json={"audioAssetId": audio_id, "language": "auto"},
+    )
     transcript_id = job_response.json()["transcriptId"]
-
-    templates = client.get("/api/ai-actions/templates").json()
-    assert len(templates["items"]) >= 2
 
     ai_job_response = client.post(
         "/api/ai-actions",
@@ -52,7 +47,7 @@ def test_ai_action_flow(mock_run, client, sample_wav_bytes):
 
     document = client.get(f"/api/documents/{document_id}").json()
     assert document["type"] == "markdown_summary"
-    assert "Mock Summary" in document["markdown"]
+    assert "Summary" in document["markdown"]
 
     patch_response = client.patch(
         f"/api/documents/{document_id}",

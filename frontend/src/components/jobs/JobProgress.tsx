@@ -5,8 +5,8 @@ import type { Job } from "@/lib/types"
 const STAGE_LABELS: Record<string, string> = {
   running_diarization: "Identifying speakers",
   running_asr: "Transcribing audio",
-  calling_llm: "Generating document",
-  saving_document: "Saving document",
+  calling_llm: "Generating summary",
+  saving_document: "Saving summary",
   saving_transcript: "Saving transcript",
   loading_model: "Loading model",
   loading_transcript: "Loading transcript",

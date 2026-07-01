@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app.config import Settings, _ENV_CANDIDATES, get_settings
+from app.core.errors import AppError
 from app.services.diarization_service import (
     PYANOTE_COMMUNITY_MODEL_URL,
     get_cached_pipeline_access,
@@ -27,14 +28,12 @@ class DependencyStatus:
 @dataclass(frozen=True)
 class CapabilityStatus:
     diarization_enabled: bool
-    diarization_mock: bool
     diarization_ready: bool
     diarization_reason: str | None
-    asr_mock: bool
-    llm_mock: bool
+    llm_provider: str
+    llm_configured: bool
     openrouter_configured: bool
     speaker_memory_enabled: bool
-    speaker_memory_mock: bool
     speaker_memory_ready: bool
     speaker_memory_reason: str | None
     speaker_memory_consent_given: bool
@@ -61,37 +60,60 @@ def check_dependencies() -> list[DependencyStatus]:
         DependencyStatus(
             name="torch",
             installed=_dependency_installed("torch"),
-            required_for="real ASR when ASR_MOCK=false",
+            required_for="local ASR transcription",
             install_hint="cd backend && uv add torch",
         ),
         DependencyStatus(
             name="qwen-asr",
             installed=_dependency_installed("qwen_asr"),
-            required_for="real ASR when ASR_MOCK=false",
+            required_for="local ASR transcription",
             install_hint="cd backend && uv add qwen-asr",
         ),
         DependencyStatus(
             name="pyannote-audio",
             installed=_dependency_installed("pyannote.audio"),
-            required_for="speaker diarization when DIARIZATION_MOCK=false",
+            required_for="speaker diarization and speaker memory",
             install_hint="cd backend && uv add pyannote-audio",
         ),
         DependencyStatus(
             name="httpx",
             installed=_dependency_installed("httpx"),
-            required_for="OpenRouter AI actions when LLM_MOCK=false",
+            required_for="LLM AI actions",
             install_hint="included with backend dependencies (uv sync)",
         ),
     ]
 
 
-def get_capability_status(settings: Settings | None = None) -> CapabilityStatus:
+def _get_llm_capability(settings: Settings, session=None) -> tuple[str, bool]:
+    from app.services.llm.config import resolve_llm_config
+    from app.services.llm.runtime import LlmRuntimeSettings
+
+    runtime: LlmRuntimeSettings
+    if session is not None:
+        from app.services.llm_settings_service import LlmSettingsService
+
+        runtime = LlmSettingsService(session).get_runtime_settings()
+    else:
+        runtime = LlmRuntimeSettings()
+
+    provider = (runtime.provider or "openrouter").strip().lower()
+    try:
+        configured = resolve_llm_config(runtime) is not None
+    except AppError:
+        configured = False
+    return provider, configured
+
+
+def get_capability_status(
+    settings: Settings | None = None,
+    session=None,
+) -> CapabilityStatus:
     settings = settings or get_settings()
     hf_token = resolve_hf_token(settings)
     pyannote_installed = _dependency_installed("pyannote.audio")
     diarization_reason: str | None = None
 
-    if settings.diarization_enabled and not settings.diarization_mock:
+    if settings.diarization_enabled:
         if not hf_token:
             diarization_reason = (
                 "HF_TOKEN is not set and no Hugging Face CLI login was found."
@@ -106,24 +128,21 @@ def get_capability_status(settings: Settings | None = None) -> CapabilityStatus:
             if not access_ok:
                 diarization_reason = access_reason
 
-    diarization_ready = (
-        not settings.diarization_enabled
-        or settings.diarization_mock
-        or (bool(hf_token) and pyannote_installed and diarization_reason is None)
+    diarization_ready = not settings.diarization_enabled or (
+        bool(hf_token) and pyannote_installed and diarization_reason is None
     )
 
     memory_status = get_speaker_memory_status(settings=settings)
+    llm_provider, llm_configured = _get_llm_capability(settings, session)
 
     return CapabilityStatus(
         diarization_enabled=settings.diarization_enabled,
-        diarization_mock=settings.diarization_mock,
         diarization_ready=diarization_ready,
         diarization_reason=diarization_reason,
-        asr_mock=settings.asr_mock,
-        llm_mock=settings.llm_mock,
-        openrouter_configured=bool(settings.openrouter_api_key),
+        llm_provider=llm_provider,
+        llm_configured=llm_configured,
+        openrouter_configured=llm_configured and llm_provider == "openrouter",
         speaker_memory_enabled=settings.speaker_memory_enabled,
-        speaker_memory_mock=settings.speaker_memory_mock,
         speaker_memory_ready=memory_status.ready and settings.speaker_memory_enabled,
         speaker_memory_reason=memory_status.reason,
         speaker_memory_consent_given=False,
@@ -141,14 +160,12 @@ def get_speaker_memory_status(
 
     if not settings.diarization_enabled:
         reason = "Speaker memory requires DIARIZATION_ENABLED=true."
-    elif settings.speaker_memory_mock:
-        return SpeakerMemoryStatus(ready=True, reason=None)
     elif not hf_token:
         reason = "HF_TOKEN is required for speaker embeddings."
     elif not pyannote_installed:
         reason = "pyannote-audio is not installed."
 
-    ready = reason is None or settings.speaker_memory_mock
+    ready = reason is None
     return SpeakerMemoryStatus(ready=ready, reason=reason)
 
 
@@ -157,7 +174,7 @@ def get_capability_status_with_session(
     settings: Settings | None = None,
 ) -> CapabilityStatus:
     settings = settings or get_settings()
-    base = get_capability_status(settings)
+    base = get_capability_status(settings, session)
     from app.services.app_preference_service import AppPreferenceService
 
     preference_service = AppPreferenceService(session, settings)
@@ -165,14 +182,12 @@ def get_capability_status_with_session(
     enabled = preference_service.is_speaker_memory_enabled()
     return CapabilityStatus(
         diarization_enabled=base.diarization_enabled,
-        diarization_mock=base.diarization_mock,
         diarization_ready=base.diarization_ready,
         diarization_reason=base.diarization_reason,
-        asr_mock=base.asr_mock,
-        llm_mock=base.llm_mock,
+        llm_provider=base.llm_provider,
+        llm_configured=base.llm_configured,
         openrouter_configured=base.openrouter_configured,
         speaker_memory_enabled=enabled,
-        speaker_memory_mock=settings.speaker_memory_mock,
         speaker_memory_ready=memory_status.ready and enabled,
         speaker_memory_reason=memory_status.reason,
         speaker_memory_consent_given=preference_service.has_speaker_memory_consent(),
@@ -198,132 +213,137 @@ def _log_action(message: str) -> None:
 
 def log_startup_summary(settings: Settings | None = None) -> None:
     settings = settings or get_settings()
-    capabilities = get_capability_status(settings)
     dependencies = check_dependencies()
 
-    logger.info(BANNER)
-    logger.info("%s backend started (%s)", settings.app_name, settings.app_env)
-    logger.info(BANNER)
+    from sqlmodel import Session
 
-    _log_section("Configuration files")
-    env_files = _loaded_env_files()
-    if env_files:
-        for path in env_files:
-            _log_bullet(f"Loaded: {path}")
-    else:
-        _log_bullet("No .env file found — using defaults and process environment variables.")
-        _log_action("Copy backend/.env.example or .env.example to .env and customize.")
+    from app.services.llm.config import resolve_llm_config
+    from app.services.llm.presets import get_preset
+    from app.services.llm_settings_service import LlmSettingsService
+    from app.storage.database import get_engine
 
-    _log_section("Storage")
-    _log_bullet(f"Database: {settings.database_url}")
-    _log_bullet(f"Data directory: {settings.data_dir}")
-    _log_bullet(f"Audio (original): {settings.original_audio_dir}")
-    _log_bullet(f"Audio (normalized): {settings.normalized_audio_dir}")
+    with Session(get_engine()) as session:
+        capabilities = get_capability_status(settings, session)
+        runtime = LlmSettingsService(session).get_runtime_settings()
 
-    _log_section("Transcription (ASR)")
-    if settings.asr_mock:
-        _log_bullet("Mode: mock (ASR_MOCK=true) — returns placeholder text, no model download.")
-        _log_action("For real transcription: set ASR_MOCK=false in .env and install torch + qwen-asr.")
-    else:
-        _log_bullet("Mode: real (ASR_MOCK=false)")
+        logger.info(BANNER)
+        logger.info("%s backend started (%s)", settings.app_name, settings.app_env)
+        logger.info(BANNER)
+
+        _log_section("Configuration files")
+        env_files = _loaded_env_files()
+        if env_files:
+            for path in env_files:
+                _log_bullet(f"Loaded: {path}")
+        else:
+            _log_bullet("No .env file found — using defaults and process environment variables.")
+            _log_action("Copy backend/.env.example or .env.example to .env and customize.")
+
+        _log_section("Storage")
+        _log_bullet(f"Database: {settings.database_url}")
+        _log_bullet(f"Data directory: {settings.data_dir}")
+        _log_bullet(f"Audio (original): {settings.original_audio_dir}")
+        _log_bullet(f"Audio (normalized): {settings.normalized_audio_dir}")
+
+        _log_section("Transcription (ASR)")
         _log_bullet(f"Model: {settings.asr_model_id}")
         _log_bullet(f"Device: {settings.asr_device}")
         _log_bullet(f"Dtype: {settings.asr_dtype}")
 
-    _log_section("Speaker diarization")
-    if not settings.diarization_enabled:
-        _log_bullet("Disabled (DIARIZATION_ENABLED=false) — transcripts will not include speaker labels.")
-        _log_action("Enable: DIARIZATION_ENABLED=true in .env")
-    elif settings.diarization_mock:
-        _log_bullet("Enabled in mock mode (DIARIZATION_MOCK=true) — uses two fake speaker segments for testing.")
-        _log_action("For real diarization: DIARIZATION_MOCK=false and configure HF_TOKEN.")
-    else:
-        _log_bullet("Enabled (DIARIZATION_ENABLED=true, DIARIZATION_MOCK=false)")
-        _log_bullet(f"Pipeline: {settings.diarization_pipeline_id}")
-        _log_bullet(
-            "Audio source: "
-            + ("original upload" if settings.diarization_use_original_audio else "normalized 16 kHz WAV")
-        )
-        _log_bullet(
-            "Segment mode: "
-            + ("exclusive (recommended for ASR)" if settings.diarization_use_exclusive else "standard")
-        )
-        _log_bullet(
-            f"Tuning: min_segment={settings.diarization_min_segment_seconds}s, "
-            f"merge_gap={settings.diarization_merge_gap_seconds}s"
-            + (
-                f", max_segments={settings.diarization_max_segments}"
-                if settings.diarization_max_segments > 0
-                else ""
+        _log_section("Speaker diarization")
+        if not settings.diarization_enabled:
+            _log_bullet("Disabled (DIARIZATION_ENABLED=false) — transcripts will not include speaker labels.")
+            _log_action("Enable: DIARIZATION_ENABLED=true in .env")
+        else:
+            _log_bullet("Enabled (DIARIZATION_ENABLED=true)")
+            _log_bullet(f"Pipeline: {settings.diarization_pipeline_id}")
+            _log_bullet(
+                "Audio source: "
+                + ("original upload" if settings.diarization_use_original_audio else "normalized 16 kHz WAV")
             )
-        )
-        if capabilities.diarization_ready:
-            _log_bullet("Status: READY — speaker labels will be applied during transcription.")
+            _log_bullet(
+                "Segment mode: "
+                + ("exclusive (recommended for ASR)" if settings.diarization_use_exclusive else "standard")
+            )
+            _log_bullet(
+                f"Tuning: min_segment={settings.diarization_min_segment_seconds}s, "
+                f"merge_gap={settings.diarization_merge_gap_seconds}s"
+                + (
+                    f", max_segments={settings.diarization_max_segments}"
+                    if settings.diarization_max_segments > 0
+                    else ""
+                )
+            )
+            if capabilities.diarization_ready:
+                _log_bullet("Status: READY — speaker labels will be applied during transcription.")
+            else:
+                _log_bullet("Status: NOT READY — diarization will be skipped; transcripts will have no speaker labels.")
+                if capabilities.diarization_reason:
+                    _log_bullet(f"Reason: {capabilities.diarization_reason}")
+                _log_action(f"Open {PYANOTE_COMMUNITY_MODEL_URL} while logged into Hugging Face")
+                _log_action("Click 'Agree and access repository' (same account as HF_TOKEN)")
+                _log_action("Create a read token: https://huggingface.co/settings/tokens")
+                _log_action("Set HF_TOKEN=hf_... in .env, restart backend, re-transcribe")
+                _log_action("Install dependency: cd backend && uv add pyannote-audio")
+
+        _log_section("Speaker memory")
+        if not settings.speaker_memory_enabled:
+            _log_bullet("Disabled (SPEAKER_MEMORY_ENABLED=false) — generic Speaker 1/2 labels only.")
+            _log_action("Enable in .env and Settings to remember speaker names across transcripts.")
         else:
-            _log_bullet("Status: NOT READY — diarization will be skipped; transcripts will have no speaker labels.")
-            if capabilities.diarization_reason:
-                _log_bullet(f"Reason: {capabilities.diarization_reason}")
-            _log_action(f"Open {PYANOTE_COMMUNITY_MODEL_URL} while logged into Hugging Face")
-            _log_action("Click 'Agree and access repository' (same account as HF_TOKEN)")
-            _log_action("Create a read token: https://huggingface.co/settings/tokens")
-            _log_action("Set HF_TOKEN=hf_... in .env, restart backend, re-transcribe")
-            _log_action("Install dependency: cd backend && uv add pyannote-audio")
+            _log_bullet(f"Enabled — embedding model: {settings.speaker_embedding_model_id}")
+            _log_bullet(f"Match threshold: {settings.speaker_match_threshold}")
+            memory_status = get_speaker_memory_status(settings=settings)
+            if memory_status.ready:
+                _log_bullet("Status: READY — auto-match uses enrolled voiceprints when consent is given.")
+            else:
+                _log_bullet("Status: NOT READY")
+                if memory_status.reason:
+                    _log_bullet(f"Reason: {memory_status.reason}")
 
-    _log_section("Speaker memory")
-    if not settings.speaker_memory_enabled:
-        _log_bullet("Disabled (SPEAKER_MEMORY_ENABLED=false) — generic Speaker 1/2 labels only.")
-        _log_action("Enable in .env and Settings to remember speaker names across transcripts.")
-    elif settings.speaker_memory_mock:
-        _log_bullet("Enabled in mock mode (SPEAKER_MEMORY_MOCK=true) — deterministic test embeddings.")
-    else:
-        _log_bullet(f"Enabled — embedding model: {settings.speaker_embedding_model_id}")
-        _log_bullet(f"Match threshold: {settings.speaker_match_threshold}")
-        memory_status = get_speaker_memory_status(settings=settings)
-        if memory_status.ready:
-            _log_bullet("Status: READY — auto-match uses enrolled voiceprints when consent is given.")
+        _log_section("Transcript summarization (LLM)")
+        provider = capabilities.llm_provider
+        preset = get_preset(provider) if provider in {"openrouter", "openai", "anthropic", "custom"} else None
+        display_name = preset.display_name if preset else provider
+
+        _log_bullet(f"Provider: {display_name}")
+        try:
+            llm_config = resolve_llm_config(runtime)
+            default_model = llm_config.default_model if llm_config else "not set"
+        except AppError:
+            default_model = "not set"
+        _log_bullet(f"Default model: {default_model}")
+        if capabilities.llm_configured:
+            _log_bullet("LLM: configured (stored in local SQLite via Settings)")
         else:
-            _log_bullet("Status: NOT READY")
-            if memory_status.reason:
-                _log_bullet(f"Reason: {memory_status.reason}")
+            _log_bullet("LLM: NOT CONFIGURED")
+            _log_action("Open Settings → LLM provider in the frontend and save provider + API key")
 
-    _log_section("AI actions (LLM)")
-    if settings.llm_mock:
-        _log_bullet("Mode: mock (LLM_MOCK=true) — AI actions return sample Markdown.")
-        _log_action("For real LLM output: set LLM_MOCK=false and OPENROUTER_API_KEY in .env.")
-    else:
-        _log_bullet("Mode: real (LLM_MOCK=false)")
-        _log_bullet(f"Default model: {settings.openrouter_default_model}")
-        if capabilities.openrouter_configured:
-            _log_bullet("OpenRouter API key: configured")
-        else:
-            _log_bullet("OpenRouter API key: NOT SET")
-            _log_action("Set OPENROUTER_API_KEY in .env")
+        _log_section("Dependencies")
+        for dep in dependencies:
+            status = "installed" if dep.installed else "MISSING"
+            _log_bullet(f"{dep.name}: {status} — needed for {dep.required_for}")
+            if not dep.installed and dep.install_hint:
+                _log_action(dep.install_hint)
 
-    _log_section("Dependencies")
-    for dep in dependencies:
-        status = "installed" if dep.installed else "MISSING"
-        _log_bullet(f"{dep.name}: {status} — needed for {dep.required_for}")
-        if not dep.installed and dep.install_hint:
-            _log_action(dep.install_hint)
+        _log_section("Documentation")
+        repo_root = Path(__file__).resolve().parents[3]
+        quickstart = repo_root / "docs" / "quickstart.md"
+        diarization_doc = repo_root / "docs" / "diarization.md"
+        env_example = repo_root / ".env.example"
+        if quickstart.is_file():
+            _log_bullet(f"Quickstart: {quickstart}")
+        if diarization_doc.is_file():
+            _log_bullet(f"Diarization guide: {diarization_doc}")
+        speaker_memory_doc = repo_root / "docs" / "speaker-memory.md"
+        if speaker_memory_doc.is_file():
+            _log_bullet(f"Speaker memory guide: {speaker_memory_doc}")
+        if env_example.is_file():
+            _log_bullet(f"Environment reference: {env_example}")
+        _log_bullet("Validate diarization: cd backend && uv run python scripts/validate_diarization.py")
+        _log_bullet("Settings page in the frontend shows live capability status from /api/health.")
 
-    _log_section("Documentation")
-    repo_root = Path(__file__).resolve().parents[3]
-    quickstart = repo_root / "docs" / "quickstart.md"
-    diarization_doc = repo_root / "docs" / "diarization.md"
-    env_example = repo_root / ".env.example"
-    if quickstart.is_file():
-        _log_bullet(f"Quickstart: {quickstart}")
-    if diarization_doc.is_file():
-        _log_bullet(f"Diarization guide: {diarization_doc}")
-    speaker_memory_doc = repo_root / "docs" / "speaker-memory.md"
-    if speaker_memory_doc.is_file():
-        _log_bullet(f"Speaker memory guide: {speaker_memory_doc}")
-    if env_example.is_file():
-        _log_bullet(f"Environment reference: {env_example}")
-    _log_bullet("Validate diarization: cd backend && uv run python scripts/validate_diarization.py")
-    _log_bullet("Settings page in the frontend shows live diarization/ASR status from /api/health.")
-
-    logger.info(BANNER)
+        logger.info(BANNER)
 
 
 ERROR_GUIDANCE: dict[str, list[str]] = {
@@ -339,7 +359,7 @@ ERROR_GUIDANCE: dict[str, list[str]] = {
         "Try DIARIZATION_USE_ORIGINAL_AUDIO=true if normalized audio quality is poor",
     ],
     "ASR_MODEL_LOAD_FAILED": [
-        "Set ASR_MOCK=false only after installing: uv add torch qwen-asr",
+        "Install ASR dependencies: uv add torch qwen-asr",
         "Ensure enough disk/RAM for the Qwen3-ASR model",
         "Set HF_HOME=./data/hf_cache in .env for model downloads",
     ],
@@ -352,8 +372,11 @@ ERROR_GUIDANCE: dict[str, list[str]] = {
         "Confirm the uploaded file is a supported audio format (mp3, wav, m4a, webm, …)",
     ],
     "LLM_NOT_CONFIGURED": [
-        "Set OPENROUTER_API_KEY in .env",
-        "Or use LLM_MOCK=true for development without API calls",
+        "Open Settings → LLM provider in the frontend",
+        "Choose a provider and save an API key (custom/local providers also need base URL and model)",
+    ],
+    "LLM_INVALID_PROVIDER": [
+        "Choose a provider in Settings → LLM provider: openrouter, openai, anthropic, or custom",
     ],
 }
 
@@ -372,7 +395,7 @@ def log_transcription_pipeline(settings: Settings | None = None) -> None:
     settings = settings or get_settings()
     capabilities = get_capability_status(settings)
 
-    if settings.diarization_enabled and not settings.diarization_mock:
+    if settings.diarization_enabled:
         if capabilities.diarization_ready:
             logger.info(
                 "Transcription pipeline: diarization → per-speaker ASR → labeled transcript"
@@ -382,9 +405,5 @@ def log_transcription_pipeline(settings: Settings | None = None) -> None:
                 "Transcription pipeline: diarization NOT READY (%s) — will fall back to full-file ASR without speaker labels",
                 capabilities.diarization_reason or "unknown",
             )
-    elif settings.diarization_enabled and settings.diarization_mock:
-        logger.info(
-            "Transcription pipeline: mock diarization (2 speakers) → per-segment ASR"
-        )
     else:
         logger.info("Transcription pipeline: full-file ASR (diarization disabled)")

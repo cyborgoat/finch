@@ -1,4 +1,3 @@
-import hashlib
 import json
 import logging
 from collections import defaultdict
@@ -11,8 +10,6 @@ from app.services.diarization_service import DiarizationTurn, extract_audio_slic
 from app.services.diarization_service import resolve_hf_token
 
 logger = logging.getLogger(__name__)
-
-MOCK_EMBEDDING_DIM = 512
 
 
 def _normalize_vector(vector: np.ndarray) -> np.ndarray:
@@ -36,8 +33,6 @@ class SpeakerEmbeddingService:
         self._inference = None
 
     def load_model(self) -> None:
-        if self.settings.speaker_memory_mock:
-            return
         if self._inference is not None:
             return
 
@@ -48,8 +43,8 @@ class SpeakerEmbeddingService:
             raise AppError(
                 "SPEAKER_EMBEDDING_MODEL_LOAD_FAILED",
                 (
-                    "pyannote-audio is required for speaker memory when "
-                    "SPEAKER_MEMORY_MOCK=false. Install with: uv add pyannote-audio"
+                    "pyannote-audio is required for speaker memory. "
+                    "Install with: uv add pyannote-audio"
                 ),
                 500,
             ) from exc
@@ -89,18 +84,7 @@ class SpeakerEmbeddingService:
     def unload_model(self) -> None:
         self._inference = None
 
-    def _mock_embedding(self, seed: str) -> np.ndarray:
-        digest = hashlib.sha256(seed.encode("utf-8")).digest()
-        values = np.frombuffer(digest * (MOCK_EMBEDDING_DIM // 32 + 1), dtype=np.uint8)[
-            :MOCK_EMBEDDING_DIM
-        ]
-        vector = values.astype(np.float32) / 255.0
-        return _normalize_vector(vector)
-
     def extract_embedding(self, audio_path: str, start_sec: float, end_sec: float) -> np.ndarray:
-        if self.settings.speaker_memory_mock:
-            return self._mock_embedding(f"{audio_path}:{start_sec}:{end_sec}")
-
         self.load_model()
         import tempfile
         from pathlib import Path

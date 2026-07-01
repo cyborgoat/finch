@@ -28,7 +28,7 @@ flowchart TD
     asrSvc --> qwen["Qwen3-ASR-1.7B local"]
     diarSvc --> pyannote["pyannote community-1 optional"]
     aiWorker --> llmSvc["LlmService"]
-    llmSvc --> openrouter["OpenRouter optional"]
+    llmSvc --> provider["LLM provider optional"]
 ```
 
 ## Core principle
@@ -36,7 +36,7 @@ flowchart TD
 - **ASR is local.** Audio never leaves the machine for transcription.
 - **Diarization is local** when enabled (pyannote). Speaker labels are optional.
 - **Transcript is source of truth.** Edits are stored separately (`editedText`).
-- **LLM is optional.** Only transcript text is sent to OpenRouter for AI actions.
+- **LLM is optional.** Only transcript text is sent to the configured provider for AI actions.
 
 ## Data model
 
@@ -92,13 +92,13 @@ If diarization is enabled but unavailable (missing HF access, etc.), the worker 
 
 Segment tuning (`DIARIZATION_MIN_SEGMENT_SECONDS`, `DIARIZATION_MERGE_GAP_SECONDS`, `DIARIZATION_MAX_SEGMENTS`) is applied after pyannote. See [diarization.md](diarization.md).
 
-### AI action job
+### Summary job
 
 ```txt
-POST /api/ai-actions { transcriptId, action }
+POST /api/ai-actions { transcriptId, action: "markdown_summary" }
   → Job (ai_action)
-  → ai_action_worker → LlmService (OpenRouter or LLM_MOCK)
-  → create Document
+  → ai_action_worker → LlmService (configured provider)
+  → create Document (markdown_summary)
 ```
 
 ## Storage
@@ -130,7 +130,7 @@ Documents store a `transcript_id` foreign key pointing at the parent recording.
 |-------|---------|
 | `/` | Recent voice recordings |
 | `/files` | Recordings library |
-| `/files/{id}` | Recording detail (Source / Summary / AI tabs) or document editor |
+| `/files/{id}` | Recording detail (Source / Summary tabs) or document editor |
 | `/upload`, `/record` | Ingest new audio |
 | `/settings` | User profile, language, AI prefs, speakers |
 
@@ -140,7 +140,7 @@ The file detail page routes by ID prefix (`transcript_` → recording detail, `d
 
 | Area | Behavior |
 |------|----------|
-| Topbar | Breadcrumbs; download (audio, transcript `.txt`, summary placeholder); actions (rename, delete) |
+| Topbar | Breadcrumbs; download (audio, transcript `.txt`, summary `.md` when generated); actions (rename, delete) |
 | Source | Audio player; compact transcript with speaker, timestamp, and text per turn; auto-scroll to active turn; read-only text |
 | Summary | Placeholder (not implemented) |
 | AI | Templates, jobs, linked documents |
@@ -156,7 +156,7 @@ The file detail page routes by ID prefix (`transcript_` → recording detail, `d
 | POST | `/api/transcripts` | Start transcription job |
 | GET/PATCH/DELETE | `/api/transcripts/{id}` | Transcript CRUD |
 | GET | `/api/jobs/{id}` | Job status and progress |
-| GET/POST | `/api/ai-actions/...` | AI action templates + jobs |
+| POST | `/api/ai-actions` | Generate transcript summary |
 | GET/PATCH/DELETE | `/api/documents/{id}` | Document CRUD |
 | GET/POST/PATCH/DELETE | `/api/speaker-profiles/...` | Speaker profile CRUD + detail |
 | GET/POST/PATCH/DELETE | `/api/speaker-memory/...` | Consent, auto-label toggle, wipe voiceprint data |
@@ -176,11 +176,10 @@ On boot, the backend logs a configuration summary: loaded env files, ASR/diariza
 | Diarization | `pyannote-audio`, `pyannote/speaker-diarization-community-1` |
 | Audio | ffmpeg, librosa |
 | Frontend | TanStack Start, Tailwind v4, shadcn/ui, TanStack Query |
-| LLM | OpenRouter (`LLM_MOCK` for development) |
+| LLM | Configurable providers (OpenRouter, OpenAI, Anthropic, custom) |
 
 ## Deployment notes (MVP)
 
 - Single process: FastAPI + in-process `BackgroundTasks` (no Redis/Celery)
 - Job polling from clients (no WebSockets)
 - CORS enabled for `http://localhost:3000`
-- Mock modes: `ASR_MOCK`, `DIARIZATION_MOCK`, `SPEAKER_MEMORY_MOCK`, `LLM_MOCK`

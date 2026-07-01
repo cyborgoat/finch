@@ -105,8 +105,6 @@ class DiarizationService:
         self._pipeline = None
 
     def load_pipeline(self) -> None:
-        if self.settings.diarization_mock:
-            return
         if self._pipeline is not None:
             return
 
@@ -117,7 +115,7 @@ class DiarizationService:
             raise AppError(
                 "DIARIZATION_MODEL_LOAD_FAILED",
                 (
-                    "pyannote-audio is required when DIARIZATION_MOCK=false. "
+                    "pyannote-audio is required for speaker diarization. "
                     "Install with: uv add pyannote-audio"
                 ),
                 500,
@@ -174,27 +172,7 @@ class DiarizationService:
         except ImportError:
             pass
 
-    def _mock_turns(self, duration_seconds: float) -> list[DiarizationTurn]:
-        min_segment = self.settings.diarization_min_segment_seconds
-        midpoint = max(duration_seconds / 2, min_segment)
-        return [
-            DiarizationTurn("Speaker 1", 0.0, midpoint, cluster_id="SPEAKER_00"),
-            DiarizationTurn(
-                "Speaker 2",
-                midpoint,
-                max(duration_seconds, midpoint + 0.5),
-                cluster_id="SPEAKER_01",
-            ),
-        ]
-
     def diarize(self, audio_path: str, duration_seconds: float | None = None) -> list[DiarizationTurn]:
-        if self.settings.diarization_mock:
-            duration = duration_seconds or 10.0
-            logger.info(
-                "Running mock diarization (DIARIZATION_MOCK=true) — 2 speaker segments"
-            )
-            return self._mock_turns(duration)
-
         self.load_pipeline()
 
         try:
