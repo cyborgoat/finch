@@ -77,6 +77,15 @@ class SpeakerProfileService:
         self.session.add(profile)
         self.session.commit()
         self.session.refresh(profile)
+        if display_name is not None:
+            from app.services.transcript_text_service import propagate_profile_display_name
+
+            propagate_profile_display_name(
+                self.session,
+                profile.id,
+                profile.display_name,
+                self.settings,
+            )
         return profile
 
     def delete_profile(self, profile: SpeakerProfile) -> None:

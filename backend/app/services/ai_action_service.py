@@ -14,11 +14,7 @@ from app.services.prompt_context import (
     build_content_language_context,
     build_user_context,
 )
-from app.services.diarization_service import (
-    SpeakerSegment,
-    build_labeled_transcript,
-    speaker_segments_from_json,
-)
+from app.services.transcript_text_service import resolve_transcript_text
 from app.services.user_settings_service import UserSettingsService
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
@@ -42,39 +38,12 @@ class AiActionService:
         return template.replace("{{TRANSCRIPT}}", transcript_text)
 
     def resolve_transcript_text(self, transcript: Transcript, source: str) -> str:
-        if source == "editedText" and transcript.edited_text and transcript.edited_text.strip():
-            return transcript.edited_text.strip()
-
-        segments = speaker_segments_from_json(transcript.speaker_segments)
-        if segments:
-            return self._labeled_text_from_segments(segments)
-
-        return (transcript.raw_text or "").strip()
-
-    def _labeled_text_from_segments(self, segments: list[SpeakerSegment]) -> str:
-        profile_names = self._load_profile_display_names(segments)
-        resolved: list[SpeakerSegment] = []
-        for segment in segments:
-            speaker = segment.speaker
-            if segment.speaker_profile_id:
-                speaker = profile_names.get(segment.speaker_profile_id, speaker)
-            resolved.append(segment.model_copy(update={"speaker": speaker}))
-        return build_labeled_transcript(resolved)
-
-    def _load_profile_display_names(self, segments: list[SpeakerSegment]) -> dict[str, str]:
-        from app.services.speaker_profile_service import SpeakerProfileService
-
-        profile_service = SpeakerProfileService(self.session, self.settings)
-        names: dict[str, str] = {}
-        for segment in segments:
-            profile_id = segment.speaker_profile_id
-            if not profile_id or profile_id in names:
-                continue
-            try:
-                names[profile_id] = profile_service.get_profile(profile_id).display_name
-            except AppError:
-                continue
-        return names
+        return resolve_transcript_text(
+            transcript,
+            source,
+            self.session,
+            self.settings,
+        )
 
     def _compose_prompt(
         self,

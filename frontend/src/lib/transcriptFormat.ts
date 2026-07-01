@@ -1,7 +1,25 @@
-import type { SpeakerSegment, Transcript } from "@/lib/types"
+import type { SpeakerProfileSummary, SpeakerSegment, Transcript } from "@/lib/types"
 
 const SPEAKER_BLOCK_PATTERN =
   /(?:^|\n\n)([^:]+):\s*([\s\S]*?)(?=(?:\n\n[^:]+:)|$)/g
+
+export type ProfileNameLookup = Record<string, string>
+
+export function profileNameById(
+  profiles: Pick<SpeakerProfileSummary, "id" | "displayName">[],
+): ProfileNameLookup {
+  return Object.fromEntries(profiles.map((profile) => [profile.id, profile.displayName]))
+}
+
+export function resolveSegmentSpeaker(
+  segment: SpeakerSegment,
+  profileNames: ProfileNameLookup = {},
+): string {
+  if (segment.speakerProfileId) {
+    return profileNames[segment.speakerProfileId] ?? segment.speaker
+  }
+  return segment.speaker
+}
 
 export function parseSpeakerLabeledText(text: string): SpeakerSegment[] {
   const segments: SpeakerSegment[] = []
@@ -34,12 +52,15 @@ export function resolveSpeakerSegments(
   return parseSpeakerLabeledText(labeledSource)
 }
 
-export function formatSpeakerTranscript(segments: SpeakerSegment[]): string {
+export function formatSpeakerTranscript(
+  segments: SpeakerSegment[],
+  profileNames: ProfileNameLookup = {},
+): string {
   return segments
     .map((segment) => {
       const text = segment.text.trim()
       if (!text) return null
-      return `${segment.speaker}: ${text}`
+      return `${resolveSegmentSpeaker(segment, profileNames)}: ${text}`
     })
     .filter((line): line is string => line !== null)
     .join("\n\n")
@@ -49,23 +70,24 @@ export function transcriptDisplayText(
   rawText: string,
   editedText: string | null | undefined,
   speakerSegments?: SpeakerSegment[] | null,
+  profileNames: ProfileNameLookup = {},
 ): string {
   if (editedText?.trim()) {
     const parsedEdited = parseSpeakerLabeledText(editedText)
     if (parsedEdited.length > 0) {
-      return formatSpeakerTranscript(parsedEdited)
+      return formatSpeakerTranscript(parsedEdited, profileNames)
     }
     return editedText
   }
   if (speakerSegments && speakerSegments.length > 0) {
-    const labeled = formatSpeakerTranscript(speakerSegments)
+    const labeled = formatSpeakerTranscript(speakerSegments, profileNames)
     if (labeled) {
       return labeled
     }
   }
   const parsedRaw = parseSpeakerLabeledText(rawText)
   if (parsedRaw.length > 0) {
-    return formatSpeakerTranscript(parsedRaw)
+    return formatSpeakerTranscript(parsedRaw, profileNames)
   }
   return rawText
 }

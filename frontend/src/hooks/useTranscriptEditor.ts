@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -12,6 +12,7 @@ import {
 } from "@/hooks/useTranscripts"
 import { updateTranscriptSpeakers, FinchApiError } from "@/lib/api"
 import {
+  profileNameById,
   resolveSpeakerSegments,
   transcriptDisplayText,
   formatSpeakerTranscript,
@@ -29,6 +30,7 @@ export function useTranscriptEditor(transcript: Transcript) {
     () => profilesData?.items ?? [],
     [profilesData?.items],
   )
+  const profileNames = useMemo(() => profileNameById(profiles), [profiles])
 
   const initialSegments = resolveSpeakerSegments(transcript)
 
@@ -39,13 +41,27 @@ export function useTranscriptEditor(transcript: Transcript) {
       transcript.rawText,
       transcript.editedText,
       initialSegments,
+      profileNames,
     ),
   )
   const [speakerSavePending, setSpeakerSavePending] = useState(false)
 
+  useEffect(() => {
+    if (transcript.editedText?.trim()) return
+    setText(
+      transcriptDisplayText(
+        transcript.rawText,
+        transcript.editedText,
+        segments,
+        profileNames,
+      ),
+    )
+  }, [transcript.rawText, transcript.editedText, segments, profileNames])
+
   const applySpeakerUpdate = (updatedSegments: SpeakerSegment[], rawText: string) => {
     setSegments(updatedSegments)
-    const formatted = formatSpeakerTranscript(updatedSegments) || rawText
+    const formatted =
+      formatSpeakerTranscript(updatedSegments, profileNames) || rawText
     setText(formatted)
     void queryClient.invalidateQueries({ queryKey: ["transcripts", transcript.id] })
     void queryClient.invalidateQueries({ queryKey: ["speaker-profiles"] })

@@ -7,6 +7,7 @@ from app.models.transcript import Transcript
 from app.schemas.user_settings import UserSettingsResponse
 from app.services.ai_action_service import AiActionService
 from app.services.diarization_service import SpeakerSegment, speaker_segments_to_json
+from app.services import transcript_text_service
 from tests.support.fakes import FAKE_LLM_MARKDOWN
 
 
@@ -145,12 +146,9 @@ def test_resolve_transcript_text_uses_voice_profile_names():
         status="draft",
     )
 
-    profile = MagicMock()
-    profile.display_name = "Robert"
-
     with patch.object(
-        service,
-        "_load_profile_display_names",
+        transcript_text_service,
+        "load_profile_display_names",
         return_value={"speaker_profile12345678": "Robert"},
     ):
         text = service.resolve_transcript_text(transcript, "editedText")
@@ -185,8 +183,8 @@ def test_run_action_uses_profile_names_in_prompt():
     service.llm_service.chat_completion = mock_llm
 
     with patch.object(
-        service,
-        "_load_profile_display_names",
+        transcript_text_service,
+        "load_profile_display_names",
         return_value={"speaker_profile12345678": "Robert"},
     ):
         service.run_action(
