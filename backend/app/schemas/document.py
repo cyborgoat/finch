@@ -9,6 +9,8 @@ class DocumentSummary(CamelModel):
     title: str
     type: str
     model: str
+    status: str
+    generation_job_id: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -25,6 +27,8 @@ class DocumentResponse(CamelModel):
     markdown: str
     model: str
     prompt_version: str
+    status: str
+    generation_job_id: str | None = None
     created_at: datetime
     updated_at: datetime
 

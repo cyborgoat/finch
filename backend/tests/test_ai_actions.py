@@ -40,13 +40,17 @@ def test_ai_action_flow(mock_run, client, sample_wav_bytes):
     )
     assert ai_job_response.status_code == 200
     ai_job_id = ai_job_response.json()["jobId"]
+    document_id = ai_job_response.json()["documentId"]
+    assert document_id
 
     ai_job = client.get(f"/api/jobs/{ai_job_id}").json()
     assert ai_job["status"] == "completed"
-    document_id = ai_job["resultId"]
+    assert ai_job["resultId"] == document_id
 
     document = client.get(f"/api/documents/{document_id}").json()
     assert document["type"] == "meeting_summary"
+    assert document["status"] == "ready"
+    assert document["generationJobId"] is None
     assert "Summary" in document["markdown"]
 
     patch_response = client.patch(

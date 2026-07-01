@@ -1,11 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { BlurFade } from "@/components/motion-primitives/blur-fade";
 import { EmptyState } from "@/components/effects/EmptyState";
 import { MdxNoteEditor } from "@/components/documents/MdxNoteEditor";
 import { CreateNoteDialog } from "@/components/notes/CreateNoteDialog";
+import { NoteGeneratingPlaceholder } from "@/components/notes/NoteGeneratingPlaceholder";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -43,8 +45,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDeleteDocument, useUpdateDocument } from "@/hooks/useDocuments";
+import { useJobPolling } from "@/hooks/useJobPolling";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
-import type { Document, DocumentSummary } from "@/lib/types";
+import { createAiAction, createDocument, getDocument } from "@/lib/api";
+import { seedDocumentInCache } from "@/lib/documentCache";
+import type { AiActionTemplate, Document, DocumentSummary } from "@/lib/types";
 
 type TranscriptNotesTabProps = {
   transcriptId: string;
@@ -65,6 +70,7 @@ export function TranscriptNotesTab({
   noteLoading = false,
   onNoteIdChange,
 }: TranscriptNotesTabProps) {
+  const queryClient = useQueryClient();
   const { preferences } = useUserPreferences();
   const deleteMutation = useDeleteDocument();
   const updateMutation = useUpdateDocument(activeNoteId ?? "");
@@ -75,6 +81,38 @@ export function TranscriptNotesTab({
   const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
   const [pendingNoteId, setPendingNoteId] = useState<string | null>(null);
   const [editorDirty, setEditorDirty] = useState(false);
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+  const [creatingBlank, setCreatingBlank] = useState(false);
+
+  const generatingJobId =
+    activeNote?.status === "generating" ? activeNote.generationJobId ?? null : null;
+
+  const handleGenerationCompleted = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["documents"] });
+    void queryClient.invalidateQueries({ queryKey: ["files"] });
+    setEditorDirty(false);
+    toast.success(`${activeNote?.title ?? "Note"} ready`);
+  }, [activeNote?.title, queryClient]);
+
+  const handleGenerationFailed = useCallback(
+    (failedJob: { error?: string | null }) => {
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+      toast.error(failedJob.error ?? "Failed to generate note. Try again.");
+    },
+    [queryClient],
+  );
+
+  const { job: generationJob, error: generationError } = useJobPolling(
+    generatingJobId,
+    {
+      enabled: !!generatingJobId,
+      onCompleted: handleGenerationCompleted,
+      onFailed: handleGenerationFailed,
+    },
+  );
+
+  const showGeneratingPlaceholder = activeNote?.status === "generating";
+  const showFailedPlaceholder = activeNote?.status === "failed";
 
   const notes = useMemo(
     () =>
@@ -85,7 +123,16 @@ export function TranscriptNotesTab({
   );
 
   const noteItems = useMemo(
-    () => notes.map((note) => ({ value: note.id, label: note.title })),
+    () =>
+      notes.map((note) => ({
+        value: note.id,
+        label:
+          note.status === "generating"
+            ? `${note.title} (Generating…)`
+            : note.status === "failed"
+              ? `${note.title} (Failed)`
+              : note.title,
+      })),
     [notes],
   );
 
@@ -129,6 +176,41 @@ export function TranscriptNotesTab({
   const handleNoteCreated = (documentId: string) => {
     onNoteIdChange?.(documentId);
     setEditorDirty(false);
+  };
+
+  const handleSelectTemplate = async (template: AiActionTemplate) => {
+    if (!llmReady || pendingTemplateId) return;
+    setPendingTemplateId(template.id);
+    try {
+      const { documentId } = await createAiAction({
+        transcriptId,
+        action: template.id,
+        source: "editedText",
+      });
+      const document = await getDocument(documentId);
+      seedDocumentInCache(queryClient, transcriptId, document);
+      setCreateOpen(false);
+      handleNoteCreated(documentId);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to start AI note");
+    } finally {
+      setPendingTemplateId(null);
+    }
+  };
+
+  const handleSelectBlank = async () => {
+    if (creatingBlank) return;
+    setCreatingBlank(true);
+    try {
+      const document = await createDocument({ transcriptId });
+      seedDocumentInCache(queryClient, transcriptId, document);
+      setCreateOpen(false);
+      handleNoteCreated(document.id);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create note");
+    } finally {
+      setCreatingBlank(false);
+    }
   };
 
   const handleNoteSelect = (noteId: string | null) => {
@@ -175,7 +257,7 @@ export function TranscriptNotesTab({
         </div>
       ) : null}
 
-      {notes.length > 0 ? (
+      {notes.length > 0 || activeNoteId ? (
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <Select
@@ -191,9 +273,9 @@ export function TranscriptNotesTab({
                 alignItemWithTrigger={false}
                 className="max-h-80 min-w-64"
               >
-                {notes.map((note) => (
-                  <SelectItem key={note.id} value={note.id} label={note.title}>
-                    {note.title}
+                {noteItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value} label={item.label}>
+                    {item.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -208,7 +290,7 @@ export function TranscriptNotesTab({
                   size="icon"
                   className="size-9 shrink-0"
                   aria-label="Note actions"
-                  disabled={!activeNoteId || noteActionsBusy}
+                  disabled={!activeNoteId || noteActionsBusy || showGeneratingPlaceholder}
                 >
                   <MoreHorizontal className="size-4" />
                 </Button>
@@ -243,7 +325,23 @@ export function TranscriptNotesTab({
         </div>
       ) : null}
 
-      {noteLoading ? (
+      {showGeneratingPlaceholder ? (
+        <NoteGeneratingPlaceholder
+          templateTitle={activeNote?.title ?? "Note"}
+          job={generationJob}
+          error={generationError}
+        />
+      ) : showFailedPlaceholder ? (
+        <EmptyState
+          title="Note generation failed"
+          description="Something went wrong while generating this note. Delete it and try again."
+          action={
+            <Button type="button" variant="outline" onClick={() => setDeleteOpen(true)}>
+              Delete note
+            </Button>
+          }
+        />
+      ) : noteLoading ? (
         <Skeleton className="min-h-[520px] w-full rounded-lg" />
       ) : activeNote ? (
         <MdxNoteEditor
@@ -268,9 +366,11 @@ export function TranscriptNotesTab({
       <CreateNoteDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        transcriptId={transcriptId}
         llmReady={llmReady}
-        onNoteCreated={handleNoteCreated}
+        pendingTemplateId={pendingTemplateId}
+        creatingBlank={creatingBlank}
+        onSelectTemplate={(template) => void handleSelectTemplate(template)}
+        onSelectBlank={() => void handleSelectBlank()}
       />
 
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>

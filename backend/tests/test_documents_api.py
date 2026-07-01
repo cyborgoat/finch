@@ -88,6 +88,7 @@ def test_create_manual_note_and_delete_one_of_many(client, sample_wav_bytes):
     )
     assert create_b.status_code == 200
     doc_b = create_b.json()["id"]
+    assert create_b.json()["status"] == "ready"
     assert doc_b != doc_a
 
     listed = client.get(f"/api/documents?transcriptId={transcript_id}").json()

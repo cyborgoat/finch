@@ -22,6 +22,7 @@ def run_ai_action_job(
     action: str,
     source: str,
     model: str | None = None,
+    document_id: str | None = None,
 ) -> None:
     settings = get_settings()
 
@@ -32,14 +33,20 @@ def run_ai_action_job(
         ai_action_service = AiActionService(session, settings)
 
         job = job_service.get_job(job_id)
+        document = (
+            document_service.get_document(document_id)
+            if document_id
+            else None
+        )
 
         try:
             logger.info(
-                "Starting AI action job %s (transcript=%s, action=%s, source=%s)",
+                "Starting AI action job %s (transcript=%s, action=%s, source=%s, document=%s)",
                 job_id,
                 transcript_id,
                 action,
                 source,
+                document_id,
             )
             runtime = LlmSettingsService(session).get_runtime_settings()
             if resolve_llm_config(runtime) is None:
@@ -64,13 +71,23 @@ def run_ai_action_job(
             resolved_model = model or ai_action_service.llm_service.resolve_default_model()
 
             job_service.update_job(job, progress=0.8, stage="saving_document")
-            document = document_service.create_document(
-                transcript_id=transcript.id,
-                title=title,
-                doc_type=doc_type,
-                markdown=markdown,
-                model=resolved_model,
-            )
+            if document is None:
+                document = document_service.create_document(
+                    transcript_id=transcript.id,
+                    title=title,
+                    doc_type=doc_type,
+                    markdown=markdown,
+                    model=resolved_model,
+                )
+            else:
+                document = document_service.update_document(
+                    document,
+                    title=title,
+                    markdown=markdown,
+                    model=resolved_model,
+                    status="ready",
+                    clear_generation_job_id=True,
+                )
 
             job_service.update_job(
                 job,
@@ -87,6 +104,8 @@ def run_ai_action_job(
             )
         except AppError as exc:
             log_error_guidance(exc.code, exc.message)
+            if document is not None:
+                document_service.update_document(document, status="failed")
             job_service.update_job(
                 job,
                 status="failed",
@@ -95,6 +114,8 @@ def run_ai_action_job(
             )
         except Exception as exc:
             logger.exception("AI action job %s failed with unexpected error", job_id)
+            if document is not None:
+                document_service.update_document(document, status="failed")
             job_service.update_job(
                 job,
                 status="failed",

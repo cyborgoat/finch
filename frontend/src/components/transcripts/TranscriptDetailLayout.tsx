@@ -76,10 +76,10 @@ export function TranscriptDetailLayout({
   )
 
   const activeNoteId = useMemo(() => {
-    if (pendingNoteId && notes.some((note) => note.id === pendingNoteId)) {
+    if (pendingNoteId) {
       return pendingNoteId
     }
-    if (noteId && notes.some((note) => note.id === noteId)) {
+    if (noteId) {
       return noteId
     }
     return notes[0]?.id ?? null

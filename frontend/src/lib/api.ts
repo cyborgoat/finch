@@ -137,7 +137,7 @@ export async function createAiAction(input: {
   action: string
   source?: "rawText" | "editedText"
   model?: string
-}): Promise<{ jobId: string; status: string }> {
+}): Promise<{ jobId: string; documentId: string; status: string }> {
   return request("/api/ai-actions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

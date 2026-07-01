@@ -53,6 +53,9 @@ class AiActionService:
         context = build_user_context(user_settings)
         return apply_user_context(prompt, context)
 
+    def build_title(self, title_prefix: str, transcript: Transcript) -> str:
+        return self._build_title(title_prefix, transcript)
+
     def _build_title(self, title_prefix: str, transcript: Transcript) -> str:
         date_label = datetime.now(UTC).strftime("%b %d, %Y")
         return f"{title_prefix} · {date_label}"

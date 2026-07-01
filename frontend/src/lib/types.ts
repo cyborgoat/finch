@@ -146,12 +146,16 @@ export type TranscriptSummary = {
   updatedAt: string
 }
 
+export type DocumentStatus = "ready" | "generating" | "failed"
+
 export type DocumentSummary = {
   id: string
   transcriptId: string
   title: string
   type: Document["type"]
   model: string
+  status: DocumentStatus
+  generationJobId?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -164,6 +168,8 @@ export type Document = {
   markdown: string
   model: string
   promptVersion: string
+  status: DocumentStatus
+  generationJobId?: string | null
   createdAt: string
   updatedAt: string
 }

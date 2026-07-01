@@ -14,6 +14,10 @@ _SQLITE_COLUMN_PATCHES: dict[str, dict[str, str]] = {
         "error_message": "TEXT",
         "processing_note": "TEXT",
     },
+    "document": {
+        "status": "TEXT NOT NULL DEFAULT 'ready'",
+        "generation_job_id": "TEXT",
+    },
 }
 
 

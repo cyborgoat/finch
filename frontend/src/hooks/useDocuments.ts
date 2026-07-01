@@ -13,6 +13,10 @@ export function useDocuments(transcriptId?: string) {
   return useQuery({
     queryKey: ["documents", "list", transcriptId ?? "all"],
     queryFn: () => listDocuments(transcriptId),
+    refetchInterval: (query) => {
+      const items = query.state.data?.items ?? []
+      return items.some((item) => item.status === "generating") ? 2000 : false
+    },
   })
 }
 
@@ -21,6 +25,8 @@ export function useDocument(id: string) {
     queryKey: ["documents", "detail", id],
     queryFn: () => getDocument(id),
     enabled: !!id,
+    refetchInterval: (query) =>
+      query.state.data?.status === "generating" ? 2000 : false,
   })
 }
 

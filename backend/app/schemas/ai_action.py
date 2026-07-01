@@ -10,6 +10,7 @@ class CreateAiActionRequest(CamelModel):
 
 class CreateAiActionResponse(CamelModel):
     job_id: str
+    document_id: str
     status: str
 
 

@@ -13,5 +13,7 @@ class Document(SQLModel, table=True):
     markdown: str
     model: str
     prompt_version: str = "v1"
+    status: str = "ready"
+    generation_job_id: str | None = Field(default=None, foreign_key="job.id")
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)

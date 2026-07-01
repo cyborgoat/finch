@@ -22,6 +22,8 @@ class DocumentService:
         markdown: str,
         model: str,
         prompt_version: str = "v1",
+        status: str = "ready",
+        generation_job_id: str | None = None,
     ) -> Document:
         now = datetime.now(UTC)
         document = Document(
@@ -32,6 +34,8 @@ class DocumentService:
             markdown=markdown,
             model=model,
             prompt_version=prompt_version,
+            status=status,
+            generation_job_id=generation_job_id,
             created_at=now,
             updated_at=now,
         )
@@ -39,6 +43,25 @@ class DocumentService:
         self.session.commit()
         self.session.refresh(document)
         return document
+
+    def create_generating_document(
+        self,
+        *,
+        transcript_id: str,
+        title: str,
+        doc_type: str,
+        generation_job_id: str,
+        model: str = "pending",
+    ) -> Document:
+        return self.create_document(
+            transcript_id=transcript_id,
+            title=title,
+            doc_type=doc_type,
+            markdown="",
+            model=model,
+            status="generating",
+            generation_job_id=generation_job_id,
+        )
 
     def create_manual_document(
         self,
@@ -80,11 +103,23 @@ class DocumentService:
         *,
         title: str | None = None,
         markdown: str | None = None,
+        model: str | None = None,
+        status: str | None = None,
+        generation_job_id: str | None = None,
+        clear_generation_job_id: bool = False,
     ) -> Document:
         if title is not None:
             document.title = title
         if markdown is not None:
             document.markdown = markdown
+        if model is not None:
+            document.model = model
+        if status is not None:
+            document.status = status
+        if clear_generation_job_id:
+            document.generation_job_id = None
+        elif generation_job_id is not None:
+            document.generation_job_id = generation_job_id
         document.updated_at = datetime.now(UTC)
         self.session.add(document)
         self.session.commit()
