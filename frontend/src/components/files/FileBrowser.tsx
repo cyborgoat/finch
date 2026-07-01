@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { EmptyState } from "@/components/effects/EmptyState"
 import { useTranscriptFileColumns } from "@/components/files/transcriptFileTableColumns"
 import { Button } from "@/components/ui/button"
@@ -62,6 +63,7 @@ export function FileBrowser({
   isRenaming,
   isDeleting,
 }: FileBrowserProps) {
+  const { t } = useTranslation()
   const data = useMemo(() => filterFiles(items, query), [items, query])
   const [sorting, setSorting] = useState<SortingState>([
     { id: "updatedAt", desc: true },
@@ -87,8 +89,8 @@ export function FileBrowser({
   if (items.length === 0) {
     return (
       <EmptyState
-        title="No recordings yet"
-        description="Record or upload audio to create your first file."
+        title={t("files.emptyTitle")}
+        description={t("files.emptyDescription")}
       />
     )
   }
@@ -96,7 +98,7 @@ export function FileBrowser({
   if (data.length === 0) {
     return (
       <p className="text-base font-light text-muted-foreground">
-        No recordings match your search.
+        {t("files.noSearchResults")}
       </p>
     )
   }

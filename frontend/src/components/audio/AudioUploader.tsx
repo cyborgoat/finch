@@ -1,5 +1,6 @@
 
 import { useCallback, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -16,6 +17,7 @@ export function AudioUploader({
   disabled,
   error,
 }: AudioUploaderProps) {
+  const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
@@ -27,18 +29,18 @@ export function AudioUploader({
       const ext = file.name.split(".").pop()?.toLowerCase()
       const allowed = ["wav", "mp3", "m4a", "webm", "ogg", "flac"]
       if (!ext || !allowed.includes(ext)) {
-        setLocalError("Unsupported file type.")
+        setLocalError(t("upload.unsupportedFileType"))
         return
       }
       onFileSelected(file)
     },
-    [onFileSelected],
+    [onFileSelected, t],
   )
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Select audio file</CardTitle>
+        <CardTitle className="text-base">{t("upload.selectAudioFile")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div
@@ -62,9 +64,9 @@ export function AudioUploader({
             dragOver ? "border-primary bg-muted/50" : "border-border"
           } ${disabled ? "pointer-events-none opacity-50" : ""}`}
         >
-          <p className="text-sm font-medium">Drop audio here or click to browse</p>
+          <p className="text-sm font-medium">{t("upload.dropOrBrowse")}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            WAV, MP3, M4A, WEBM, OGG, FLAC
+            {t("upload.supportedFormats")}
           </p>
           <input
             ref={inputRef}
@@ -84,7 +86,7 @@ export function AudioUploader({
           disabled={disabled}
           onClick={() => inputRef.current?.click()}
         >
-          Choose file
+          {t("upload.chooseFile")}
         </Button>
       </CardContent>
     </Card>
@@ -97,8 +99,8 @@ export function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function formatDuration(seconds?: number) {
-  if (seconds == null) return "—"
+export function formatDuration(seconds?: number, emptyLabel = "—") {
+  if (seconds == null) return emptyLabel
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${s.toString().padStart(2, "0")}`

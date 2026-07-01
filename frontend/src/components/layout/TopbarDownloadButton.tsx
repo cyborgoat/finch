@@ -1,5 +1,5 @@
-import { useState } from "react"
 import { AudioLines, FileText, Notebook, Download } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,6 +13,7 @@ import { downloadAudioAsset } from "@/lib/download"
 import { exportDocumentMd, exportTranscriptTxt } from "@/lib/export"
 
 export function TopbarDownloadButton() {
+  const { t } = useTranslation()
   const { actions } = useTopbarActions()
 
   if (!actions) return null
@@ -23,7 +24,7 @@ export function TopbarDownloadButton() {
 
   const handleDownloadAudio = () => {
     void downloadAudioAsset(actions.audioAssetId, actions.audioFilename).catch(() => {
-      toast.error("Failed to download audio")
+      toast.error(t("toasts.failedToDownloadAudio"))
     })
   }
 
@@ -33,7 +34,7 @@ export function TopbarDownloadButton() {
 
   const handleDownloadNote = () => {
     if (!noteMarkdown) return
-    const label = actions.activeNoteTitle?.trim() || "note"
+    const label = actions.activeNoteTitle?.trim() || t("common.note").toLowerCase()
     exportDocumentMd(`${actions.title} ${label}`, noteMarkdown)
   }
 
@@ -44,7 +45,7 @@ export function TopbarDownloadButton() {
           <Button
             variant="outline"
             size="icon-sm"
-            aria-label="Download"
+            aria-label={t("common.download")}
             disabled={busy}
           >
             <Download className="size-4" />
@@ -57,15 +58,15 @@ export function TopbarDownloadButton() {
       >
         <DropdownMenuItem onClick={handleDownloadAudio} disabled={busy}>
           <AudioLines />
-          Audio
+          {t("files.downloadAudio")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleDownloadTranscript} disabled={busy}>
           <FileText />
-          Transcript
+          {t("files.downloadTranscript")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleDownloadNote} disabled={busy || !hasNote}>
           <Notebook />
-          Active note
+          {t("files.downloadActiveNote")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

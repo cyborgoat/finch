@@ -1,5 +1,6 @@
 import { MoreHorizontal } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { EmptyState } from "@/components/effects/EmptyState"
 import {
   AlertDialog,
@@ -59,6 +60,7 @@ function SpeakerRow({
   embedded?: boolean
   isYou?: boolean
 }) {
+  const { t } = useTranslation()
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [displayName, setDisplayName] = useState(profile.displayName)
@@ -89,7 +91,7 @@ function SpeakerRow({
           </p>
           {isYou ? (
             <Badge variant="secondary" className="shrink-0 text-[10px]">
-              You
+              {t("common.you")}
             </Badge>
           ) : null}
         </div>
@@ -99,7 +101,7 @@ function SpeakerRow({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`Actions for ${profile.displayName}`}
+                aria-label={t("speakers.actionsAriaLabel", { name: profile.displayName })}
                 disabled={busy}
               >
                 <MoreHorizontal className="size-4" />
@@ -107,13 +109,13 @@ function SpeakerRow({
             }
           />
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={openRename}>Rename</DropdownMenuItem>
+            <DropdownMenuItem onClick={openRename}>{t("common.rename")}</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
               onClick={() => setDeleteOpen(true)}
             >
-              Delete voice profile
+              {t("speakers.deleteVoiceProfile")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -122,13 +124,13 @@ function SpeakerRow({
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename speaker</DialogTitle>
+            <DialogTitle>{t("speakers.renameTitle")}</DialogTitle>
             <DialogDescription>
-              Update the display name shown on transcripts.
+              {t("speakers.renameDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="field-stack py-2">
-            <Label htmlFor={`rename-${profile.id}`}>Display name</Label>
+            <Label htmlFor={`rename-${profile.id}`}>{t("common.displayName")}</Label>
             <Input
               id={`rename-${profile.id}`}
               value={displayName}
@@ -142,13 +144,13 @@ function SpeakerRow({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenameOpen(false)} disabled={isRenaming}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={() => void handleRename()}
               disabled={isRenaming || !displayName.trim()}
             >
-              {isRenaming ? "Saving…" : "Save"}
+              {isRenaming ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -157,13 +159,15 @@ function SpeakerRow({
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete &quot;{profile.displayName}&quot;?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("speakers.deleteTitle", { name: profile.displayName })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This removes the profile and all associated voiceprints. This cannot be undone.
+              {t("speakers.deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={isDeleting}
@@ -172,7 +176,7 @@ function SpeakerRow({
                 setDeleteOpen(false)
               }}
             >
-              {isDeleting ? "Deleting…" : "Delete"}
+              {isDeleting ? t("common.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -190,11 +194,13 @@ export function SpeakerProfileManager({
   embedded,
   userSpeakerProfileId,
 }: SpeakerProfileManagerProps) {
+  const { t } = useTranslation()
+
   if (profiles.length === 0) {
     return (
       <EmptyState
-        title="No speakers yet"
-        description="Open a recording with speaker labels and click a speaker pill on any turn to assign a name."
+        title={t("speakers.emptyTitle")}
+        description={t("speakers.emptyDescription")}
         className="py-8"
       />
     )

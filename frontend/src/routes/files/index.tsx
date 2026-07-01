@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 import { FileBrowser } from "@/components/files/FileBrowser"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Input } from "@/components/ui/input"
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/files/")({
 })
 
 function FilesPage() {
+  const { t } = useTranslation()
   const { data, isLoading } = useFiles()
   const deleteTranscriptMutation = useDeleteTranscript()
   const renameMutation = useRenameTranscript()
@@ -28,18 +30,18 @@ function FilesPage() {
   const handleRename = async (id: string, title: string) => {
     try {
       await renameMutation.mutateAsync({ id, title })
-      toast.success("File renamed")
+      toast.success(t("toasts.fileRenamed"))
     } catch {
-      toast.error("Failed to rename file")
+      toast.error(t("toasts.fileRenameFailed"))
     }
   }
 
   const handleDelete = async (id: string) => {
     try {
       await deleteTranscriptMutation.mutateAsync(id)
-      toast.success("File deleted")
+      toast.success(t("toasts.fileDeleted"))
     } catch {
-      toast.error("Failed to delete file")
+      toast.error(t("toasts.fileDeleteFailed"))
     }
   }
 
@@ -47,7 +49,7 @@ function FilesPage() {
     <PageContainer size="wide">
       <div className="mb-6 flex justify-end">
         <Input
-          placeholder="Search by name…"
+          placeholder={t("common.searchPlaceholder")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="w-full min-w-[200px] max-w-xs"

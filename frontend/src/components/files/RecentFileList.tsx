@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import {
   flexRender,
   getCoreRowModel,
@@ -30,6 +31,7 @@ export function RecentFileList({
   isRenaming,
   isDeleting,
 }: RecentFileListProps) {
+  const { t } = useTranslation()
   const columns = useTranscriptFileColumns({
     onRename,
     onDelete,
@@ -46,7 +48,7 @@ export function RecentFileList({
   if (items.length === 0) {
     return (
       <p className="text-base font-light text-muted-foreground">
-        No recordings yet. Record or upload audio to get started.
+        {t("files.recentEmpty")}
       </p>
     )
   }

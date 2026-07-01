@@ -57,7 +57,7 @@ What Finch does today and what is intentionally out of scope.
 - **Notes** tab on each recording: create multiple markdown notes via AI templates or blank note
 - AI templates: meeting summary, action items, key decisions, follow-up email
 - MDXEditor for in-app editing notes; auto-save toggle (default on) or manual Save
-- User language, summary style/format, and display name applied to meeting summary prompts
+- User content language, summary style/format, and display name applied to AI note prompts (content language on all templates; style/format on meeting summary)
 - Notes stored as linked documents per transcript (`meeting_summary`, `action_items`, `note`, etc.)
 
 ### Documents
@@ -68,10 +68,17 @@ What Finch does today and what is intentionally out of scope.
 ### User settings
 
 - **You:** display name and link to your speaker profile (applied to meeting summary prompts when set)
-- **Language:** English or 中文 (Chinese) — applied to AI note output language
+- **Language & region:** interface language (English / 中文) and AI note content language (separate settings)
 - **AI notes:** style (concise / balanced / detailed) and format (paragraphs / bullets) — applied when generating meeting summaries; auto-save toggle for note editing
 - **Speakers:** auto-label toggle, saved speaker list (rename / delete)
 - Persisted via `GET/PATCH /api/user-settings` (stored in `AppPreference`)
+
+### Internationalization
+
+- Full UI localization: English and 中文 (Chinese) via `react-i18next`
+- **Interface language** (`uiLanguage`) — menus, buttons, labels, toasts
+- **AI note language** (`contentLanguage`) — language instruction injected into all AI note templates
+- Locale files: `frontend/src/i18n/locales/en.json`, `zh.json`
 
 ### Operations
 
@@ -83,7 +90,6 @@ What Finch does today and what is intentionally out of scope.
 
 | Area | Notes |
 |------|--------|
-| **UI localization** | Language setting does not translate the app |
 | **Transcript editing** | Source transcript is read-only (rename title via topbar only) |
 | **Full-text search** | Files search filters by title only |
 | **Rich exports** | PDF, DOCX, HTML, Obsidian, Notion (audio + transcript `.txt` and note `.md` exist today) |

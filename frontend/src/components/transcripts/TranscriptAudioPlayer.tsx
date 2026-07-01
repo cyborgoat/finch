@@ -1,5 +1,5 @@
-
 import { ChevronDown, Pause, Play, RotateCcw, RotateCw } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -68,6 +68,7 @@ export function TranscriptAudioPlayer({
   onEnded,
   className,
 }: TranscriptAudioPlayerProps) {
+  const { t } = useTranslation()
   const max = duration > 0 ? duration : 0
   const canControl = Boolean(src) && (isReady || max > 0)
   const progress = max > 0 ? (currentTime / max) * 100 : 0
@@ -102,7 +103,7 @@ export function TranscriptAudioPlayer({
           disabled={!canControl || max <= 0}
           onChange={(event) => onSeekInput(Number(event.target.value))}
           className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-slider-thumb]:size-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
-          aria-label="Seek"
+          aria-label={t("common.seekAriaLabel")}
           style={{
             background: `linear-gradient(to right, var(--primary) ${progress}%, var(--muted) ${progress}%)`,
           }}
@@ -124,7 +125,7 @@ export function TranscriptAudioPlayer({
                   size="icon"
                   onClick={onSkipBackward}
                   disabled={!canControl}
-                  aria-label={`Back ${PLAYBACK_SKIP_SECONDS} seconds`}
+                  aria-label={t("common.backSeconds", { seconds: PLAYBACK_SKIP_SECONDS })}
                 >
                   <RotateCcw className="size-4" />
                 </Button>
@@ -132,7 +133,7 @@ export function TranscriptAudioPlayer({
             }
           />
           <TooltipContent side="bottom">
-            Back {PLAYBACK_SKIP_SECONDS} seconds
+            {t("common.backSeconds", { seconds: PLAYBACK_SKIP_SECONDS })}
           </TooltipContent>
         </Tooltip>
 
@@ -145,7 +146,7 @@ export function TranscriptAudioPlayer({
                   variant="secondary"
                   size="icon-lg"
                   onClick={onTogglePlay}
-                  aria-label={isPlaying ? "Pause" : "Play"}
+                  aria-label={isPlaying ? t("common.pause") : t("common.play")}
                   disabled={!src}
                   className="size-11 rounded-full"
                 >
@@ -154,7 +155,9 @@ export function TranscriptAudioPlayer({
               </span>
             }
           />
-          <TooltipContent side="bottom">{isPlaying ? "Pause" : "Play"}</TooltipContent>
+          <TooltipContent side="bottom">
+            {isPlaying ? t("common.pause") : t("common.play")}
+          </TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -167,7 +170,7 @@ export function TranscriptAudioPlayer({
                   size="icon"
                   onClick={onSkipForward}
                   disabled={!canControl}
-                  aria-label={`Forward ${PLAYBACK_SKIP_SECONDS} seconds`}
+                  aria-label={t("common.forwardSeconds", { seconds: PLAYBACK_SKIP_SECONDS })}
                 >
                   <RotateCw className="size-4" />
                 </Button>
@@ -175,13 +178,13 @@ export function TranscriptAudioPlayer({
             }
           />
           <TooltipContent side="bottom">
-            Forward {PLAYBACK_SKIP_SECONDS} seconds
+            {t("common.forwardSeconds", { seconds: PLAYBACK_SKIP_SECONDS })}
           </TooltipContent>
         </Tooltip>
 
         <div className="absolute right-0 flex items-center gap-2">
           <span className="hidden text-xs text-muted-foreground sm:inline">
-           Speed
+            {t("common.speed")}
           </span>
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -192,9 +195,13 @@ export function TranscriptAudioPlayer({
                   size="sm"
                   className="gap-1"
                   disabled={!canControl}
-                  aria-label={`Playback speed, currently ${formatPlaybackRate(playbackRate)}`}
+                  aria-label={t("common.playbackSpeedAria", {
+                    rate: formatPlaybackRate(playbackRate),
+                  })}
                 >
-                  <span className="text-xs text-muted-foreground sm:hidden">Speed</span>
+                  <span className="text-xs text-muted-foreground sm:hidden">
+                    {t("common.speed")}
+                  </span>
                   {formatPlaybackRate(playbackRate)}
                   <ChevronDown className="size-3.5 opacity-60" />
                 </Button>

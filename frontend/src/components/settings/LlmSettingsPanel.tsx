@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
+import type { TFunction } from "i18next"
 import { SettingsRow, SettingsSection } from "@/components/settings/SettingsSection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,20 +26,21 @@ function providerLabel(settings: LlmSettings, providerId: LlmProviderId): string
   )
 }
 
-function baseUrlDescription(provider: LlmProviderId): string {
+function baseUrlDescription(t: TFunction, provider: LlmProviderId): string {
   switch (provider) {
     case "custom":
-      return "OpenAI-compatible endpoint, e.g. http://localhost:11434/v1 for Ollama."
+      return t("settings.llmBaseUrlCustom")
     case "openai":
-      return "Optional. Override for Azure OpenAI, proxies, or other compatible endpoints."
+      return t("settings.llmBaseUrlOpenai")
     case "openrouter":
-      return "Optional. Override the OpenRouter API base URL."
+      return t("settings.llmBaseUrlOpenrouter")
     case "anthropic":
-      return "Optional. Override the Anthropic API base URL."
+      return t("settings.llmBaseUrlAnthropic")
   }
 }
 
 export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
+  const { t } = useTranslation()
   const { settings, saveSettings, ready, isLoading, isSaving } = useLlmSettings()
   const [provider, setProvider] = useState<LlmProviderId>("openrouter")
   const [apiKey, setApiKey] = useState("")
@@ -57,10 +60,10 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
   if (isLoading || !ready || !settings) {
     return (
       <SettingsSection
-        title="LLM provider"
-        description="Configure the model provider used for AI actions."
+        title={t("settings.llmTitle")}
+        description={t("settings.llmDescriptionLoading")}
       >
-        <div className="px-4 py-3 text-sm text-muted-foreground">Loading…</div>
+        <div className="px-4 py-3 text-sm text-muted-foreground">{t("common.loading")}</div>
       </SettingsSection>
     )
   }
@@ -105,9 +108,9 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
       await saveSettings(patch)
       setApiKey("")
       setDirty(false)
-      toast.success("LLM settings saved")
+      toast.success(t("toasts.llmSettingsSaved"))
     } catch {
-      toast.error("Failed to save LLM settings")
+      toast.error(t("toasts.failedToSaveLlmSettings"))
     }
   }
 
@@ -116,30 +119,30 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
 
   return (
     <SettingsSection
-      title="LLM provider"
-      description="Configure the model provider used for transcript summaries. Only transcript text is sent—not audio. Credentials are stored locally in the Finch database and are never returned by the API."
+      title={t("settings.llmTitle")}
+      description={t("settings.llmDescription")}
     >
       <SettingsRow
-        label="Status"
+        label={t("settings.llmStatusLabel")}
         description={
           settings.configured
-            ? `Ready via ${settings.providerDisplayName}.`
-            : "Add an API key and save to enable summaries."
+            ? t("settings.llmStatusReady", { provider: settings.providerDisplayName })
+            : t("settings.llmStatusNotReady")
         }
       >
         <div className="flex flex-wrap justify-end gap-2">
           {settings.configured ? (
-            <Badge>Configured</Badge>
+            <Badge>{t("settings.llmStatusConfigured")}</Badge>
           ) : (
-            <Badge variant="destructive">Not configured</Badge>
+            <Badge variant="destructive">{t("settings.llmStatusNotConfigured")}</Badge>
           )}
           {settings.source === "stored" ? (
-            <Badge variant="outline">Saved locally</Badge>
+            <Badge variant="outline">{t("settings.llmStatusSavedLocally")}</Badge>
           ) : null}
         </div>
       </SettingsRow>
 
-      <SettingsRow label="Provider">
+      <SettingsRow label={t("settings.llmProviderLabel")}>
         <Select value={provider} onValueChange={handleProviderChange} disabled={busy}>
           <SelectTrigger className="w-full">
             <span>{providerLabel(settings, provider)}</span>
@@ -155,19 +158,23 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
       </SettingsRow>
 
       <SettingsRow
-        label="API key"
+        label={t("settings.llmApiKeyLabel")}
         description={
           settings.apiKeyConfigured
-            ? "A key is saved. Enter a new value to replace it."
+            ? t("settings.llmApiKeySavedHint")
             : provider === "custom"
-              ? "Optional for local servers without authentication."
-              : "Required for cloud providers."
+              ? t("settings.llmApiKeyOptionalLocal")
+              : t("settings.llmApiKeyRequiredCloud")
         }
       >
         <Input
           type="password"
           autoComplete="off"
-          placeholder={settings.apiKeyConfigured ? "••••••••" : "sk-..."}
+          placeholder={
+            settings.apiKeyConfigured
+              ? t("settings.llmApiKeyPlaceholderSaved")
+              : t("settings.llmApiKeyPlaceholderNew")
+          }
           value={apiKey}
           onChange={(event) => {
             setApiKey(event.target.value)
@@ -178,8 +185,8 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
       </SettingsRow>
 
       <SettingsRow
-        label="Base URL"
-        description={baseUrlDescription(provider)}
+        label={t("settings.llmBaseUrlLabel")}
+        description={baseUrlDescription(t, provider)}
       >
         <Input
           value={baseUrl}
@@ -187,17 +194,19 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
             setBaseUrl(event.target.value)
             setDirty(true)
           }}
-          placeholder={selectedProvider?.defaultBaseUrl || "https://api.example.com/v1"}
+          placeholder={selectedProvider?.defaultBaseUrl || t("settings.llmBaseUrlPlaceholder")}
           disabled={busy}
         />
       </SettingsRow>
 
       <SettingsRow
-        label="Default model"
+        label={t("settings.llmDefaultModelLabel")}
         description={
           isCustomProvider
-            ? "Model name your server expects."
-            : `Preset default: ${selectedProvider?.defaultModel ?? ""}`
+            ? t("settings.llmDefaultModelCustomHint")
+            : t("settings.llmDefaultModelPresetHint", {
+                model: selectedProvider?.defaultModel ?? "",
+              })
         }
       >
         <Input
@@ -206,14 +215,14 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
             setDefaultModel(event.target.value)
             setDirty(true)
           }}
-          placeholder={selectedProvider?.defaultModel || "model-id"}
+          placeholder={selectedProvider?.defaultModel || t("settings.llmDefaultModelPlaceholder")}
           disabled={busy}
         />
       </SettingsRow>
 
       <div className="flex justify-end border-t border-border px-4 py-3">
         <Button type="button" onClick={() => void handleSave()} disabled={busy || !dirty}>
-          {isSaving ? "Saving…" : "Save LLM settings"}
+          {isSaving ? t("common.saving") : t("settings.llmSaveButton")}
         </Button>
       </div>
     </SettingsSection>

@@ -1,6 +1,8 @@
 import { Link, useParams, useRouterState } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { ChevronRight } from "lucide-react"
+import { useTranslation } from "react-i18next"
+import type { TFunction } from "i18next"
 import { cn } from "@/lib/utils"
 import { parseFileDetailTab } from "@/lib/fileDetailTabs"
 import { resolveFileKind } from "@/lib/files"
@@ -49,49 +51,55 @@ function useFileDetailTab() {
 }
 
 function buildCrumbs(
+  t: TFunction,
   pathname: string,
   id: string | undefined,
   recordTitle: string | undefined,
   tab: ReturnType<typeof useFileDetailTab>,
 ): Crumb[] {
   if (pathname === "/") {
-    return [{ label: "Home" }]
+    return [{ label: t("nav.home") }]
   }
   if (pathname === "/files") {
-    return [{ label: "Files" }]
+    return [{ label: t("nav.files") }]
   }
   if (pathname.startsWith("/files/") && id) {
     const crumbs: Crumb[] = [
-      { label: "Files", to: "/files" },
-      { label: recordTitle || "Untitled", to: "/files/$id", params: { id } },
+      { label: t("nav.files"), to: "/files" },
+      {
+        label: recordTitle || t("nav.untitled"),
+        to: "/files/$id",
+        params: { id },
+      },
     ]
     if (tab === "notes") {
-      crumbs.push({ label: "Notes" })
+      crumbs.push({ label: t("nav.notes") })
     }
     return crumbs
   }
   if (pathname === "/settings") {
-    return [{ label: "Settings" }]
+    return [{ label: t("nav.settings") }]
   }
   if (pathname === "/record") {
-    return [{ label: "Record voice" }]
+    return [{ label: t("nav.recordVoice") }]
   }
   if (pathname === "/upload") {
-    return [{ label: "Upload audio" }]
+    return [{ label: t("nav.uploadAudio") }]
   }
-  return [{ label: "Finch" }]
+  return [{ label: t("nav.appName") }]
 }
 
 export function NavBreadcrumb() {
+  const { t } = useTranslation()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const params = useParams({ strict: false })
   const id = typeof params.id === "string" ? params.id : undefined
   const recordTitle = useFileRecordTitle(id)
   const tab = useFileDetailTab()
-  const crumbs = buildCrumbs(pathname, id, recordTitle, tab)
+  const crumbs = buildCrumbs(t, pathname, id, recordTitle, tab)
 
   return (
-    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
+    <nav aria-label={t("nav.breadcrumbAriaLabel")} className="flex min-w-0 items-center gap-1.5 text-sm">
       {crumbs.map((crumb, index) => {
         const isLast = index === crumbs.length - 1
 

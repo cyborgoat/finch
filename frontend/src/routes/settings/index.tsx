@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 import { SettingsRow, SettingsSection } from "@/components/settings/SettingsSection"
 import { UserProfileSettings } from "@/components/settings/UserProfileSettings"
 import { LlmSettingsPanel } from "@/components/settings/LlmSettingsPanel"
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/settings/")({
 })
 
 function SettingsPage() {
+  const { t } = useTranslation()
   const { data: profilesData } = useSpeakerProfiles()
   const { data: memoryStatus } = useSpeakerMemoryStatus()
   const deleteProfile = useDeleteSpeakerProfile()
@@ -70,7 +72,7 @@ function SettingsPage() {
         toast.success(successMessage)
       }
     } catch {
-      toast.error("Failed to save settings")
+      toast.error(t("toasts.saveSettingsFailed"))
     }
   }
 
@@ -78,9 +80,9 @@ function SettingsPage() {
     if (!enabled) {
       try {
         await toggleMemory.mutateAsync(false)
-        toast.success("Auto-labeling turned off")
+        toast.success(t("toasts.autoLabelOff"))
       } catch {
-        toast.error("Failed to update speaker settings")
+        toast.error(t("toasts.speakerSettingsFailed"))
       }
       return
     }
@@ -92,9 +94,9 @@ function SettingsPage() {
 
     try {
       await toggleMemory.mutateAsync(true)
-      toast.success("Auto-labeling turned on")
+      toast.success(t("toasts.autoLabelOn"))
     } catch {
-      toast.error("Failed to update speaker settings")
+      toast.error(t("toasts.speakerSettingsFailed"))
     }
   }
 
@@ -103,9 +105,9 @@ function SettingsPage() {
       await consentMutation.mutateAsync()
       await toggleMemory.mutateAsync(true)
       setConsentOpen(false)
-      toast.success("Auto-labeling turned on")
+      toast.success(t("toasts.autoLabelOn"))
     } catch {
-      toast.error("Failed to enable auto-labeling")
+      toast.error(t("toasts.autoLabelEnableFailed"))
     }
   }
 
@@ -121,41 +123,76 @@ function SettingsPage() {
         />
 
         <SettingsSection
-          title="Language"
-          description="Preferred language for the app and AI-generated content."
+          title={t("settings.languageTitle")}
+          description={t("settings.languageDescription")}
         >
-          <SettingsRow label="Display language">
+          <SettingsRow
+            label={t("settings.uiLanguageLabel")}
+            description={t("settings.uiLanguageDescription")}
+          >
             <Select
-              value={preferences.language}
+              value={preferences.uiLanguage}
               onValueChange={(value) => {
                 if (value !== "en" && value !== "zh") return
                 void savePreference(
-                  { language: value },
-                  value === "zh" ? "Language set to 中文" : "Language set to English",
+                  { uiLanguage: value },
+                  value === "zh"
+                    ? t("settings.uiLanguageSetZh")
+                    : t("settings.uiLanguageSetEn"),
                 )
               }}
               disabled={settingsBusy}
             >
               <SelectTrigger className="w-full">
                 <span>
-                  {preferences.language === "zh" ? "中文 (Chinese)" : "English"}
+                  {preferences.uiLanguage === "zh" ? t("common.chinese") : t("common.english")}
                 </span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="zh">中文 (Chinese)</SelectItem>
+                <SelectItem value="en">{t("common.english")}</SelectItem>
+                <SelectItem value="zh">{t("common.chinese")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingsRow>
+          <SettingsRow
+            label={t("settings.contentLanguageLabel")}
+            description={t("settings.contentLanguageDescription")}
+          >
+            <Select
+              value={preferences.contentLanguage}
+              onValueChange={(value) => {
+                if (value !== "en" && value !== "zh") return
+                void savePreference(
+                  { contentLanguage: value },
+                  value === "zh"
+                    ? t("settings.contentLanguageSetZh")
+                    : t("settings.contentLanguageSetEn"),
+                )
+              }}
+              disabled={settingsBusy}
+            >
+              <SelectTrigger className="w-full">
+                <span>
+                  {preferences.contentLanguage === "zh"
+                    ? t("common.chinese")
+                    : t("common.english")}
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">{t("common.english")}</SelectItem>
+                <SelectItem value="zh">{t("common.chinese")}</SelectItem>
               </SelectContent>
             </Select>
           </SettingsRow>
         </SettingsSection>
 
         <SettingsSection
-          title="AI notes"
-          description="How Finch generates meeting summaries and other AI notes."
+          title={t("settings.aiNotesTitle")}
+          description={t("settings.aiNotesDescription")}
         >
           <SettingsRow
-            label="Summary style"
-            description="Applied when generating a meeting summary note."
+            label={t("settings.summaryStyleLabel")}
+            description={t("settings.summaryStyleDescription")}
           >
             <Select
               value={preferences.summaryStyle}
@@ -170,22 +207,22 @@ function SettingsPage() {
               <SelectTrigger className="w-full">
                 <span>
                   {preferences.summaryStyle === "concise"
-                    ? "Concise"
+                    ? t("settings.summaryStyleConcise")
                     : preferences.summaryStyle === "detailed"
-                      ? "Detailed"
-                      : "Balanced"}
+                      ? t("settings.summaryStyleDetailed")
+                      : t("settings.summaryStyleBalanced")}
                 </span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="concise">Concise</SelectItem>
-                <SelectItem value="balanced">Balanced</SelectItem>
-                <SelectItem value="detailed">Detailed</SelectItem>
+                <SelectItem value="concise">{t("settings.summaryStyleConcise")}</SelectItem>
+                <SelectItem value="balanced">{t("settings.summaryStyleBalanced")}</SelectItem>
+                <SelectItem value="detailed">{t("settings.summaryStyleDetailed")}</SelectItem>
               </SelectContent>
             </Select>
           </SettingsRow>
           <SettingsRow
-            label="Summary format"
-            description="Paragraphs or bullet points."
+            label={t("settings.summaryFormatLabel")}
+            description={t("settings.summaryFormatDescription")}
           >
             <Select
               value={preferences.summaryFormat}
@@ -198,19 +235,19 @@ function SettingsPage() {
               <SelectTrigger className="w-full">
                 <span>
                   {preferences.summaryFormat === "bullets"
-                    ? "Bullet points"
-                    : "Paragraphs"}
+                    ? t("settings.summaryFormatBullets")
+                    : t("settings.summaryFormatParagraphs")}
                 </span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="paragraphs">Paragraphs</SelectItem>
-                <SelectItem value="bullets">Bullet points</SelectItem>
+                <SelectItem value="paragraphs">{t("settings.summaryFormatParagraphs")}</SelectItem>
+                <SelectItem value="bullets">{t("settings.summaryFormatBullets")}</SelectItem>
               </SelectContent>
             </Select>
           </SettingsRow>
           <SettingsRow
-            label="Auto-save notes"
-            description="When enabled, note edits save automatically while you type."
+            label={t("settings.notesAutoSaveLabel")}
+            description={t("settings.notesAutoSaveDescription")}
           >
             <Switch
               checked={preferences.notesAutoSave}
@@ -225,16 +262,15 @@ function SettingsPage() {
         <LlmSettingsPanel disabled={settingsBusy} />
 
         <SettingsSection
-          title="Speakers"
-          description="Saved speaker names and automatic labeling on new recordings."
+          title={t("settings.speakersTitle")}
+          description={t("settings.speakersDescription")}
         >
           <SettingsRow
-            label="Auto-label speaker names"
+            label={t("settings.autoLabelLabel")}
             description={
               autoLabelReady
-                ? "Apply saved speaker names when transcribing new recordings."
-                : (memoryStatus?.reason ??
-                  "Speaker matching is not available on this server.")
+                ? t("settings.autoLabelReadyDescription")
+                : (memoryStatus?.reason ?? t("settings.autoLabelNotReady"))
             }
           >
             <div className="flex justify-end">
@@ -242,7 +278,7 @@ function SettingsPage() {
                 checked={autoLabelEnabled}
                 onCheckedChange={(checked) => void handleAutoLabelChange(checked)}
                 disabled={!autoLabelReady || togglePending}
-                aria-label="Auto-label speaker names"
+                aria-label={t("settings.autoLabelAriaLabel")}
               />
             </div>
           </SettingsRow>
@@ -255,12 +291,12 @@ function SettingsPage() {
               isRenaming={updateProfile.isPending}
               onRename={(profileId, displayName) => {
                 void updateProfile.mutateAsync({ profileId, displayName }).then(() => {
-                  toast.success(`Renamed to ${displayName}`)
+                  toast.success(t("toasts.speakerRenamed", { name: displayName }))
                 })
               }}
               onDelete={(profileId, displayName) => {
                 void deleteProfile.mutateAsync(profileId).then(() => {
-                  toast.success(`Removed ${displayName}`)
+                  toast.success(t("toasts.speakerRemoved", { name: displayName }))
                 })
               }}
             />

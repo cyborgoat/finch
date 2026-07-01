@@ -76,6 +76,18 @@ def check_dependencies() -> list[DependencyStatus]:
             install_hint="cd backend && uv add pyannote-audio",
         ),
         DependencyStatus(
+            name="omegaconf",
+            installed=_dependency_installed("omegaconf"),
+            required_for="speaker embedding model checkpoints",
+            install_hint="cd backend && uv add omegaconf",
+        ),
+        DependencyStatus(
+            name="speechbrain",
+            installed=_dependency_installed("speechbrain"),
+            required_for="speaker embedding model checkpoints",
+            install_hint="cd backend && uv add speechbrain",
+        ),
+        DependencyStatus(
             name="httpx",
             installed=_dependency_installed("httpx"),
             required_for="LLM AI actions",
@@ -164,6 +176,10 @@ def get_speaker_memory_status(
         reason = "HF_TOKEN is required for speaker embeddings."
     elif not pyannote_installed:
         reason = "pyannote-audio is not installed."
+    elif not _dependency_installed("omegaconf"):
+        reason = "omegaconf is not installed (required for speaker embeddings)."
+    elif not _dependency_installed("speechbrain"):
+        reason = "speechbrain is not installed (required for speaker embeddings)."
 
     ready = reason is None
     return SpeakerMemoryStatus(ready=ready, reason=reason)
@@ -377,6 +393,12 @@ ERROR_GUIDANCE: dict[str, list[str]] = {
     ],
     "LLM_INVALID_PROVIDER": [
         "Choose a provider in Settings → LLM provider: openrouter, openai, anthropic, or custom",
+    ],
+    "SPEAKER_EMBEDDING_MODEL_LOAD_FAILED": [
+        "Install embedding dependencies: cd backend && uv add omegaconf speechbrain",
+        "Accept Hugging Face terms for https://huggingface.co/pyannote/embedding",
+        "Ensure HF_TOKEN in .env matches the account that accepted model terms",
+        "Restart backend after installing dependencies",
     ],
 }
 

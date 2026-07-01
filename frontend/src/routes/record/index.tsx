@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useCallback, useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { AudioRecorder } from "@/components/audio/AudioRecorder"
 import { JobProgress } from "@/components/jobs/JobProgress"
@@ -19,6 +19,7 @@ export const Route = createFileRoute("/record/")({
 })
 
 function RecordPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const invalidateTranscripts = useInvalidateTranscripts()
   const recorder = useAudioRecorder()
@@ -30,11 +31,11 @@ function RecordPage() {
   const onCompleted = useCallback(
     (resultId: string | null | undefined) => {
       if (resultId) {
-        toast.success("Transcription complete")
+        toast.success(t("toasts.transcriptionComplete"))
         void navigate({ to: "/files/$id", params: { id: resultId } })
       }
     },
-    [navigate],
+    [navigate, t],
   )
 
   const { job, error: pollError } = useJobPolling(jobId, {
@@ -45,7 +46,7 @@ function RecordPage() {
     },
     onFailed: (j) => {
       invalidateTranscripts()
-      toast.error(j.error ?? "Transcription failed")
+      toast.error(j.error ?? t("toasts.transcriptionFailed"))
     },
   })
 
@@ -71,13 +72,13 @@ function RecordPage() {
       })
       setJobId(newJobId)
       invalidateTranscripts()
-      toast.message("Transcription started")
+      toast.message(t("toasts.transcriptionStarted"))
       void navigate({
         to: "/files/$id",
         params: { id: transcriptId },
       })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to transcribe")
+      toast.error(err instanceof Error ? err.message : t("toasts.failedToTranscribe"))
     } finally {
       setIsTranscribing(false)
     }
@@ -113,7 +114,9 @@ function RecordPage() {
             onClick={() => void handleTranscribe()}
             disabled={isUploading || isTranscribing || !!jobId}
           >
-            {isUploading || isTranscribing ? "Processing…" : "Transcribe recording"}
+            {isUploading || isTranscribing
+              ? t("common.processing")
+              : t("record.transcribeRecording")}
           </Button>
         ) : null}
       </BlurFade>

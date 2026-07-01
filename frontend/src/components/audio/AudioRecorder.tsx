@@ -1,4 +1,5 @@
 
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AudioPreview } from "@/components/audio/AudioPreview"
@@ -38,6 +39,7 @@ export function AudioRecorder({
   onStop,
   onReset,
 }: AudioRecorderProps) {
+  const { t } = useTranslation()
   const isRecording = state === "recording"
   const isPaused = state === "paused"
   const hasRecording = state === "stopped" && !!audioUrl
@@ -45,14 +47,16 @@ export function AudioRecorder({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Record voice</CardTitle>
+        <CardTitle className="text-base">{t("record.recordVoice")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <span className="font-mono text-2xl tabular-nums">
             {formatTimer(durationSeconds)}
           </span>
-          <span className="text-sm capitalize text-muted-foreground">{state}</span>
+          <span className="text-sm capitalize text-muted-foreground">
+            {t(`record.state.${state}`)}
+          </span>
         </div>
         <AudioWaveform
           state={state}
@@ -61,25 +65,25 @@ export function AudioRecorder({
         />
         <div className="flex flex-wrap gap-2">
           {state === "idle" || state === "error" ? (
-            <Button onClick={onStart}>Start recording</Button>
+            <Button onClick={onStart}>{t("record.startRecording")}</Button>
           ) : null}
           {isRecording ? (
             <>
               <Button variant="outline" onClick={onPause}>
-                Pause
+                {t("common.pause")}
               </Button>
-              <Button onClick={onStop}>Stop</Button>
+              <Button onClick={onStop}>{t("common.stop")}</Button>
             </>
           ) : null}
           {isPaused ? (
             <>
-              <Button onClick={onResume}>Resume</Button>
-              <Button onClick={onStop}>Stop</Button>
+              <Button onClick={onResume}>{t("common.resume")}</Button>
+              <Button onClick={onStop}>{t("common.stop")}</Button>
             </>
           ) : null}
           {hasRecording || state === "error" ? (
             <Button variant="ghost" onClick={onReset}>
-              Reset
+              {t("common.reset")}
             </Button>
           ) : null}
         </div>

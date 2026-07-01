@@ -1,5 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import { ChevronDown, Mic, Upload } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -9,24 +10,25 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
-const links = [
-  { href: "/", label: "Home" },
-  { href: "/files", label: "Files" },
-  { href: "/settings", label: "Settings" },
-] as const
-
 export function Sidebar() {
+  const { t } = useTranslation()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
   const navigate = useNavigate()
   const isNewActive = pathname === "/record" || pathname === "/upload"
 
+  const links = [
+    { href: "/", label: t("nav.home") },
+    { href: "/files", label: t("nav.files") },
+    { href: "/settings", label: t("nav.settings") },
+  ] as const
+
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-card/50 p-4">
       <div className="mb-8 px-2">
-        <p className="text-lg font-semibold tracking-tight">Finch</p>
-        <p className="text-xs text-muted-foreground">Local voice notes</p>
+        <p className="text-lg font-semibold tracking-tight">{t("nav.appName")}</p>
+        <p className="text-xs text-muted-foreground">{t("nav.tagline")}</p>
       </div>
 
       <DropdownMenu>
@@ -36,7 +38,7 @@ export function Sidebar() {
               className={cn("mb-4 w-full justify-between", isNewActive && "ring-2 ring-ring")}
               size="sm"
             >
-              New
+              {t("nav.new")}
               <ChevronDown className="size-4 opacity-70" />
             </Button>
           }
@@ -44,11 +46,11 @@ export function Sidebar() {
         <DropdownMenuContent align="start" className="w-(--anchor-width)">
           <DropdownMenuItem onClick={() => void navigate({ to: "/record" })}>
             <Mic className="size-4" />
-            Record voice
+            {t("nav.recordVoice")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => void navigate({ to: "/upload" })}>
             <Upload className="size-4" />
-            Upload audio
+            {t("nav.uploadAudio")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

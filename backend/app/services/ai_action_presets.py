@@ -9,6 +9,7 @@ class AiActionPreset:
     doc_type: str
     prompt_file: str
     title_prefix: str
+    uses_content_language: bool = True
     uses_user_summary_prefs: bool = False
 
 

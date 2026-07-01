@@ -1,5 +1,6 @@
 import { MoreHorizontal } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +46,7 @@ export function FileRowActions({
   isRenaming,
   isDeleting,
 }: FileRowActionsProps) {
+  const { t } = useTranslation()
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [title, setTitle] = useState(item.title)
@@ -77,7 +79,7 @@ export function FileRowActions({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="File actions"
+              aria-label={t("files.actionsAriaLabel")}
               disabled={busy}
             >
               <MoreHorizontal className="size-4" />
@@ -87,7 +89,7 @@ export function FileRowActions({
         <DropdownMenuContent align="end">
           {onRename ? (
             <>
-              <DropdownMenuItem onClick={openRename}>Rename</DropdownMenuItem>
+              <DropdownMenuItem onClick={openRename}>{t("common.rename")}</DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
           ) : null}
@@ -95,7 +97,7 @@ export function FileRowActions({
             variant="destructive"
             onClick={() => setDeleteOpen(true)}
           >
-            Delete
+            {t("common.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -104,13 +106,13 @@ export function FileRowActions({
         <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Rename file</DialogTitle>
+              <DialogTitle>{t("files.renameTitle")}</DialogTitle>
               <DialogDescription>
-                Update the title shown in your file library.
+                {t("files.renameDescription")}
               </DialogDescription>
             </DialogHeader>
             <div className="field-stack py-2">
-              <Label htmlFor={`rename-${item.id}`}>Title</Label>
+              <Label htmlFor={`rename-${item.id}`}>{t("common.title")}</Label>
               <Input
                 id={`rename-${item.id}`}
                 value={title}
@@ -128,13 +130,13 @@ export function FileRowActions({
                 onClick={() => setRenameOpen(false)}
                 disabled={isRenaming}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 onClick={() => void handleRename()}
                 disabled={isRenaming || !title.trim()}
               >
-                {isRenaming ? "Saving…" : "Save"}
+                {isRenaming ? t("common.saving") : t("common.save")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -144,13 +146,13 @@ export function FileRowActions({
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete file?</AlertDialogTitle>
+            <AlertDialogTitle>{t("files.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the transcript and its related documents.
+              {t("files.deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={isDeleting}
@@ -159,7 +161,7 @@ export function FileRowActions({
                 setDeleteOpen(false)
               }}
             >
-              {isDeleting ? "Deleting…" : "Delete"}
+              {isDeleting ? t("common.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

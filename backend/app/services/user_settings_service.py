@@ -11,7 +11,8 @@ from app.services.speaker_profile_service import SpeakerProfileService
 USER_SETTINGS_KEY = "user_settings"
 
 DEFAULT_USER_SETTINGS: dict[str, Any] = {
-    "language": "en",
+    "ui_language": "en",
+    "content_language": "en",
     "summary_style": "balanced",
     "summary_format": "paragraphs",
     "user_name": "",
@@ -49,7 +50,7 @@ class UserSettingsService:
         for key, value in patch.items():
             if key not in DEFAULT_USER_SETTINGS:
                 continue
-            if key == "language" and value not in {"en", "zh"}:
+            if key in {"ui_language", "content_language"} and value not in {"en", "zh"}:
                 raise AppError("INVALID_LANGUAGE", "Language must be 'en' or 'zh'.")
             if key == "summary_style" and value not in {"concise", "balanced", "detailed"}:
                 raise AppError(
@@ -97,6 +98,15 @@ class UserSettingsService:
         for key in DEFAULT_USER_SETTINGS:
             if key in parsed:
                 merged[key] = parsed[key]
+
+        if "language" in parsed:
+            legacy = parsed["language"]
+            if legacy in {"en", "zh"}:
+                if "ui_language" not in parsed:
+                    merged["ui_language"] = legacy
+                if "content_language" not in parsed:
+                    merged["content_language"] = legacy
+
         return merged
 
     def _save_raw(self, settings: dict[str, Any]) -> None:

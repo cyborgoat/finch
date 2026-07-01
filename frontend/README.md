@@ -54,7 +54,7 @@ Backend config (ASR, diarization, speaker memory) lives in repo root `.env` or `
 | `/files/$id` | Recording detail (Source, Notes tabs) or standalone document editor |
 | `/upload` | Upload audio and transcribe |
 | `/record` | Browser recording with live waveform |
-| `/settings` | User profile, language, AI note prefs, speakers, LLM provider |
+| `/settings` | User profile, language (UI + AI content), AI note prefs, speakers, LLM provider |
 
 ## Layout and navigation
 
@@ -85,7 +85,12 @@ Backend config (ASR, diarization, speaker memory) lives in repo root `.env` or `
   - Dropdown to switch notes; **+** to create; **⋯** menu for rename/delete
   - AI templates: meeting summary, action items, key decisions, follow-up email; or blank note
   - MDXEditor with auto-save toggle (default on) or manual Save
-  - Meeting summary prompts use language and summarization prefs from Settings
+  - Meeting summary prompts use content language and summarization prefs from Settings; all AI templates use content language
+
+### Internationalization
+
+- UI strings use `react-i18next` with locale files under `src/i18n/locales/`
+- **Settings → Language & region:** `uiLanguage` (interface) and `contentLanguage` (AI output) are stored separately via `GET/PATCH /api/user-settings`
 
 ### Document detail (`/files/doc_*`)
 
@@ -94,7 +99,8 @@ Backend config (ASR, diarization, speaker memory) lives in repo root `.env` or `
 ### Settings
 
 - **You:** display name and linked speaker profile (`GET/PATCH /api/user-settings`)
-- **Language / AI notes:** preferences persisted on the backend and applied to meeting summary prompts
+- **Language & region:** interface language and AI note content language (English or 中文)
+- **AI notes:** summary style/format and auto-save toggle
 - **Speakers:** auto-label toggle (consent on first enable), rename/delete profiles
 - **LLM provider:** configurable provider credentials (stored locally in SQLite)
 - **Backend capabilities** (ASR, diarization): configured in `.env` — startup logs and `/api/health`

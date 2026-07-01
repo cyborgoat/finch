@@ -4,6 +4,7 @@ import pytest
 
 from app.config import Settings
 from app.core.startup_diagnostics import (
+    check_dependencies,
     get_capability_status,
     log_error_guidance,
     log_startup_summary,
@@ -50,6 +51,23 @@ def test_log_startup_summary_emits_configuration(caplog_info):
     assert "Speaker memory" in output
     assert "Transcript summarization (LLM)" in output
     assert "Dependencies" in output
+
+
+def test_check_dependencies_includes_speaker_embedding_packages():
+    deps = check_dependencies()
+    names = {dep.name for dep in deps}
+    assert "omegaconf" in names
+    assert "speechbrain" in names
+
+
+def test_log_error_guidance_speaker_embedding(caplog_info):
+    log_error_guidance(
+        "SPEAKER_EMBEDDING_MODEL_LOAD_FAILED",
+        "No module named 'omegaconf'",
+    )
+    output = caplog_info.text
+    assert "Suggested fixes" in output
+    assert "omegaconf" in output
 
 
 def test_log_error_guidance_includes_remediation_steps(caplog_info):

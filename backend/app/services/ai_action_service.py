@@ -9,7 +9,11 @@ from app.models.transcript import Transcript
 from app.schemas.user_settings import UserSettingsResponse
 from app.services.ai_action_presets import get_preset, resolve_action_id
 from app.services.llm_service import LlmService
-from app.services.prompt_context import apply_user_context, build_user_context
+from app.services.prompt_context import (
+    apply_user_context,
+    build_content_language_context,
+    build_user_context,
+)
 from app.services.user_settings_service import UserSettingsService
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
@@ -45,13 +49,17 @@ class AiActionService:
         prompt_file: str,
         transcript_text: str,
         user_settings: UserSettingsResponse,
+        uses_content_language: bool,
         uses_user_summary_prefs: bool,
     ) -> str:
         prompt = self._load_prompt(prompt_file, transcript_text)
-        if not uses_user_summary_prefs:
-            return prompt
-        context = build_user_context(user_settings)
-        return apply_user_context(prompt, context)
+        if uses_user_summary_prefs:
+            context = build_user_context(user_settings)
+            return apply_user_context(prompt, context)
+        if uses_content_language:
+            context = build_content_language_context(user_settings)
+            return apply_user_context(prompt, context)
+        return prompt
 
     def build_title(self, title_prefix: str, transcript: Transcript) -> str:
         return self._build_title(title_prefix, transcript)
@@ -93,6 +101,7 @@ class AiActionService:
             prompt_file=preset.prompt_file,
             transcript_text=transcript_text,
             user_settings=user_settings,
+            uses_content_language=preset.uses_content_language,
             uses_user_summary_prefs=preset.uses_user_summary_prefs,
         )
         messages = [{"role": "user", "content": prompt}]

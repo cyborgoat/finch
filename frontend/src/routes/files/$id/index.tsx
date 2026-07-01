@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Suspense } from "react"
+import { useTranslation } from "react-i18next"
 import { useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { MdxNoteEditor } from "@/components/documents/MdxNoteEditor"
@@ -87,21 +88,22 @@ function TranscriptDetailEditor({ transcript }: { transcript: Transcript }) {
 }
 
 function DocumentDetailEditor({ document }: { document: Document }) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const deleteMutation = useDeleteDocument()
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(document.markdown)
-    toast.success("Copied to clipboard")
+    toast.success(t("toasts.copiedToClipboard"))
   }
 
   const handleDelete = async () => {
     try {
       await deleteMutation.mutateAsync(document.id)
-      toast.success("Document deleted")
+      toast.success(t("toasts.documentDeleted"))
       void navigate({ to: "/files" })
     } catch {
-      toast.error("Failed to delete")
+      toast.error(t("toasts.failedToDelete"))
     }
   }
 
@@ -119,6 +121,7 @@ function DocumentDetailEditor({ document }: { document: Document }) {
 }
 
 function FileDetailPage() {
+  const { t } = useTranslation()
   const { id } = Route.useParams()
   const { kind } = Route.useLoaderData()
 
@@ -132,12 +135,13 @@ function FileDetailPage() {
 
   return (
     <PageContainer size="wide">
-      <p className="text-muted-foreground">File not found.</p>
+      <p className="text-muted-foreground">{t("files.notFound")}</p>
     </PageContainer>
   )
 }
 
 function DocumentFileDetail({ id }: { id: string }) {
+  const { t } = useTranslation()
   const { data: document, isLoading } = useDocument(id)
 
   if (isLoading) {
@@ -152,7 +156,7 @@ function DocumentFileDetail({ id }: { id: string }) {
   if (!document) {
     return (
       <PageContainer size="wide">
-        <p className="text-muted-foreground">File not found.</p>
+        <p className="text-muted-foreground">{t("files.notFound")}</p>
       </PageContainer>
     )
   }
@@ -168,6 +172,7 @@ function DocumentFileDetail({ id }: { id: string }) {
 }
 
 function TranscriptFileDetail({ id }: { id: string }) {
+  const { t } = useTranslation()
   const { data: transcript, isLoading } = useTranscript(id)
 
   if (isLoading) {
@@ -183,7 +188,7 @@ function TranscriptFileDetail({ id }: { id: string }) {
   if (!transcript) {
     return (
       <PageContainer size="wide">
-        <p className="text-muted-foreground">File not found.</p>
+        <p className="text-muted-foreground">{t("files.notFound")}</p>
       </PageContainer>
     )
   }
@@ -194,11 +199,10 @@ function TranscriptFileDetail({ id }: { id: string }) {
         <TranscriptPageAudio audioAssetId={transcript.audioAssetId} />
         <div className="surface-card">
           <p className="text-sm font-medium">
-            <TextShimmer>Transcribing…</TextShimmer>
+            <TextShimmer>{t("transcript.transcribing")}</TextShimmer>
           </p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            You can leave this page and check the files list. The status will
-            update automatically.
+            {t("transcript.transcribingHint")}
           </p>
         </div>
       </PageContainer>
@@ -210,10 +214,9 @@ function TranscriptFileDetail({ id }: { id: string }) {
       <PageContainer size="wide">
         <TranscriptPageAudio audioAssetId={transcript.audioAssetId} />
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
-          <p className="text-sm font-medium text-destructive">Error</p>
+          <p className="text-sm font-medium text-destructive">{t("common.error")}</p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            {transcript.errorMessage ??
-              "Something went wrong during transcription. Check backend logs and try again."}
+            {transcript.errorMessage ?? t("transcript.failedDefault")}
           </p>
         </div>
       </PageContainer>

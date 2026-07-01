@@ -8,7 +8,8 @@ SummaryFormat = Literal["paragraphs", "bullets"]
 
 
 class UserSettingsResponse(CamelModel):
-    language: AppLanguage = "en"
+    ui_language: AppLanguage = "en"
+    content_language: AppLanguage = "en"
     summary_style: SummaryStyle = "balanced"
     summary_format: SummaryFormat = "paragraphs"
     user_name: str = ""
@@ -17,7 +18,8 @@ class UserSettingsResponse(CamelModel):
 
 
 class UpdateUserSettingsRequest(CamelModel):
-    language: AppLanguage | None = None
+    ui_language: AppLanguage | None = None
+    content_language: AppLanguage | None = None
     summary_style: SummaryStyle | None = None
     summary_format: SummaryFormat | None = None
     user_name: str | None = None

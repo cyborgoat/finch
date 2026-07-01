@@ -5,7 +5,8 @@ export type SummaryStyle = "concise" | "balanced" | "detailed"
 export type SummaryFormat = "paragraphs" | "bullets"
 
 export type UserPreferences = {
-  language: AppLanguage
+  uiLanguage: AppLanguage
+  contentLanguage: AppLanguage
   summaryStyle: SummaryStyle
   summaryFormat: SummaryFormat
   userName: string
@@ -14,7 +15,8 @@ export type UserPreferences = {
 }
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
-  language: "en",
+  uiLanguage: "en",
+  contentLanguage: "en",
   summaryStyle: "balanced",
   summaryFormat: "paragraphs",
   userName: "",

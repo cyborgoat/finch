@@ -68,7 +68,8 @@ export type SpeakerMemoryStatus = {
 }
 
 export type UserSettings = {
-  language: "en" | "zh"
+  uiLanguage: "en" | "zh"
+  contentLanguage: "en" | "zh"
   summaryStyle: "concise" | "balanced" | "detailed"
   summaryFormat: "paragraphs" | "bullets"
   userName: string

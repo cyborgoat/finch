@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import { Trans, useTranslation } from "react-i18next"
 import {
   ClipboardList,
   Gavel,
@@ -15,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Link } from "@tanstack/react-router"
 import { listAiActionTemplates } from "@/lib/api"
 import type { AiActionTemplate } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -45,6 +47,7 @@ export function CreateNoteDialog({
   onSelectTemplate,
   onSelectBlank,
 }: CreateNoteDialogProps) {
+  const { t } = useTranslation()
   const { data: templatesData, isLoading } = useQuery({
     queryKey: ["ai-actions", "templates"],
     queryFn: listAiActionTemplates,
@@ -58,20 +61,24 @@ export function CreateNoteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Create note</DialogTitle>
-          <DialogDescription>
-            Generate a note with AI or start from a blank page.
-          </DialogDescription>
+          <DialogTitle>{t("notes.createDialogTitle")}</DialogTitle>
+          <DialogDescription>{t("notes.createDialogDescription")}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3 sm:grid-cols-2">
           {isLoading ? (
             <p className="text-sm text-muted-foreground sm:col-span-2">
-              Loading templates…
+              {t("notes.loadingTemplates")}
             </p>
           ) : (
             templates.map((template) => {
               const Icon = TEMPLATE_ICONS[template.id] ?? Notebook
+              const templateTitle = t(`templates.${template.id}.title`, {
+                defaultValue: template.title,
+              })
+              const templateDescription = t(`templates.${template.id}.description`, {
+                defaultValue: template.description,
+              })
               return (
                 <button
                   key={template.id}
@@ -87,11 +94,11 @@ export function CreateNoteDialog({
                     <CardHeader className="gap-2">
                       <div className="flex items-center gap-2">
                         <Icon className="size-4 text-primary" />
-                        <CardTitle className="text-base">{template.title}</CardTitle>
+                        <CardTitle className="text-base">{templateTitle}</CardTitle>
                       </div>
-                      <CardDescription>{template.description}</CardDescription>
+                      <CardDescription>{templateDescription}</CardDescription>
                       {pendingTemplateId === template.id ? (
-                        <CardDescription>Starting…</CardDescription>
+                        <CardDescription>{t("common.starting")}</CardDescription>
                       ) : null}
                     </CardHeader>
                   </Card>
@@ -110,13 +117,11 @@ export function CreateNoteDialog({
               <CardHeader className="gap-2">
                 <div className="flex items-center gap-2">
                   <PenLine className="size-4 text-primary" />
-                  <CardTitle className="text-base">Blank note</CardTitle>
+                  <CardTitle className="text-base">{t("notes.blankNote")}</CardTitle>
                 </div>
-                <CardDescription>
-                  Start with an empty note and write your own markdown.
-                </CardDescription>
+                <CardDescription>{t("notes.blankDescription")}</CardDescription>
                 {creatingBlank ? (
-                  <CardDescription>Creating…</CardDescription>
+                  <CardDescription>{t("common.creating")}</CardDescription>
                 ) : null}
               </CardHeader>
             </Card>
@@ -125,7 +130,16 @@ export function CreateNoteDialog({
 
         {!llmReady ? (
           <p className="text-sm text-muted-foreground">
-            AI templates require an LLM provider in Settings. Blank notes are always available.
+            <Trans
+              i18nKey="notes.llmRequiredBanner"
+              components={{
+                link: (
+                  <Link to="/settings" className="underline underline-offset-2">
+                    {t("nav.settingsLlmProvider")}
+                  </Link>
+                ),
+              }}
+            />
           </p>
         ) : null}
       </DialogContent>

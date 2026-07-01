@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Section } from "@/components/layout/Section"
@@ -39,6 +40,7 @@ export function FullTranscriptPanel({
   speakerSavePending,
   disabled,
 }: FullTranscriptPanelProps) {
+  const { t } = useTranslation()
   const [editingSegment, setEditingSegment] = useState<SpeakerSegment | null>(null)
   const turnRefs = useRef<(HTMLDivElement | null)[]>([])
 
@@ -59,7 +61,7 @@ export function FullTranscriptPanel({
 
   return (
     <>
-      <Section title="Transcript">
+      <Section title={t("transcript.sectionTitle")}>
         <ScrollArea className="surface-card h-96 rounded-xl border border-border">
           {segments.length > 0 ? (
             <div className="space-y-1 p-3">

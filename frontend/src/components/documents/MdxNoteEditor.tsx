@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -33,6 +34,7 @@ export function MdxNoteEditor({
   onDelete,
   deletePending = false,
 }: MdxNoteEditorProps) {
+  const { t } = useTranslation()
   const saveTimerRef = useRef<number | null>(null)
   const updateMutation = useUpdateDocument(document.id)
   const { preferences, updatePreferences } = useUserPreferences()
@@ -66,7 +68,7 @@ export function MdxNoteEditor({
     async (nextTitle: string, nextMarkdown: string) => {
       setSaveStatus("saving")
       try {
-        const resolvedTitle = nextTitle.trim() || "Untitled note"
+        const resolvedTitle = nextTitle.trim() || t("notes.untitledNote")
         await updateMutation.mutateAsync({
           title: resolvedTitle,
           markdown: nextMarkdown,
@@ -78,10 +80,10 @@ export function MdxNoteEditor({
         setSaveStatus("saved")
       } catch (err) {
         setSaveStatus("unsaved")
-        toast.error(err instanceof Error ? err.message : "Failed to save note")
+        toast.error(err instanceof Error ? err.message : t("toasts.failedToSaveNote"))
       }
     },
-    [updateMutation],
+    [t, updateMutation],
   )
 
   const scheduleAutoSave = useCallback(
@@ -131,7 +133,7 @@ export function MdxNoteEditor({
 
   const handleAutoSaveToggle = (checked: boolean) => {
     void updatePreferences({ notesAutoSave: checked }).catch(() => {
-      toast.error("Failed to update auto-save setting")
+      toast.error(t("toasts.failedToUpdateAutoSave"))
     })
     if (checked && (saveStatus === "unsaved" || dirty)) {
       scheduleAutoSave(hideTitle ? document.title : title, draftMarkdown)
@@ -140,10 +142,10 @@ export function MdxNoteEditor({
 
   const statusLabel =
     saveStatus === "saving"
-      ? "Saving…"
+      ? t("common.saving")
       : saveStatus === "unsaved" || dirty
-        ? "Unsaved changes"
-        : "Saved"
+        ? t("notes.editorStatusUnsaved")
+        : t("notes.editorStatusSaved")
 
   return (
     <div className="field-stack">
@@ -151,14 +153,14 @@ export function MdxNoteEditor({
         {!hideTitle ? (
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <Label htmlFor={`note-title-${document.id}`} className="sr-only">
-              Note title
+              {t("notes.editorNoteTitleAriaLabel")}
             </Label>
             <Input
               id={`note-title-${document.id}`}
               value={title}
               onChange={(event) => handleTitleChange(event.target.value)}
               className="max-w-md font-medium"
-              placeholder="Note title"
+              placeholder={t("notes.editorNoteTitlePlaceholder")}
             />
           </div>
         ) : (
@@ -172,7 +174,7 @@ export function MdxNoteEditor({
               onCheckedChange={handleAutoSaveToggle}
             />
             <Label htmlFor={`auto-save-${document.id}`} className="text-sm text-muted-foreground">
-              Auto-save
+              {t("notes.editorAutoSave")}
             </Label>
           </div>
           {onDelete ? (
@@ -180,7 +182,7 @@ export function MdxNoteEditor({
               type="button"
               variant="outline"
               size="icon-sm"
-              aria-label="Delete note"
+              aria-label={t("notes.editorDeleteAriaLabel")}
               disabled={deletePending}
               onClick={onDelete}
             >
@@ -194,7 +196,7 @@ export function MdxNoteEditor({
               onClick={handleManualSave}
               disabled={updateMutation.isPending || (!dirty && saveStatus !== "unsaved")}
             >
-              Save
+              {t("common.save")}
             </Button>
           ) : null}
           <span className="text-xs text-muted-foreground">{statusLabel}</span>

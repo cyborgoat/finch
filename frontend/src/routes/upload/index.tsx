@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useCallback, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
   AudioUploader,
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/upload/")({
 })
 
 function UploadPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const invalidateTranscripts = useInvalidateTranscripts()
   const { upload, isUploading, error, reset } = useAudioUpload()
@@ -33,11 +35,11 @@ function UploadPage() {
   const onCompleted = useCallback(
     (resultId: string | null | undefined) => {
       if (resultId) {
-        toast.success("Transcription complete")
+        toast.success(t("toasts.transcriptionComplete"))
         void navigate({ to: "/files/$id", params: { id: resultId } })
       }
     },
-    [navigate],
+    [navigate, t],
   )
 
   const { job, error: pollError } = useJobPolling(jobId, {
@@ -48,7 +50,7 @@ function UploadPage() {
     },
     onFailed: (j) => {
       invalidateTranscripts()
-      toast.error(j.error ?? "Transcription failed")
+      toast.error(j.error ?? t("toasts.transcriptionFailed"))
     },
   })
 
@@ -60,9 +62,9 @@ function UploadPage() {
     try {
       const uploaded = await upload(file, "upload")
       setAsset(uploaded)
-      toast.success("Audio uploaded")
+      toast.success(t("toasts.audioUploaded"))
     } catch {
-      toast.error("Upload failed")
+      toast.error(t("toasts.uploadFailed"))
     }
   }
 
@@ -76,13 +78,13 @@ function UploadPage() {
       })
       setJobId(newJobId)
       invalidateTranscripts()
-      toast.message("Transcription started")
+      toast.message(t("toasts.transcriptionStarted"))
       void navigate({
         to: "/files/$id",
         params: { id: transcriptId },
       })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to start job")
+      toast.error(err instanceof Error ? err.message : t("toasts.failedToStartJob"))
     } finally {
       setIsTranscribing(false)
     }
@@ -108,19 +110,19 @@ function UploadPage() {
         {asset ? (
           <Card className="rounded-xl border bg-card/50">
             <CardHeader>
-              <CardTitle className="text-base">File preview</CardTitle>
+              <CardTitle className="text-base">{t("upload.filePreview")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1 text-sm">
               <p>
-                <span className="text-muted-foreground">Name:</span> {asset.filename}
+                <span className="text-muted-foreground">{t("upload.nameLabel")}</span> {asset.filename}
               </p>
               <p>
-                <span className="text-muted-foreground">Size:</span>{" "}
+                <span className="text-muted-foreground">{t("upload.sizeLabel")}</span>{" "}
                 {formatBytes(asset.sizeBytes)}
               </p>
               <p>
-                <span className="text-muted-foreground">Duration:</span>{" "}
-                {formatDuration(asset.durationSeconds)}
+                <span className="text-muted-foreground">{t("upload.durationLabel")}</span>{" "}
+                {formatDuration(asset.durationSeconds, t("common.notAvailable"))}
               </p>
             </CardContent>
           </Card>
@@ -133,11 +135,11 @@ function UploadPage() {
             onClick={() => void handleTranscribe()}
             disabled={!asset || isTranscribing || !!jobId}
           >
-            {isTranscribing ? "Starting…" : "Transcribe"}
+            {isTranscribing ? t("common.starting") : t("common.transcribe")}
           </Button>
           {asset ? (
             <Button variant="outline" onClick={handleReset}>
-              Reset
+              {t("common.reset")}
             </Button>
           ) : null}
         </div>

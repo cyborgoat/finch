@@ -21,7 +21,7 @@ def test_run_meeting_summary_includes_user_preferences_in_prompt():
     )
 
     user_settings = UserSettingsResponse(
-        language="zh",
+        content_language="zh",
         summary_style="detailed",
         summary_format="bullets",
         user_name="Alex",
@@ -45,6 +45,34 @@ def test_run_meeting_summary_includes_user_preferences_in_prompt():
     assert "bullet points" in prompt
     assert "Alex" in prompt
     assert "We discussed the roadmap." in prompt
+
+
+def test_run_action_items_includes_content_language():
+    service = AiActionService(MagicMock())
+
+    transcript = Transcript(
+        id="transcript_test12345678",
+        audio_asset_id="audio_test1234567890",
+        title="Team sync",
+        raw_text="We discussed the roadmap.",
+        status="draft",
+    )
+
+    user_settings = UserSettingsResponse(content_language="zh")
+
+    mock_llm = MagicMock(return_value=FAKE_LLM_MARKDOWN)
+    service.llm_service.chat_completion = mock_llm
+
+    service.run_action(
+        transcript,
+        action="action_items",
+        source="rawText",
+        user_settings=user_settings,
+    )
+
+    prompt = mock_llm.call_args.args[0][0]["content"]
+    assert "Response language: 中文 (Chinese)" in prompt
+    assert "Summary style" not in prompt
 
 
 def test_run_action_rejects_unknown_action():

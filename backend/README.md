@@ -103,7 +103,7 @@ If diarization or speaker matching is unavailable, the worker falls back gracefu
 - `GET/POST/PATCH/DELETE /api/documents` — document CRUD (POST creates blank manual notes)
 - `GET/POST/PATCH/DELETE /api/speaker-profiles` · `GET /api/speaker-profiles/{id}`
 - `GET/PATCH/DELETE /api/speaker-memory/status` · `POST /api/speaker-memory/consent` · `DELETE /api/speaker-memory/data`
-- `GET/PATCH /api/user-settings` — user name, language, summarization prefs, linked speaker profile
+- `GET/PATCH /api/user-settings` — user name, ui/content language, summarization prefs, linked speaker profile
 - `GET/PATCH /api/llm-settings` — LLM provider credentials (stored locally in SQLite; API keys never returned)
 
 Transcripts may include `speakerSegments`, `processingNote`, or `errorMessage` when diarization is skipped or a job fails.

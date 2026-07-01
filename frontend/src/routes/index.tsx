@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 import { RecentFileList } from "@/components/files/RecentFileList"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/")({
 })
 
 function HomePage() {
+  const { t } = useTranslation()
   const { data: items, isLoading } = useRecentFiles(8)
   const deleteTranscriptMutation = useDeleteTranscript()
   const renameMutation = useRenameTranscript()
@@ -23,18 +25,18 @@ function HomePage() {
   const handleRename = async (id: string, title: string) => {
     try {
       await renameMutation.mutateAsync({ id, title })
-      toast.success("File renamed")
+      toast.success(t("toasts.fileRenamed"))
     } catch {
-      toast.error("Failed to rename file")
+      toast.error(t("toasts.fileRenameFailed"))
     }
   }
 
   const handleDelete = async (id: string) => {
     try {
       await deleteTranscriptMutation.mutateAsync(id)
-      toast.success("File deleted")
+      toast.success(t("toasts.fileDeleted"))
     } catch {
-      toast.error("Failed to delete file")
+      toast.error(t("toasts.fileDeleteFailed"))
     }
   }
 

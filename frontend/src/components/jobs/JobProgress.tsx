@@ -1,22 +1,28 @@
 
+import { useTranslation } from "react-i18next"
 import { Progress } from "@/components/ui/progress"
 import type { Job } from "@/lib/types"
 
-const STAGE_LABELS: Record<string, string> = {
-  running_diarization: "Identifying speakers",
-  running_asr: "Transcribing audio",
-  calling_llm: "Generating note",
-  saving_document: "Saving note",
-  saving_transcript: "Saving transcript",
-  loading_model: "Loading model",
-  loading_transcript: "Loading transcript",
-  completed: "Completed",
-  queued: "Queued",
+const STAGE_KEYS: Record<string, string> = {
+  running_diarization: "runningDiarization",
+  running_asr: "runningAsr",
+  calling_llm: "callingLlm",
+  saving_document: "savingDocument",
+  saving_transcript: "savingTranscript",
+  loading_model: "loadingModel",
+  loading_transcript: "loadingTranscript",
+  completed: "completed",
+  queued: "queued",
 }
 
-function formatStage(stage: string | null | undefined) {
-  if (!stage) return "Waiting"
-  if (STAGE_LABELS[stage]) return STAGE_LABELS[stage]
+function formatStage(
+  stage: string | null | undefined,
+  t: (key: string) => string,
+) {
+  if (!stage) return t("jobs.stage.waiting")
+
+  const key = STAGE_KEYS[stage]
+  if (key) return t(`jobs.stage.${key}`)
 
   if (stage.startsWith("running_asr_chunk_") || stage.startsWith("running_asr_segment_")) {
     return stage.replaceAll("_", " ")
@@ -31,10 +37,12 @@ type JobProgressProps = {
 }
 
 export function JobProgress({ job, error }: JobProgressProps) {
+  const { t } = useTranslation()
+
   if (!job && !error) return null
 
   const progress = Math.round((job?.progress ?? 0) * 100)
-  const stage = formatStage(job?.stage)
+  const stage = formatStage(job?.stage, t)
 
   return (
     <div className="space-y-3 rounded-lg border border-border bg-card p-4">
@@ -45,7 +53,7 @@ export function JobProgress({ job, error }: JobProgressProps) {
       <Progress value={progress} />
       {job?.status === "failed" && (
         <p className="text-sm text-destructive">
-          {job.error ?? "Job failed. Restart the backend and try again."}
+          {job.error ?? t("jobs.failedDefault")}
         </p>
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}

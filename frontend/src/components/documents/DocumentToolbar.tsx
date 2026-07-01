@@ -1,5 +1,5 @@
-
 import { Copy, Download } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog"
 import { StickyActionBar } from "@/components/layout/StickyActionBar"
@@ -21,26 +21,28 @@ export function DocumentToolbar({
   isSaving,
   isDeleting,
 }: DocumentToolbarProps) {
+  const { t } = useTranslation()
+
   return (
     <StickyActionBar>
       <div className="flex flex-wrap items-center gap-2">
         {onSave ? (
           <Button onClick={onSave} disabled={isSaving} size="sm">
-            {isSaving ? "Saving…" : "Save"}
+            {isSaving ? t("common.saving") : t("common.save")}
           </Button>
         ) : null}
         <Button variant="outline" size="sm" onClick={onCopy}>
           <Copy className="size-4" />
-          Copy
+          {t("common.copy")}
         </Button>
         <Button variant="outline" size="sm" onClick={onExport}>
           <Download className="size-4" />
-          Export MD
+          {t("files.exportMd")}
         </Button>
       </div>
       <DeleteConfirmDialog
-        title="Delete document?"
-        description="This permanently removes the document and cannot be undone."
+        title={t("files.deleteDocumentTitle")}
+        description={t("files.deleteDocumentDescription")}
         onConfirm={onDelete}
         isPending={isDeleting}
         variant="ghost"

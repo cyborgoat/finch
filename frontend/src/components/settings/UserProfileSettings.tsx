@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { SettingsRow, SettingsSection } from "@/components/settings/SettingsSection"
 import { Input } from "@/components/ui/input"
 import {
@@ -30,6 +31,7 @@ export function UserProfileSettings({
   disabled,
   onUpdate,
 }: UserProfileSettingsProps) {
+  const { t } = useTranslation()
   const [nameDraft, setNameDraft] = useState(preferences.userName)
 
   useEffect(() => {
@@ -61,12 +63,12 @@ export function UserProfileSettings({
 
   return (
     <SettingsSection
-      title="You"
-      description="Your display name and which saved speaker is you."
+      title={t("settings.youTitle")}
+      description={t("settings.youDescription")}
     >
       <SettingsRow
-        label="Your name"
-        description="How Finch refers to you in summaries and AI features."
+        label={t("settings.yourNameLabel")}
+        description={t("settings.yourNameDescription")}
       >
         <Input
           value={nameDraft}
@@ -77,17 +79,17 @@ export function UserProfileSettings({
               event.currentTarget.blur()
             }
           }}
-          placeholder="e.g. Alex"
+          placeholder={t("settings.yourNamePlaceholder")}
           disabled={controlsDisabled}
           autoComplete="name"
         />
       </SettingsRow>
       <SettingsRow
-        label="Your speaker"
+        label={t("settings.yourSpeakerLabel")}
         description={
           profiles.length > 0
-            ? "Link your voice to a saved speaker profile."
-            : "Register a speaker from a recording first."
+            ? t("settings.yourSpeakerDescriptionLinked")
+            : t("settings.yourSpeakerDescriptionUnlinked")
         }
       >
         <Select
@@ -101,11 +103,13 @@ export function UserProfileSettings({
         >
           <SelectTrigger className="w-full">
             <span className="truncate">
-              {selectedSpeaker?.displayName ?? "Not linked"}
+              {selectedSpeaker?.displayName ?? t("settings.yourSpeakerNotLinked")}
             </span>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={NO_SPEAKER_VALUE}>Not linked</SelectItem>
+            <SelectItem value={NO_SPEAKER_VALUE}>
+              {t("settings.yourSpeakerNotLinked")}
+            </SelectItem>
             {profiles.map((profile) => (
               <SelectItem key={profile.id} value={profile.id}>
                 {profile.displayName}

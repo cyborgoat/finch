@@ -46,8 +46,10 @@ Accept Hugging Face terms for:
 Install dependencies:
 
 ```bash
-cd backend && uv add pyannote-audio
+cd backend && uv add pyannote-audio omegaconf speechbrain
 ```
+
+`omegaconf` and `speechbrain` are required to load the `pyannote/embedding` checkpoint (not always pulled in transitively).
 
 ## User flow (UI)
 
@@ -76,7 +78,7 @@ cd backend && uv add pyannote-audio
 | Section | Purpose |
 |---------|---------|
 | **You** | Your display name; map one saved speaker profile as yourself |
-| **Language** | App / AI content language (English or 中文) |
+| **Language & region** | Interface language and AI note content language (English or 中文) |
 | **AI notes** | Summary style and format for meeting summary notes |
 | **Speakers** | Auto-label toggle; list of saved speakers (rename / delete) |
 
@@ -106,7 +108,7 @@ Higher threshold → stricter matching (more `Unknown Speaker`).
 | POST | `/api/speaker-memory/consent` | Record consent |
 | PATCH | `/api/speaker-memory/status` | Toggle auto-label (enabled) |
 | DELETE | `/api/speaker-memory/data` | Wipe all voiceprint data |
-| GET/PATCH | `/api/user-settings` | User name, language, summarization prefs, linked speaker profile |
+| GET/PATCH | `/api/user-settings` | User name, ui/content language, summarization prefs, linked speaker profile |
 | PATCH | `/api/transcripts/{id}/speakers` | Rename/link speakers; `enroll: true` saves voiceprint from optional turn timestamps |
 
 Primary enrollment path: `PATCH /api/transcripts/{id}/speakers` with:
@@ -145,5 +147,6 @@ When `enrollStartSec` / `enrollEndSec` are omitted, enrollment uses the longest 
 | Wrong name matched | Raise threshold; re-assign via a cleaner turn’s speaker label |
 | Consent required error | Turn on auto-label in Settings and accept consent before voiceprints can be stored |
 | Auto-label toggle disabled | Enable diarization and speaker memory in `.env`; check startup logs and `HF_TOKEN` |
+| `No module named 'omegaconf'` | Run `cd backend && uv add omegaconf speechbrain` and restart the backend |
 
 See also [diarization.md](diarization.md).

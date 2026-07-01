@@ -1,4 +1,5 @@
 
+import { useTranslation } from "react-i18next"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,17 +27,19 @@ export function DeleteConfirmDialog({
   title,
   description,
   onConfirm,
-  triggerLabel = "Delete",
-  confirmLabel = "Delete",
+  triggerLabel,
+  confirmLabel,
   isPending,
   variant = "destructive",
 }: DeleteConfirmDialogProps) {
+  const { t } = useTranslation()
+
   return (
     <AlertDialog>
       <AlertDialogTrigger
         render={
           <Button variant={variant} size="sm" disabled={isPending}>
-            {triggerLabel}
+            {triggerLabel ?? t("common.delete")}
           </Button>
         }
       />
@@ -46,13 +49,13 @@ export function DeleteConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             disabled={isPending}
             onClick={onConfirm}
           >
-            {isPending ? "Deleting…" : confirmLabel}
+            {isPending ? t("common.deleting") : (confirmLabel ?? t("common.delete"))}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

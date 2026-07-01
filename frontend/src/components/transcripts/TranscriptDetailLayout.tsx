@@ -1,5 +1,6 @@
 import { useNavigate, useSearch } from "@tanstack/react-router"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
@@ -55,6 +56,7 @@ export function TranscriptDetailLayout({
   onDelete,
   onSegmentSpeakerSave,
 }: TranscriptDetailLayoutProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate({ from: "/files/$id/" })
   const { tab, noteId } = useSearch({ from: "/files/$id/" })
   const activeTab = parseFileDetailTab(tab)
@@ -188,10 +190,10 @@ export function TranscriptDetailLayout({
       <Tabs value={activeTab} onValueChange={setTab} className="section-stack">
         <TabsList variant="line" className="w-full justify-start border-b border-border pb-0">
           <TabsTrigger value="source" className="px-4 pb-3">
-            Source
+            {t("nav.source")}
           </TabsTrigger>
           <TabsTrigger value="notes" className="px-4 pb-3">
-            Notes
+            {t("nav.notes")}
             {noteCount > 0 ? (
               <Badge variant="outline" className="ml-1.5 h-5 px-1.5 text-xs">
                 {noteCount}

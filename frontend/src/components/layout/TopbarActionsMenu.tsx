@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ import { Label } from "@/components/ui/label"
 import { useTopbarActions } from "@/components/layout/TopbarActionsContext"
 
 export function TopbarActionsMenu() {
+  const { t } = useTranslation()
   const { actions } = useTopbarActions()
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -64,7 +66,7 @@ export function TopbarActionsMenu() {
             <Button
               variant="outline"
               size="icon-sm"
-              aria-label="Recording actions"
+              aria-label={t("files.recordingActionsAriaLabel")}
               disabled={busy}
             >
               <MoreHorizontal className="size-4" />
@@ -77,7 +79,7 @@ export function TopbarActionsMenu() {
         >
           <DropdownMenuItem onClick={openRename} disabled={busy}>
             <Pencil />
-            Rename
+            {t("common.rename")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -86,7 +88,7 @@ export function TopbarActionsMenu() {
             disabled={busy}
           >
             <Trash2 />
-            Delete session
+            {t("files.deleteSession")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -94,13 +96,13 @@ export function TopbarActionsMenu() {
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename recording</DialogTitle>
+            <DialogTitle>{t("files.renameRecording")}</DialogTitle>
             <DialogDescription>
-              Update the title shown in your file library.
+              {t("files.renameRecordingDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="field-stack py-2">
-            <Label htmlFor="recording-rename-title">Title</Label>
+            <Label htmlFor="recording-rename-title">{t("common.title")}</Label>
             <Input
               id="recording-rename-title"
               value={title}
@@ -118,13 +120,13 @@ export function TopbarActionsMenu() {
               onClick={() => setRenameOpen(false)}
               disabled={actions.isRenaming}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={() => void handleRename()}
               disabled={actions.isRenaming || !title.trim()}
             >
-              {actions.isRenaming ? "Saving…" : "Save"}
+              {actions.isRenaming ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -133,14 +135,13 @@ export function TopbarActionsMenu() {
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete session?</AlertDialogTitle>
+            <AlertDialogTitle>{t("files.deleteSessionTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the recording, transcript, and related
-              documents.
+              {t("files.deleteSessionDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={actions.isDeleting}
@@ -149,7 +150,7 @@ export function TopbarActionsMenu() {
                 setDeleteOpen(false)
               }}
             >
-              {actions.isDeleting ? "Deleting…" : "Delete session"}
+              {actions.isDeleting ? t("common.deleting") : t("files.deleteSession")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router"
 import { type ColumnDef } from "@tanstack/react-table"
 import { Folder } from "lucide-react"
 import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import { formatDuration } from "@/components/audio/AudioUploader"
 import { FileRowActions } from "@/components/files/FileRowActions"
 import { Badge } from "@/components/ui/badge"
@@ -22,11 +23,13 @@ export function useTranscriptFileColumns({
   isDeleting,
   showTranscribingDetail = false,
 }: TranscriptFileTableActions) {
+  const { t } = useTranslation()
+
   return useMemo<ColumnDef<FileSummary>[]>(
     () => [
       {
         id: "title",
-        header: "Name",
+        header: t("common.name"),
         enableSorting: false,
         accessorFn: (row) => row.title,
         cell: ({ row }) => {
@@ -53,7 +56,7 @@ export function useTranscriptFileColumns({
                 )}
                 {showTranscribingDetail && isTranscribing ? (
                   <p className="mt-1.5 text-sm font-light leading-relaxed text-muted-foreground">
-                    Transcription is running locally. This usually takes a moment.
+                    {t("files.transcribingHint")}
                   </p>
                 ) : null}
                 {showTranscribingDetail && isFailed && item.errorMessage ? (
@@ -68,7 +71,7 @@ export function useTranscriptFileColumns({
       },
       {
         id: "updatedAt",
-        header: "Updated",
+        header: t("common.updated"),
         enableSorting: true,
         accessorFn: (row) => new Date(row.updatedAt).getTime(),
         cell: ({ row }) => (
@@ -79,18 +82,21 @@ export function useTranscriptFileColumns({
       },
       {
         id: "duration",
-        header: "Length",
+        header: t("common.length"),
         enableSorting: false,
         accessorFn: (row) => row.durationSeconds ?? -1,
         cell: ({ row }) => (
           <span className="tabular-nums text-base font-light text-muted-foreground">
-            {formatDuration(row.original.durationSeconds ?? undefined)}
+            {formatDuration(
+              row.original.durationSeconds ?? undefined,
+              t("common.notAvailable"),
+            )}
           </span>
         ),
       },
       {
         id: "language",
-        header: "Language",
+        header: t("common.language"),
         enableSorting: false,
         cell: ({ row }) =>
           row.original.language ? (
@@ -98,12 +104,14 @@ export function useTranscriptFileColumns({
               {row.original.language}
             </Badge>
           ) : (
-            <span className="text-base font-light text-muted-foreground">—</span>
+            <span className="text-base font-light text-muted-foreground">
+              {t("common.notAvailable")}
+            </span>
           ),
       },
       {
         id: "actions",
-        header: () => <span className="sr-only">Actions</span>,
+        header: () => <span className="sr-only">{t("common.actions")}</span>,
         enableSorting: false,
         cell: ({ row }) => (
           <FileRowActions
@@ -116,6 +124,6 @@ export function useTranscriptFileColumns({
         ),
       },
     ],
-    [onDelete, isDeleting, isRenaming, onRename, showTranscribingDetail],
+    [onDelete, isDeleting, isRenaming, onRename, showTranscribingDetail, t],
   )
 }

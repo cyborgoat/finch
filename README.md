@@ -13,6 +13,7 @@ Finch is a local-first voice transcription app. Audio is transcribed on your mac
 - Transcript library: **Files** at `/files` (voice recordings); detail page with **Source** and **Notes** tabs; topbar download/actions
 - AI note templates (meeting summary, action items, key decisions, follow-up email) and blank notes via configurable LLM providers
 - Markdown notes with MDXEditor; auto-save or manual save
+- UI localization (English / 中文) with separate interface and AI note content language settings
 
 See [docs/features.md](docs/features.md) for the full feature list and roadmap.
 

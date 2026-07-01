@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -43,10 +44,14 @@ export function SpeakerTurnDialog({
   isPending,
   onSave,
 }: SpeakerTurnDialogProps) {
+  const { t } = useTranslation()
   const initialName = resolveSpeakerDisplayName(clusterId, {
     segment,
     profiles,
-    fallback: segment.matchStatus === "unknown" ? "Unknown Speaker" : segment.speaker,
+    fallback:
+      segment.matchStatus === "unknown"
+        ? t("transcript.unknownSpeaker")
+        : segment.speaker,
   })
   const initialProfileId = segment.speakerProfileId ?? ""
 
@@ -83,25 +88,26 @@ export function SpeakerTurnDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Speaker for this turn</DialogTitle>
-          <DialogDescription>
-            Assign a name or link to a saved voice profile. Changes apply to all turns
-            from this voice in the transcript.
-          </DialogDescription>
+          <DialogTitle>{t("transcript.speakerTurnTitle")}</DialogTitle>
+          <DialogDescription>{t("transcript.speakerTurnDescription")}</DialogDescription>
         </DialogHeader>
 
         <div className="field-stack py-2">
           {profiles.length > 0 ? (
             <div className="field-stack">
-              <Label className="text-xs text-muted-foreground">Saved profile</Label>
+              <Label className="text-xs text-muted-foreground">
+                {t("transcript.savedProfile")}
+              </Label>
               <Select value={profileId} onValueChange={handleProfileChange} disabled={isPending}>
                 <SelectTrigger className="w-full">
                   <span className="truncate">
-                    {selectedProfile ? selectedProfile.displayName : "New name"}
+                    {selectedProfile
+                      ? selectedProfile.displayName
+                      : t("transcript.newName")}
                   </span>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__new__">New name</SelectItem>
+                  <SelectItem value="__new__">{t("transcript.newName")}</SelectItem>
                   {profiles.map((profile) => (
                     <SelectItem key={profile.id} value={profile.id}>
                       {profile.displayName}
@@ -114,7 +120,7 @@ export function SpeakerTurnDialog({
 
           <div className="field-stack">
             <Label htmlFor="turn-speaker-name" className="text-xs text-muted-foreground">
-              Display name
+              {t("common.displayName")}
             </Label>
             <Input
               id="turn-speaker-name"
@@ -124,28 +130,27 @@ export function SpeakerTurnDialog({
                 setDisplayName(event.target.value)
                 setProfileId("__new__")
               }}
-              placeholder="e.g. Robert"
+              placeholder={t("transcript.namePlaceholder")}
             />
           </div>
 
           {memoryReady ? (
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Saving updates the voiceprint from this turn&apos;s audio.
+              {t("transcript.memoryReadyHint")}
             </p>
           ) : (
             <p className="text-xs leading-relaxed text-muted-foreground">
-              The display name applies to this transcript. Voiceprints across recordings
-              depend on server configuration.
+              {t("transcript.memoryDisabledHint")}
             </p>
           )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={isPending || !displayName.trim()}>
-            {isPending ? "Saving…" : "Save speaker"}
+            {isPending ? t("common.saving") : t("transcript.saveSpeaker")}
           </Button>
         </DialogFooter>
       </DialogContent>

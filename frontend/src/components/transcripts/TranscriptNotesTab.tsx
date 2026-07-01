@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -70,6 +71,7 @@ export function TranscriptNotesTab({
   noteLoading = false,
   onNoteIdChange,
 }: TranscriptNotesTabProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { preferences } = useUserPreferences();
   const deleteMutation = useDeleteDocument();
@@ -91,15 +93,17 @@ export function TranscriptNotesTab({
     void queryClient.invalidateQueries({ queryKey: ["documents"] });
     void queryClient.invalidateQueries({ queryKey: ["files"] });
     setEditorDirty(false);
-    toast.success(`${activeNote?.title ?? "Note"} ready`);
-  }, [activeNote?.title, queryClient]);
+    toast.success(
+      t("toasts.noteReady", { title: activeNote?.title ?? t("common.note") }),
+    );
+  }, [activeNote?.title, queryClient, t]);
 
   const handleGenerationFailed = useCallback(
     (failedJob: { error?: string | null }) => {
       void queryClient.invalidateQueries({ queryKey: ["documents"] });
-      toast.error(failedJob.error ?? "Failed to generate note. Try again.");
+      toast.error(failedJob.error ?? t("toasts.generateNoteFailed"));
     },
-    [queryClient],
+    [queryClient, t],
   );
 
   const { job: generationJob, error: generationError } = useJobPolling(
@@ -128,12 +132,12 @@ export function TranscriptNotesTab({
         value: note.id,
         label:
           note.status === "generating"
-            ? `${note.title} (Generating…)`
+            ? t("notes.generatingLabel", { title: note.title })
             : note.status === "failed"
-              ? `${note.title} (Failed)`
+              ? t("notes.failedLabel", { title: note.title })
               : note.title,
       })),
-    [notes],
+    [notes, t],
   );
 
   const activeNoteSummary = notes.find((note) => note.id === activeNoteId);
@@ -163,13 +167,13 @@ export function TranscriptNotesTab({
     if (!activeNoteId) return;
     try {
       await deleteMutation.mutateAsync(activeNoteId);
-      toast.success("Note deleted");
+      toast.success(t("toasts.noteDeleted"));
       const remaining = notes.filter((note) => note.id !== activeNoteId);
       onNoteIdChange?.(remaining[0]?.id ?? null);
       setEditorDirty(false);
       setDeleteOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete note");
+      toast.error(err instanceof Error ? err.message : t("toasts.deleteNoteFailed"));
     }
   };
 
@@ -192,7 +196,7 @@ export function TranscriptNotesTab({
       setCreateOpen(false);
       handleNoteCreated(documentId);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to start AI note");
+      toast.error(err instanceof Error ? err.message : t("toasts.startAiNoteFailed"));
     } finally {
       setPendingTemplateId(null);
     }
@@ -207,7 +211,7 @@ export function TranscriptNotesTab({
       setCreateOpen(false);
       handleNoteCreated(document.id);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create note");
+      toast.error(err instanceof Error ? err.message : t("toasts.createNoteFailed"));
     } finally {
       setCreatingBlank(false);
     }
@@ -220,7 +224,7 @@ export function TranscriptNotesTab({
 
   const openRename = () => {
     const title =
-      activeNote?.title ?? activeNoteSummary?.title ?? "Untitled note";
+      activeNote?.title ?? activeNoteSummary?.title ?? t("notes.untitledNote");
     setRenameTitle(title);
     setRenameOpen(true);
   };
@@ -230,7 +234,7 @@ export function TranscriptNotesTab({
     if (!activeNoteId || !trimmed) return;
 
     const currentTitle =
-      activeNote?.title ?? activeNoteSummary?.title ?? "Untitled note";
+      activeNote?.title ?? activeNoteSummary?.title ?? t("notes.untitledNote");
     if (trimmed === currentTitle) {
       setRenameOpen(false);
       return;
@@ -238,10 +242,10 @@ export function TranscriptNotesTab({
 
     try {
       await updateMutation.mutateAsync({ title: trimmed });
-      toast.success("Note renamed");
+      toast.success(t("toasts.noteRenamed"));
       setRenameOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to rename note");
+      toast.error(err instanceof Error ? err.message : t("toasts.renameNoteFailed"));
     }
   };
 
@@ -249,11 +253,16 @@ export function TranscriptNotesTab({
     <BlurFade className="section-stack">
       {!llmReady ? (
         <div className="surface-card text-sm text-muted-foreground">
-          AI note templates require an LLM provider. Configure{" "}
-          <Link to="/settings" className="underline underline-offset-2">
-            Settings → LLM provider
-          </Link>
-          . Blank notes are always available.
+          <Trans
+            i18nKey="notes.llmRequiredBanner"
+            components={{
+              link: (
+                <Link to="/settings" className="underline underline-offset-2">
+                  {t("nav.settingsLlmProvider")}
+                </Link>
+              ),
+            }}
+          />
         </div>
       ) : null}
 
@@ -266,7 +275,7 @@ export function TranscriptNotesTab({
               items={noteItems}
             >
               <SelectTrigger className="h-9 w-full">
-                <SelectValue placeholder="Select note" />
+                <SelectValue placeholder={t("notes.selectNote")} />
               </SelectTrigger>
               <SelectContent
                 align="start"
@@ -289,7 +298,7 @@ export function TranscriptNotesTab({
                   variant="outline"
                   size="icon"
                   className="size-9 shrink-0"
-                  aria-label="Note actions"
+                  aria-label={t("notes.actionsAriaLabel")}
                   disabled={!activeNoteId || noteActionsBusy || showGeneratingPlaceholder}
                 >
                   <MoreHorizontal className="size-4" />
@@ -299,7 +308,7 @@ export function TranscriptNotesTab({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={openRename} disabled={noteActionsBusy}>
                 <Pencil />
-                Rename note
+                {t("notes.renameNote")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -308,7 +317,7 @@ export function TranscriptNotesTab({
                 disabled={noteActionsBusy}
               >
                 <Trash2 />
-                Delete note
+                {t("notes.deleteNote")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -317,7 +326,7 @@ export function TranscriptNotesTab({
             variant="outline"
             size="icon"
             className="size-9 shrink-0"
-            aria-label="New note"
+            aria-label={t("notes.newNoteAriaLabel")}
             onClick={() => setCreateOpen(true)}
           >
             <Plus className="size-4" />
@@ -327,17 +336,17 @@ export function TranscriptNotesTab({
 
       {showGeneratingPlaceholder ? (
         <NoteGeneratingPlaceholder
-          templateTitle={activeNote?.title ?? "Note"}
+          templateTitle={activeNote?.title ?? t("common.note")}
           job={generationJob}
           error={generationError}
         />
       ) : showFailedPlaceholder ? (
         <EmptyState
-          title="Note generation failed"
-          description="Something went wrong while generating this note. Delete it and try again."
+          title={t("notes.failedTitle")}
+          description={t("notes.failedDescription")}
           action={
             <Button type="button" variant="outline" onClick={() => setDeleteOpen(true)}>
-              Delete note
+              {t("notes.deleteNote")}
             </Button>
           }
         />
@@ -352,12 +361,12 @@ export function TranscriptNotesTab({
         />
       ) : (
         <EmptyState
-          title="No notes yet"
-          description="Create a note from an AI template or start with a blank page."
+          title={t("notes.emptyTitle")}
+          description={t("notes.emptyDescription")}
           action={
             <Button type="button" onClick={() => setCreateOpen(true)}>
               <Plus className="size-4" />
-              Create note
+              {t("notes.createNote")}
             </Button>
           }
         />
@@ -376,13 +385,11 @@ export function TranscriptNotesTab({
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename note</DialogTitle>
-            <DialogDescription>
-              Update the name shown in the note list.
-            </DialogDescription>
+            <DialogTitle>{t("notes.renameTitle")}</DialogTitle>
+            <DialogDescription>{t("notes.renameDescription")}</DialogDescription>
           </DialogHeader>
           <div className="field-stack py-2">
-            <Label htmlFor="note-rename-title">Title</Label>
+            <Label htmlFor="note-rename-title">{t("common.title")}</Label>
             <Input
               id="note-rename-title"
               value={renameTitle}
@@ -400,13 +407,13 @@ export function TranscriptNotesTab({
               onClick={() => setRenameOpen(false)}
               disabled={updateMutation.isPending}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={() => void handleRename()}
               disabled={updateMutation.isPending || !renameTitle.trim()}
             >
-              {updateMutation.isPending ? "Saving…" : "Save"}
+              {updateMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -415,19 +422,17 @@ export function TranscriptNotesTab({
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete note?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently removes the selected note from this recording.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("notes.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("notes.deleteDescription")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={deleteMutation.isPending}
               onClick={() => void handleDelete()}
             >
-              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+              {deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -436,13 +441,11 @@ export function TranscriptNotesTab({
       <AlertDialog open={switchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have unsaved edits. Switch notes without saving?
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("notes.discardTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("notes.discardDescription")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogCancel>{t("notes.discardKeepEditing")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (pendingNoteId) {
@@ -453,7 +456,7 @@ export function TranscriptNotesTab({
                 setSwitchConfirmOpen(false);
               }}
             >
-              Discard changes
+              {t("notes.discardConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
