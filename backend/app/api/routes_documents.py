@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session
 
 from app.models.document import Document
@@ -26,7 +26,7 @@ def _to_response(document: Document) -> DocumentResponse:
 
 @router.get("", response_model=DocumentListResponse)
 def list_documents(
-    transcript_id: str | None = None,
+    transcript_id: str | None = Query(None, alias="transcriptId"),
     session: Session = Depends(get_session),
 ) -> DocumentListResponse:
     service = DocumentService(session)

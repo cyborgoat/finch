@@ -10,14 +10,14 @@ import type { Document } from "@/lib/types"
 
 export function useDocuments(transcriptId?: string) {
   return useQuery({
-    queryKey: ["documents", transcriptId ?? "all"],
+    queryKey: ["documents", "list", transcriptId ?? "all"],
     queryFn: () => listDocuments(transcriptId),
   })
 }
 
 export function useDocument(id: string) {
   return useQuery({
-    queryKey: ["documents", id],
+    queryKey: ["documents", "detail", id],
     queryFn: () => getDocument(id),
     enabled: !!id,
   })
@@ -30,7 +30,7 @@ export function useUpdateDocument(id: string) {
       updateDocument(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] })
-      queryClient.invalidateQueries({ queryKey: ["documents", id] })
+      queryClient.invalidateQueries({ queryKey: ["documents", "detail", id] })
       queryClient.invalidateQueries({ queryKey: ["files"] })
     },
   })

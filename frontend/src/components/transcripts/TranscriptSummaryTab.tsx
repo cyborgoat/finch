@@ -54,11 +54,13 @@ export function TranscriptSummaryTab({
   const summaryMarkdown = summaryDocument?.markdown ?? null
 
   const invalidateSummary = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ["documents", transcriptId] })
-    void queryClient.invalidateQueries({ queryKey: ["documents"] })
+    void queryClient.invalidateQueries({ queryKey: ["documents", "list", transcriptId] })
+    void queryClient.invalidateQueries({ queryKey: ["documents", "list"] })
     void queryClient.invalidateQueries({ queryKey: ["files"] })
     if (summarySummary?.id) {
-      void queryClient.invalidateQueries({ queryKey: ["documents", summarySummary.id] })
+      void queryClient.invalidateQueries({
+        queryKey: ["documents", "detail", summarySummary.id],
+      })
     }
   }, [queryClient, summarySummary?.id, transcriptId])
 
@@ -68,7 +70,7 @@ export function TranscriptSummaryTab({
       setJobId(null)
       invalidateSummary()
       if (resultId) {
-        void queryClient.invalidateQueries({ queryKey: ["documents", resultId] })
+        void queryClient.invalidateQueries({ queryKey: ["documents", "detail", resultId] })
       }
       toast.success("Summary generated")
     },
