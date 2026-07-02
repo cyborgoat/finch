@@ -3,13 +3,24 @@ from datetime import UTC, datetime
 
 from sqlmodel import Session
 
+from app.core.enums import RecordingStatus
+from app.core.errors import AppError
 from app.domains.jobs.job_service import JobService
 from app.domains.jobs.queue import enqueue_transcription
 from app.domains.media.audio_service import AudioService
+from app.domains.recordings.presenter import normalize_recording_status
 from app.domains.recordings.recording_service import RecordingService
 from app.models.audio_asset import AudioAsset
 from app.models.job import Job
 from app.models.recording import Recording
+
+TRANSCRIBABLE_STATUSES = frozenset(
+    {
+        RecordingStatus.PENDING,
+        RecordingStatus.FAILED,
+        RecordingStatus.DRAFT,
+    }
+)
 
 
 def default_recording_title(existing_titles: set[str]) -> str:
@@ -48,6 +59,11 @@ def resolve_recording_title(
 
 
 @dataclass(frozen=True)
+class PendingRecordingResult:
+    recording: Recording
+
+
+@dataclass(frozen=True)
 class TranscriptionJobResult:
     job: Job
     recording: Recording
@@ -67,12 +83,7 @@ class TranscriptionJobService:
         self.recording_service = recording_service or RecordingService(session)
         self.job_service = job_service or JobService(session)
 
-    def create_job(
-        self,
-        *,
-        audio_asset_id: str,
-        language: str = "auto",
-    ) -> TranscriptionJobResult:
+    def create_recording(self, *, audio_asset_id: str) -> PendingRecordingResult:
         audio_asset = self.audio_service.get_audio(audio_asset_id)
         existing_titles = {
             recording.title for recording in self.recording_service.list_recordings()
@@ -82,9 +93,59 @@ class TranscriptionJobService:
             audio_asset_id=audio_asset.id,
             title=title,
             raw_text="",
-            status="transcribing",
+            status=RecordingStatus.PENDING,
+        )
+        return PendingRecordingResult(recording=recording)
+
+    def start_transcription(
+        self,
+        recording_id: str,
+        *,
+        language: str = "auto",
+        regenerate: bool = False,
+    ) -> TranscriptionJobResult:
+        recording = self.recording_service.get_recording(recording_id)
+        if recording.status == RecordingStatus.TRANSCRIBING:
+            raise AppError(
+                "RECORDING_ALREADY_TRANSCRIBING",
+                "This recording is already being transcribed.",
+                409,
+            )
+        if normalize_recording_status(recording.status) not in TRANSCRIBABLE_STATUSES:
+            raise AppError(
+                "RECORDING_NOT_TRANSCRIBABLE",
+                f"Recording status '{recording.status}' cannot be transcribed.",
+                400,
+            )
+
+        if regenerate:
+            recording = self.recording_service.update_recording(
+                recording,
+                raw_text="",
+                edited_text="",
+                speaker_segments="",
+                error_message=None,
+                processing_note=None,
+            )
+
+        recording = self.recording_service.update_recording(
+            recording,
+            status=RecordingStatus.TRANSCRIBING,
         )
         job = self.job_service.create_job("transcription")
         self.job_service.update_job(job, result_id=recording.id)
-        enqueue_transcription(job.id, audio_asset_id, language)
+        enqueue_transcription(job.id, recording.audio_asset_id, language)
         return TranscriptionJobResult(job=job, recording=recording)
+
+    def create_job(
+        self,
+        *,
+        audio_asset_id: str,
+        language: str = "auto",
+    ) -> TranscriptionJobResult:
+        """Legacy helper: create pending recording and start transcription immediately."""
+        pending = self.create_recording(audio_asset_id=audio_asset_id)
+        return self.start_transcription(
+            pending.recording.id,
+            language=language,
+        )

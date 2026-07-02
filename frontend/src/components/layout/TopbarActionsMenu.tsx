@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { MoreHorizontal, Pencil, RefreshCw, Trash2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import {
   AlertDialog,
@@ -36,11 +36,12 @@ export function TopbarActionsMenu() {
   const { actions } = useTopbarActions()
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [regenerateOpen, setRegenerateOpen] = useState(false)
   const [title, setTitle] = useState("")
 
   if (!actions) return null
 
-  const busy = actions.isRenaming || actions.isDeleting
+  const busy = actions.isRenaming || actions.isDeleting || actions.isRegenerating
 
   const openRename = () => {
     setTitle(actions.title)
@@ -77,6 +78,18 @@ export function TopbarActionsMenu() {
           align="end"
           className="w-auto min-w-48 p-1.5 [&_[data-slot=dropdown-menu-item]]:gap-2.5 [&_[data-slot=dropdown-menu-item]]:px-3 [&_[data-slot=dropdown-menu-item]]:py-2"
         >
+          {actions.onRegenerateTranscription ? (
+            <>
+              <DropdownMenuItem
+                onClick={() => setRegenerateOpen(true)}
+                disabled={busy}
+              >
+                <RefreshCw />
+                {t("recordings.regenerateTranscription")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          ) : null}
           <DropdownMenuItem onClick={openRename} disabled={busy}>
             <Pencil />
             {t("common.rename")}
@@ -131,6 +144,31 @@ export function TopbarActionsMenu() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {actions.onRegenerateTranscription ? (
+        <AlertDialog open={regenerateOpen} onOpenChange={setRegenerateOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("recordings.regenerateTitle")}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("recordings.regenerateDescription")}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={actions.isRegenerating}
+                onClick={() => {
+                  void actions.onRegenerateTranscription?.()
+                  setRegenerateOpen(false)
+                }}
+              >
+                {t("recordings.regenerateTranscription")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ) : null}
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

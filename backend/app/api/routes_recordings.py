@@ -17,6 +17,8 @@ from app.schemas.recording import (
     CreateRecordingResponse,
     RecordingListResponse,
     RecordingResponse,
+    StartTranscriptionRequest,
+    StartTranscriptionResponse,
     UpdateRecordingRequest,
     UpdateRecordingResponse,
 )
@@ -29,15 +31,29 @@ router = APIRouter(prefix="/recordings", tags=["recordings"])
 
 
 @router.post("", response_model=CreateRecordingResponse)
-def create_recording_job(
+def create_recording(
     payload: CreateRecordingRequest,
     job_service: TranscriptionJobService = Depends(get_transcription_job_service),
 ) -> CreateRecordingResponse:
-    result = job_service.create_job(
-        audio_asset_id=payload.audio_asset_id,
-        language=payload.language,
-    )
+    result = job_service.create_recording(audio_asset_id=payload.audio_asset_id)
     return CreateRecordingResponse(
+        recording_id=result.recording.id,
+        status=result.recording.status,
+    )
+
+
+@router.post("/{recording_id}/transcribe", response_model=StartTranscriptionResponse)
+def start_transcription(
+    recording_id: str,
+    payload: StartTranscriptionRequest,
+    job_service: TranscriptionJobService = Depends(get_transcription_job_service),
+) -> StartTranscriptionResponse:
+    result = job_service.start_transcription(
+        recording_id,
+        language=payload.language,
+        regenerate=payload.regenerate,
+    )
+    return StartTranscriptionResponse(
         job_id=result.job.id,
         recording_id=result.recording.id,
         status=result.job.status,
@@ -74,7 +90,6 @@ def update_recording(
         transcript,
         title=payload.title,
         edited_text=payload.edited_text,
-        status=payload.status,
     )
     return UpdateRecordingResponse(
         id=updated.id,

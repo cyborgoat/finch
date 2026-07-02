@@ -143,7 +143,7 @@ export type Recording = {
   rawText: string
   editedText?: string | null
   language?: string | null
-  status: "draft" | "final" | "transcribing" | "failed"
+  status: "pending" | "draft" | "transcribing" | "failed"
   speakerSegments?: SpeakerSegment[] | null
   errorMessage?: string | null
   processingNote?: string | null
@@ -156,7 +156,7 @@ export type RecordingSummary = {
   audioAssetId: string
   title: string
   language?: string | null
-  status: "draft" | "final" | "transcribing" | "failed"
+  status: "pending" | "draft" | "transcribing" | "failed"
   durationSeconds?: number | null
   errorMessage?: string | null
   createdAt: string

@@ -83,15 +83,34 @@ export async function getAudioAsset(audioId: string): Promise<AudioAsset> {
   return request(`/api/audio/${audioId}`)
 }
 
-export async function createRecordingJob(input: {
+export async function createRecording(input: {
   audioAssetId: string
-  language?: string
-}): Promise<{ jobId: string; recordingId: string; status: string }> {
+}): Promise<{ recordingId: string; status: string }> {
   return request("/api/recordings", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   })
+}
+
+export async function startTranscription(
+  recordingId: string,
+  input?: { language?: string; regenerate?: boolean },
+): Promise<{ jobId: string; recordingId: string; status: string }> {
+  return request(`/api/recordings/${recordingId}/transcribe`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input ?? {}),
+  })
+}
+
+/** @deprecated Use createRecording + startTranscription */
+export async function createRecordingJob(input: {
+  audioAssetId: string
+  language?: string
+}): Promise<{ jobId: string; recordingId: string; status: string }> {
+  const created = await createRecording({ audioAssetId: input.audioAssetId })
+  return startTranscription(created.recordingId, { language: input.language })
 }
 
 export async function getJob(jobId: string): Promise<Job> {
@@ -108,7 +127,7 @@ export async function getRecording(id: string): Promise<Recording> {
 
 export async function updateRecording(
   id: string,
-  input: Partial<Pick<Recording, "title" | "editedText" | "status">>,
+  input: Partial<Pick<Recording, "title" | "editedText">>,
 ): Promise<Recording> {
   return request(`/api/recordings/${id}`, {
     method: "PATCH",

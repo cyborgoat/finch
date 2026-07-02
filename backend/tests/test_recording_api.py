@@ -11,28 +11,40 @@ RECORDING_TITLE_PATTERN = re.compile(
 )
 
 
+def _upload_audio(client, sample_wav_bytes, *, source="upload", filename="sample.wav"):
+    return client.post(
+        "/api/audio/upload",
+        data={"source": source},
+        files={"file": (filename, BytesIO(sample_wav_bytes), "audio/wav")},
+    )
+
+
+def _create_pending(client, audio_id):
+    return client.post("/api/recordings", json={"audioAssetId": audio_id})
+
+
+def _start_transcription(client, recording_id, **payload):
+    return client.post(
+        f"/api/recordings/{recording_id}/transcribe",
+        json={"language": "auto", **payload},
+    )
+
+
 @patch("app.domains.media.audio_service.subprocess.run")
 def test_transcription_flow(mock_run, client, sample_wav_bytes):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    upload_response = client.post(
-        "/api/audio/upload",
-        data={"source": "upload"},
-        files={"file": ("sample.wav", BytesIO(sample_wav_bytes), "audio/wav")},
-    )
+    upload_response = _upload_audio(client, sample_wav_bytes)
     assert upload_response.status_code == 200
     audio_id = upload_response.json()["id"]
 
-    job_response = client.post(
-        "/api/recordings",
-        json={"audioAssetId": audio_id, "language": "auto"},
-    )
+    create_response = _create_pending(client, audio_id)
+    assert create_response.status_code == 200
+    recording_id = create_response.json()["recordingId"]
 
+    job_response = _start_transcription(client, recording_id)
     assert job_response.status_code == 200
-    job_body = job_response.json()
-    job_id = job_body["jobId"]
-    recording_id = job_body["recordingId"]
-    assert recording_id is not None
+    job_id = job_response.json()["jobId"]
 
     job = client.get(f"/api/jobs/{job_id}").json()
     assert job["status"] == "completed"
@@ -46,12 +58,12 @@ def test_transcription_flow(mock_run, client, sample_wav_bytes):
 
     patch_response = client.patch(
         f"/api/recordings/{transcript['id']}",
-        json={"editedText": "Edited transcript text", "status": "final"},
+        json={"editedText": "Edited transcript text"},
     )
     assert patch_response.status_code == 200
     patched = patch_response.json()
     assert patched["editedText"] == "Edited transcript text"
-    assert patched["status"] == "final"
+    assert patched["status"] == "draft"
     assert patched["updatedAt"] is not None
 
     list_response = client.get("/api/recordings")
@@ -65,7 +77,7 @@ def test_transcription_flow(mock_run, client, sample_wav_bytes):
 
 @patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
 @patch("app.domains.media.audio_service.subprocess.run")
-def test_create_recording_job_adds_transcribing_placeholder(
+def test_create_recording_returns_pending(
     mock_run,
     mock_worker,
     client,
@@ -73,35 +85,22 @@ def test_create_recording_job_adds_transcribing_placeholder(
 ):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    upload_response = client.post(
-        "/api/audio/upload",
-        data={"source": "upload"},
-        files={"file": ("sample.wav", BytesIO(sample_wav_bytes), "audio/wav")},
-    )
-    audio_id = upload_response.json()["id"]
-
-    job_response = client.post(
-        "/api/recordings",
-        json={"audioAssetId": audio_id, "language": "auto"},
-    )
-    assert job_response.status_code == 200
-    body = job_response.json()
+    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
+    create_response = _create_pending(client, audio_id)
+    assert create_response.status_code == 200
+    body = create_response.json()
+    assert body["status"] == "pending"
     recording_id = body["recordingId"]
 
-    recording_response = client.get(f"/api/recordings/{recording_id}")
-    assert recording_response.status_code == 200
-    transcript = recording_response.json()
-    assert transcript["status"] == "transcribing"
-    assert transcript["rawText"] == ""
-    assert transcript["title"] == "sample"
-
-    list_response = client.get("/api/recordings")
-    assert list_response.json()["items"][0]["status"] == "transcribing"
+    recording = client.get(f"/api/recordings/{recording_id}").json()
+    assert recording["status"] == "pending"
+    assert recording["rawText"] == ""
+    assert recording["title"] == "sample"
 
 
 @patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
 @patch("app.domains.media.audio_service.subprocess.run")
-def test_create_recording_job_uses_datetime_title_for_mic_recordings(
+def test_start_transcription_sets_transcribing_status(
     mock_run,
     mock_worker,
     client,
@@ -109,18 +108,34 @@ def test_create_recording_job_uses_datetime_title_for_mic_recordings(
 ):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    upload_response = client.post(
-        "/api/audio/upload",
-        data={"source": "recording"},
-        files={"file": ("recording.webm", BytesIO(sample_wav_bytes), "audio/wav")},
-    )
-    audio_id = upload_response.json()["id"]
+    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = _create_pending(client, audio_id).json()["recordingId"]
 
-    job_response = client.post(
-        "/api/recordings",
-        json={"audioAssetId": audio_id, "language": "auto"},
-    )
-    recording_id = job_response.json()["recordingId"]
+    transcribe_response = _start_transcription(client, recording_id)
+    assert transcribe_response.status_code == 200
+    assert transcribe_response.json()["recordingId"] == recording_id
+
+    recording = client.get(f"/api/recordings/{recording_id}").json()
+    assert recording["status"] == "transcribing"
+
+
+@patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
+@patch("app.domains.media.audio_service.subprocess.run")
+def test_create_recording_uses_datetime_title_for_mic_recordings(
+    mock_run,
+    mock_worker,
+    client,
+    sample_wav_bytes,
+):
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+
+    audio_id = _upload_audio(
+        client,
+        sample_wav_bytes,
+        source="recording",
+        filename="recording.webm",
+    ).json()["id"]
+    recording_id = _create_pending(client, audio_id).json()["recordingId"]
     recording = client.get(f"/api/recordings/{recording_id}").json()
 
     assert RECORDING_TITLE_PATTERN.match(recording["title"])
@@ -128,7 +143,7 @@ def test_create_recording_job_uses_datetime_title_for_mic_recordings(
 
 @patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
 @patch("app.domains.media.audio_service.subprocess.run")
-def test_create_recording_job_uses_unique_titles_for_same_minute(
+def test_create_recording_uses_unique_titles_for_same_minute(
     mock_run,
     mock_worker,
     client,
@@ -138,23 +153,45 @@ def test_create_recording_job_uses_unique_titles_for_same_minute(
 
     titles: list[str] = []
     for index in range(2):
-        upload_response = client.post(
-            "/api/audio/upload",
-            data={"source": "recording"},
-            files={"file": (f"recording-{index}.webm", BytesIO(sample_wav_bytes), "audio/wav")},
-        )
-        audio_id = upload_response.json()["id"]
-
-        job_response = client.post(
-            "/api/recordings",
-            json={"audioAssetId": audio_id, "language": "auto"},
-        )
-        recording_id = job_response.json()["recordingId"]
+        audio_id = _upload_audio(
+            client,
+            sample_wav_bytes,
+            source="recording",
+            filename=f"recording-{index}.webm",
+        ).json()["id"]
+        recording_id = _create_pending(client, audio_id).json()["recordingId"]
         recording = client.get(f"/api/recordings/{recording_id}").json()
         titles.append(recording["title"])
 
     assert titles[0] != titles[1]
     assert all(RECORDING_TITLE_PATTERN.match(title) for title in titles)
+
+
+@patch("app.domains.media.audio_service.subprocess.run")
+def test_regenerate_transcription_clears_existing_text(
+    mock_run,
+    client,
+    sample_wav_bytes,
+):
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+
+    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = _create_pending(client, audio_id).json()["recordingId"]
+    _start_transcription(client, recording_id)
+
+    recording = client.get(f"/api/recordings/{recording_id}").json()
+    assert recording["rawText"] == FAKE_TRANSCRIPT_TEXT
+
+    client.patch(
+        f"/api/recordings/{recording_id}",
+        json={"editedText": "User edits"},
+    )
+
+    _start_transcription(client, recording_id, regenerate=True)
+    recording = client.get(f"/api/recordings/{recording_id}").json()
+    assert recording["status"] == "draft"
+    assert recording["editedText"] == ""
+    assert recording["rawText"] == FAKE_TRANSCRIPT_TEXT
 
 
 @patch("app.domains.transcription.pipeline.DiarizationService.load_pipeline")
@@ -179,18 +216,9 @@ def test_diarization_fallback_when_hf_token_missing(
     monkeypatch.setenv("DIARIZATION_ENABLED", "true")
     get_settings.cache_clear()
 
-    upload_response = client.post(
-        "/api/audio/upload",
-        data={"source": "upload"},
-        files={"file": ("sample.wav", BytesIO(sample_wav_bytes), "audio/wav")},
-    )
-    audio_id = upload_response.json()["id"]
-
-    job_response = client.post(
-        "/api/recordings",
-        json={"audioAssetId": audio_id, "language": "auto"},
-    )
-    job_id = job_response.json()["jobId"]
+    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = _create_pending(client, audio_id).json()["recordingId"]
+    job_id = _start_transcription(client, recording_id).json()["jobId"]
 
     job = client.get(f"/api/jobs/{job_id}").json()
     assert job["status"] == "completed"
@@ -219,19 +247,9 @@ def test_diarization_produces_speaker_labeled_transcript(
     monkeypatch.setenv("DIARIZATION_ENABLED", "true")
     get_settings.cache_clear()
 
-    upload_response = client.post(
-        "/api/audio/upload",
-        data={"source": "upload"},
-        files={"file": ("sample.wav", BytesIO(sample_wav_bytes), "audio/wav")},
-    )
-    audio_id = upload_response.json()["id"]
-
-    job_response = client.post(
-        "/api/recordings",
-        json={"audioAssetId": audio_id, "language": "auto"},
-    )
-    assert job_response.status_code == 200
-    job_id = job_response.json()["jobId"]
+    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = _create_pending(client, audio_id).json()["recordingId"]
+    job_id = _start_transcription(client, recording_id).json()["jobId"]
 
     job = client.get(f"/api/jobs/{job_id}").json()
     assert job["status"] == "completed"
@@ -254,24 +272,16 @@ def test_failed_transcription_keeps_recording_with_error(
 
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    upload_response = client.post(
-        "/api/audio/upload",
-        data={"source": "upload"},
-        files={"file": ("sample.wav", BytesIO(sample_wav_bytes), "audio/wav")},
-    )
-    audio_id = upload_response.json()["id"]
+    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = _create_pending(client, audio_id).json()["recordingId"]
 
     with patch(
         "app.domains.transcription.pipeline.TranscriptionPipeline._transcribe_single_pass",
         side_effect=AppError("ASR_TRANSCRIPTION_FAILED", "Mock ASR failure", 500),
     ):
-        job_response = client.post(
-            "/api/recordings",
-            json={"audioAssetId": audio_id, "language": "auto"},
-        )
+        job_response = _start_transcription(client, recording_id)
 
     job_id = job_response.json()["jobId"]
-    recording_id = job_response.json()["recordingId"]
 
     job = client.get(f"/api/jobs/{job_id}").json()
     assert job["status"] == "failed"

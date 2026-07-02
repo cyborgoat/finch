@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
+import { Link, useRouterState } from "@tanstack/react-router"
 import { ChevronDown, Mic, Upload } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useNewRecordingDialogs } from "@/components/layout/NewRecordingDialogs"
 import { cn } from "@/lib/utils"
 
 export function Sidebar() {
@@ -15,8 +16,7 @@ export function Sidebar() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
-  const navigate = useNavigate()
-  const isNewActive = pathname === "/record" || pathname === "/upload"
+  const { openUploadDialog, openRecordDialog } = useNewRecordingDialogs()
 
   const links = [
     { href: "/", label: t("nav.home") },
@@ -46,21 +46,18 @@ export function Sidebar() {
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button
-              className={cn("mb-4 w-full justify-between", isNewActive && "ring-2 ring-ring")}
-              size="sm"
-            >
+            <Button className="mb-4 w-full justify-between" size="sm">
               {t("nav.new")}
               <ChevronDown className="size-4 opacity-70" />
             </Button>
           }
         />
         <DropdownMenuContent align="start" className="w-(--anchor-width)">
-          <DropdownMenuItem onClick={() => void navigate({ to: "/record" })}>
+          <DropdownMenuItem onClick={openRecordDialog}>
             <Mic className="size-4" />
             {t("nav.recordVoice")}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => void navigate({ to: "/upload" })}>
+          <DropdownMenuItem onClick={openUploadDialog}>
             <Upload className="size-4" />
             {t("nav.uploadAudio")}
           </DropdownMenuItem>

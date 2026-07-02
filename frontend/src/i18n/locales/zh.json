@@ -84,7 +84,8 @@
     "backSeconds": "后退 {{seconds}} 秒",
     "forwardSeconds": "前进 {{seconds}} 秒",
     "playbackSpeedAria": "播放速度，当前 {{rate}}",
-    "searchPlaceholder": "按名称搜索…"
+    "searchPlaceholder": "按名称搜索…",
+    "status": "状态"
   },
   "upload": {
     "selectAudioFile": "选择音频文件",
@@ -95,12 +96,19 @@
     "filePreview": "音频预览",
     "nameLabel": "名称：",
     "sizeLabel": "大小：",
-    "durationLabel": "时长："
+    "durationLabel": "时长：",
+    "dialogTitle": "上传音频",
+    "dialogDescription": "将音频文件添加到库中。转录将在录音列表中手动开始。",
+    "saveToLibrary": "保存到库"
   },
   "record": {
     "recordVoice": "录制语音",
+    "dialogTitle": "录制语音",
+    "dialogDescription": "通过麦克风捕获音频。录制时可关闭此对话框 — 控制项保留在顶部栏。",
     "startRecording": "开始录制",
-    "transcribeRecording": "转录录音",
+    "saveRecording": "保存录音",
+    "discardRecording": "丢弃",
+    "continuesInBackground": "录制将在后台继续",
     "includeSystemAudio": "包含电脑音频",
     "includeSystemAudioHint": "同时捕获标签页、窗口或屏幕的音频。Chrome 或 Edge 效果最佳 — 共享时请启用标签页音频选项。",
     "errors": {
@@ -114,6 +122,11 @@
       "paused": "已暂停",
       "stopped": "已停止",
       "error": "错误"
+    },
+    "indicator": {
+      "recording": "录制中",
+      "paused": "已暂停",
+      "stopped": "待保存"
     }
   },
   "jobs": {
@@ -141,7 +154,6 @@
     "emptyDescription": "录制或上传音频以创建您的第一个录音。",
     "recentEmpty": "暂无录音。录制或上传音频即可开始。",
     "noSearchResults": "没有符合搜索条件的录音。",
-    "transcribingHint": "转录正在本地运行，通常需要片刻。",
     "notFound": "未找到录音。",
     "actionsAriaLabel": "录音操作",
     "renameTitle": "重命名录音",
@@ -152,10 +164,25 @@
     "downloadTranscript": "转录",
     "downloadActiveNote": "当前笔记",
     "exportMd": "导出 MD",
-    "deleteRecording": "删除录音"
+    "deleteRecording": "删除录音",
+    "transcribe": "转录",
+    "retryTranscription": "重试",
+    "regenerateTranscription": "重新生成转录",
+    "regenerateTitle": "重新生成转录？",
+    "regenerateDescription": "这将用全新的转录替换当前文本、说话人标签和所有编辑内容。",
+    "status": {
+      "pending": "仅音频",
+      "transcribing": "转录中",
+      "draft": "已转录",
+      "failed": "转录失败"
+    }
   },
   "recording": {
     "sectionTitle": "转录",
+    "pendingTitle": "音频已保存",
+    "pendingDescription": "尚未开始转录。准备好后可在本地运行转录。",
+    "startTranscription": "开始转录",
+    "retryTranscription": "重试转录",
     "transcribing": "转录中…",
     "transcribingHint": "您可以离开此页面并查看录音列表，状态会自动更新。",
     "failedDefault": "转录过程中出现问题。请查看后端日志并重试。",
@@ -366,6 +393,9 @@
     "transcriptionComplete": "转录完成",
     "transcriptionFailed": "转录失败",
     "transcriptionStarted": "转录已开始",
+    "transcriptionRegenerating": "正在重新生成转录",
+    "recordingSaved": "已保存到录音库",
+    "failedToSaveRecording": "保存录音失败",
     "audioUploaded": "音频已上传",
     "uploadFailed": "上传失败",
     "failedToStartJob": "启动任务失败",

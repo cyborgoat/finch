@@ -38,6 +38,8 @@ type RecordingDetailLayoutProps = {
     segment: SpeakerSegment,
     payload: { displayName: string; profileId: string | null; enroll: boolean },
   ) => Promise<void>
+  onRegenerateTranscription?: () => void | Promise<void>
+  isRegenerating?: boolean
 }
 
 export function RecordingDetailLayout({
@@ -55,6 +57,8 @@ export function RecordingDetailLayout({
   onRename,
   onDelete,
   onSegmentSpeakerSave,
+  onRegenerateTranscription,
+  isRegenerating,
 }: RecordingDetailLayoutProps) {
   const { t } = useTranslation()
   const navigate = useNavigate({ from: "/recordings/$id/" })
@@ -164,8 +168,10 @@ export function RecordingDetailLayout({
       activeNoteTitle: resolvedActiveNote?.title ?? null,
       onRename,
       onDelete,
+      onRegenerateTranscription,
       isRenaming: renamePending,
       isDeleting: deletePending,
+      isRegenerating,
     }),
     [
       recording.audioAssetId,
@@ -176,8 +182,10 @@ export function RecordingDetailLayout({
       resolvedActiveNote?.title,
       onRename,
       onDelete,
+      onRegenerateTranscription,
       renamePending,
       deletePending,
+      isRegenerating,
     ],
   )
 

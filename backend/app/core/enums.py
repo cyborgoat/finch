@@ -2,9 +2,9 @@ from enum import StrEnum
 
 
 class RecordingStatus(StrEnum):
+    PENDING = "pending"
     DRAFT = "draft"
     TRANSCRIBING = "transcribing"
-    COMPLETED = "completed"
     FAILED = "failed"
 
 

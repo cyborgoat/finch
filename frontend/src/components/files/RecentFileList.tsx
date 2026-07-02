@@ -20,23 +20,29 @@ type RecentRecordingListProps = {
   items: RecordingListItem[]
   onRename?: (id: string, title: string) => void | Promise<void>
   onDelete: (id: string) => void
+  onTranscribe?: (id: string, options?: { regenerate?: boolean }) => void | Promise<void>
   isRenaming?: boolean
   isDeleting?: boolean
+  isTranscribing?: boolean
 }
 
 export function RecentRecordingList({
   items,
   onRename,
   onDelete,
+  onTranscribe,
   isRenaming,
   isDeleting,
+  isTranscribing,
 }: RecentRecordingListProps) {
   const { t } = useTranslation()
   const columns = useRecordingFileColumns({
     onRename,
     onDelete,
+    onTranscribe,
     isRenaming,
     isDeleting,
+    isTranscribing,
   })
 
   const table = useReactTable({
@@ -73,20 +79,8 @@ export function RecentRecordingList({
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows.map((row) => {
-            const item = row.original
-            const isTranscribing = item.status === "transcribing"
-            const isFailed = item.status === "failed"
-
-            return (
-              <TableRow
-                key={row.id}
-                className={cn(
-                  "h-16",
-                  isTranscribing && "bg-muted/20 hover:bg-muted/25",
-                  isFailed && "bg-destructive/5 hover:bg-destructive/10",
-                )}
-              >
+          {table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id} className="h-16">
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
                     key={cell.id}
@@ -99,8 +93,7 @@ export function RecentRecordingList({
                   </TableCell>
                 ))}
               </TableRow>
-            )
-          })}
+          ))}
         </TableBody>
       </Table>
     </div>

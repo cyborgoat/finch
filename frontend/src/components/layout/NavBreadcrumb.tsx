@@ -69,12 +69,6 @@ function buildCrumbs(
   if (pathname === "/settings") {
     return [{ label: t("nav.settings") }]
   }
-  if (pathname === "/record") {
-    return [{ label: t("nav.recordVoice") }]
-  }
-  if (pathname === "/upload") {
-    return [{ label: t("nav.uploadAudio") }]
-  }
   return [{ label: t("nav.appName") }]
 }
 

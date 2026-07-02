@@ -2,6 +2,14 @@ from app.domains.transcription.diarization_service import speaker_segments_from_
 from app.models.recording import Recording
 from app.schemas.recording import RecordingResponse, RecordingSummary
 
+LEGACY_TRANSCRIBED_STATUSES = frozenset({"final", "completed"})
+
+
+def normalize_recording_status(status: str) -> str:
+    if status in LEGACY_TRANSCRIBED_STATUSES:
+        return "draft"
+    return status
+
 
 def to_recording_summary(
     recording: Recording,
@@ -12,7 +20,7 @@ def to_recording_summary(
         audio_asset_id=recording.audio_asset_id,
         title=recording.title,
         language=recording.language,
-        status=recording.status,
+        status=normalize_recording_status(recording.status),
         duration_seconds=duration_seconds,
         error_message=recording.error_message,
         processing_note=recording.processing_note,
@@ -30,7 +38,7 @@ def to_recording_response(recording: Recording) -> RecordingResponse:
         raw_text=recording.raw_text,
         edited_text=recording.edited_text,
         language=recording.language,
-        status=recording.status,
+        status=normalize_recording_status(recording.status),
         speaker_segments=[segment.to_api() for segment in segments] if segments else None,
         error_message=recording.error_message,
         processing_note=recording.processing_note,

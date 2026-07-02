@@ -16,10 +16,19 @@ class SpeakerSegmentSchema(CamelModel):
 
 class CreateRecordingRequest(CamelModel):
     audio_asset_id: str
-    language: str = "auto"
 
 
 class CreateRecordingResponse(CamelModel):
+    recording_id: str
+    status: str
+
+
+class StartTranscriptionRequest(CamelModel):
+    language: str = "auto"
+    regenerate: bool = False
+
+
+class StartTranscriptionResponse(CamelModel):
     job_id: str
     recording_id: str
     status: str
@@ -60,7 +69,6 @@ class RecordingResponse(CamelModel):
 class UpdateRecordingRequest(CamelModel):
     title: str | None = None
     edited_text: str | None = None
-    status: str | None = None
 
 
 class UpdateRecordingResponse(CamelModel):

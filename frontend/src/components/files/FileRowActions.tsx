@@ -35,25 +35,31 @@ type RecordingRowActionsProps = {
   item: RecordingListItem
   onRename?: (id: string, title: string) => void | Promise<void>
   onDelete: (id: string) => void
+  onTranscribe?: (id: string, options?: { regenerate?: boolean }) => void | Promise<void>
   isRenaming?: boolean
   isDeleting?: boolean
+  isTranscribing?: boolean
 }
 
 export function RecordingRowActions({
   item,
   onRename,
   onDelete,
+  onTranscribe,
   isRenaming,
   isDeleting,
+  isTranscribing,
 }: RecordingRowActionsProps) {
   const { t } = useTranslation()
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [regenerateOpen, setRegenerateOpen] = useState(false)
   const [title, setTitle] = useState(item.title)
-  const busy = isRenaming || isDeleting
-  const isTranscribing = item.status === "transcribing"
+  const busy = isRenaming || isDeleting || isTranscribing
+  const isItemTranscribing = item.status === "transcribing"
+  const canRegenerate = onTranscribe && item.status === "draft"
 
-  if (isTranscribing) return null
+  if (isItemTranscribing) return null
 
   const openRename = () => {
     setTitle(item.title)
@@ -87,6 +93,14 @@ export function RecordingRowActions({
           }
         />
         <DropdownMenuContent align="end">
+          {canRegenerate ? (
+            <>
+              <DropdownMenuItem onClick={() => setRegenerateOpen(true)}>
+                {t("recordings.regenerateTranscription")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          ) : null}
           {onRename ? (
             <>
               <DropdownMenuItem onClick={openRename}>{t("common.rename")}</DropdownMenuItem>
@@ -141,6 +155,31 @@ export function RecordingRowActions({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      ) : null}
+
+      {canRegenerate ? (
+        <AlertDialog open={regenerateOpen} onOpenChange={setRegenerateOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("recordings.regenerateTitle")}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("recordings.regenerateDescription")}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isTranscribing}
+                onClick={() => {
+                  void onTranscribe(item.id, { regenerate: true })
+                  setRegenerateOpen(false)
+                }}
+              >
+                {t("recordings.regenerateTranscription")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       ) : null}
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

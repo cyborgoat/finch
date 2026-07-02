@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { RecentRecordingList } from "@/components/files/RecentFileList"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useStartTranscriptionFlow } from "@/hooks/useStartTranscriptionFlow"
 import { useRecentRecordings } from "@/hooks/useRecordingsList"
 import {
   useDeleteRecording,
@@ -21,6 +22,7 @@ function HomePage() {
   const { data: items, isLoading } = useRecentRecordings(8)
   const deleteRecordingMutation = useDeleteRecording()
   const renameMutation = useRenameRecording()
+  const { startTranscriptionFlow, isStarting } = useStartTranscriptionFlow()
 
   const handleRename = async (id: string, title: string) => {
     try {
@@ -49,8 +51,10 @@ function HomePage() {
           items={items ?? []}
           onRename={(id, title) => void handleRename(id, title)}
           onDelete={(id) => void handleDelete(id)}
+          onTranscribe={(id, options) => void startTranscriptionFlow(id, options)}
           isRenaming={renameMutation.isPending}
           isDeleting={deleteRecordingMutation.isPending}
+          isTranscribing={isStarting}
         />
       )}
     </PageContainer>

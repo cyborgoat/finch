@@ -15,8 +15,10 @@ export type TopbarActions = {
   activeNoteTitle?: string | null
   onRename: (title: string) => void | Promise<void>
   onDelete: () => void
+  onRegenerateTranscription?: () => void | Promise<void>
   isRenaming?: boolean
   isDeleting?: boolean
+  isRegenerating?: boolean
 }
 
 type TopbarActionsContextValue = {

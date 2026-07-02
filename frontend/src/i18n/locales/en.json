@@ -84,7 +84,8 @@
     "backSeconds": "Back {{seconds}} seconds",
     "forwardSeconds": "Forward {{seconds}} seconds",
     "playbackSpeedAria": "Playback speed, currently {{rate}}",
-    "searchPlaceholder": "Search by name…"
+    "searchPlaceholder": "Search by name…",
+    "status": "Status"
   },
   "upload": {
     "selectAudioFile": "Select audio file",
@@ -95,12 +96,19 @@
     "filePreview": "Audio preview",
     "nameLabel": "Name:",
     "sizeLabel": "Size:",
-    "durationLabel": "Duration:"
+    "durationLabel": "Duration:",
+    "dialogTitle": "Upload audio",
+    "dialogDescription": "Add an audio file to your library. Transcription starts when you choose to from the recordings list.",
+    "saveToLibrary": "Save to library"
   },
   "record": {
     "recordVoice": "Record voice",
+    "dialogTitle": "Record voice",
+    "dialogDescription": "Capture audio from your microphone. You can close this dialog while recording — controls stay in the header.",
     "startRecording": "Start recording",
-    "transcribeRecording": "Transcribe recording",
+    "saveRecording": "Save recording",
+    "discardRecording": "Discard",
+    "continuesInBackground": "Recording continues in the background",
     "includeSystemAudio": "Include computer audio",
     "includeSystemAudioHint": "Also capture audio from a tab, window, or screen. Works best in Chrome or Edge — when sharing, enable the tab audio option.",
     "errors": {
@@ -114,6 +122,11 @@
       "paused": "Paused",
       "stopped": "Stopped",
       "error": "Error"
+    },
+    "indicator": {
+      "recording": "Recording",
+      "paused": "Paused",
+      "stopped": "Ready to save"
     }
   },
   "jobs": {
@@ -141,7 +154,6 @@
     "emptyDescription": "Record or upload audio to create your first recording.",
     "recentEmpty": "No recordings yet. Record or upload audio to get started.",
     "noSearchResults": "No recordings match your search.",
-    "transcribingHint": "Transcription is running locally. This usually takes a moment.",
     "notFound": "Recording not found.",
     "actionsAriaLabel": "Recording actions",
     "renameTitle": "Rename recording",
@@ -152,10 +164,25 @@
     "downloadTranscript": "Transcript",
     "downloadActiveNote": "Active note",
     "exportMd": "Export MD",
-    "deleteRecording": "Delete recording"
+    "deleteRecording": "Delete recording",
+    "transcribe": "Transcribe",
+    "retryTranscription": "Retry",
+    "regenerateTranscription": "Regenerate transcription",
+    "regenerateTitle": "Regenerate transcription?",
+    "regenerateDescription": "This replaces the current transcript, speaker labels, and any edits with a fresh transcription.",
+    "status": {
+      "pending": "Audio only",
+      "transcribing": "Transcribing",
+      "draft": "Transcribed",
+      "failed": "Transcription failed"
+    }
   },
   "recording": {
     "sectionTitle": "Transcript",
+    "pendingTitle": "Audio saved",
+    "pendingDescription": "Transcription has not started yet. Run it locally when you are ready.",
+    "startTranscription": "Start transcription",
+    "retryTranscription": "Retry transcription",
     "transcribing": "Transcribing…",
     "transcribingHint": "You can leave this page and check the recordings list. The status will update automatically.",
     "failedDefault": "Something went wrong during transcription. Check backend logs and try again.",
@@ -366,6 +393,9 @@
     "transcriptionComplete": "Transcription complete",
     "transcriptionFailed": "Transcription failed",
     "transcriptionStarted": "Transcription started",
+    "transcriptionRegenerating": "Regenerating transcription",
+    "recordingSaved": "Saved to recordings",
+    "failedToSaveRecording": "Failed to save recording",
     "audioUploaded": "Audio uploaded",
     "uploadFailed": "Upload failed",
     "failedToStartJob": "Failed to start job",

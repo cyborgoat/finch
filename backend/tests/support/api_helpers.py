@@ -33,12 +33,18 @@ def create_recording(client: TestClient, sample_wav: bytes) -> str:
     audio_id = upload_sample_audio(client, sample_wav)
     with patch("app.domains.media.audio_service.subprocess.run") as mock_run:
         mock_run.side_effect = fake_ffmpeg_run(sample_wav)
-        job = client.post(
+        create_response = client.post(
             "/api/recordings",
-            json={"audioAssetId": audio_id, "language": "auto"},
+            json={"audioAssetId": audio_id},
         )
-    assert job.status_code == 200
-    return job.json()["recordingId"]
+    assert create_response.status_code == 200
+    recording_id = create_response.json()["recordingId"]
+    transcribe_response = client.post(
+        f"/api/recordings/{recording_id}/transcribe",
+        json={"language": "auto"},
+    )
+    assert transcribe_response.status_code == 200
+    return recording_id
 
 
 def create_meeting_summary(client: TestClient, recording_id: str) -> str:

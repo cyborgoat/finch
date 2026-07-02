@@ -59,7 +59,7 @@ Note(s)
 | Entity | Purpose |
 |--------|---------|
 | `AudioAsset` | Uploaded or recorded file metadata + paths to original/normalized WAV |
-| `Recording` | `rawText`, optional `editedText`, `speakerSegments`, `status` (`draft` / `final` / `transcribing` / `failed`) |
+| `Recording` | `rawText`, optional `editedText`, `speakerSegments`, `status` (`pending` / `transcribing` / `draft` / `failed`) |
 | `VoiceprintProfile` | Voiceprint profile identity (`displayName`, `notes`) |
 | `VoiceprintEmbedding` | Local voiceprint vectors linked to a profile |
 | `AppPreference` | Key/value store (transcription settings, voiceprint consent, auto-label toggle, `user_settings` JSON) |

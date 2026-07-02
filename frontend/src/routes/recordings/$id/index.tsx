@@ -2,16 +2,19 @@ import { createFileRoute } from "@tanstack/react-router"
 import { Suspense } from "react"
 import { useTranslation } from "react-i18next"
 import { useQuery } from "@tanstack/react-query"
+import { FileText } from "lucide-react"
 import { JobProgress } from "@/components/jobs/JobProgress"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { TextShimmer } from "@/components/motion-primitives/text-shimmer"
 import { RecordingDetailLayout } from "@/components/transcripts/TranscriptDetailLayout"
 import { RecordingPageAudio } from "@/components/transcripts/TranscriptPageAudio"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useNotes } from "@/hooks/useNotes"
 import { useJobPolling } from "@/hooks/useJobPolling"
 import { useRecording } from "@/hooks/useRecordings"
 import { useRecordingEditor } from "@/hooks/useRecordingEditor"
+import { useStartTranscriptionFlow } from "@/hooks/useStartTranscriptionFlow"
 import { parseRecordingDetailTab, type RecordingDetailTab } from "@/lib/recordingDetailTabs"
 import { resolveRecordingKind } from "@/lib/recordings"
 import { notesQuery } from "@/lib/queries/notes"
@@ -64,7 +67,15 @@ export const Route = createFileRoute("/recordings/$id/")({
   component: RecordingDetailPage,
 })
 
-function RecordingDetailEditor({ recording }: { recording: Recording }) {
+function RecordingDetailEditor({
+  recording,
+  onRegenerateTranscription,
+  isRegenerating,
+}: {
+  recording: Recording
+  onRegenerateTranscription?: () => void | Promise<void>
+  isRegenerating?: boolean
+}) {
   const { data: notesData } = useNotes(recording.id)
   const { data: health } = useQuery(healthQuery())
   const editor = useRecordingEditor(recording)
@@ -86,6 +97,8 @@ function RecordingDetailEditor({ recording }: { recording: Recording }) {
       onRename={(nextTitle) => editor.handleRename(nextTitle)}
       onDelete={() => void editor.handleDelete()}
       onSegmentSpeakerSave={editor.applySegmentSpeaker}
+      onRegenerateTranscription={onRegenerateTranscription}
+      isRegenerating={isRegenerating}
     />
   )
 }
@@ -110,6 +123,7 @@ function RecordingFileDetail({ id }: { id: string }) {
   const { t } = useTranslation()
   const { jobId } = Route.useSearch()
   const { data: recording, isLoading } = useRecording(id)
+  const { startTranscriptionFlow, isStarting } = useStartTranscriptionFlow()
   const { job, error: jobError } = useJobPolling(jobId ?? null, {
     enabled: !!jobId,
   })
@@ -128,6 +142,31 @@ function RecordingFileDetail({ id }: { id: string }) {
     return (
       <PageContainer size="wide">
         <p className="text-muted-foreground">{t("recordings.notFound")}</p>
+      </PageContainer>
+    )
+  }
+
+  if (recording.status === "pending") {
+    return (
+      <PageContainer size="wide">
+        <RecordingPageAudio audioAssetId={recording.audioAssetId} />
+        <div className="surface-card flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted">
+            <FileText className="size-5 text-muted-foreground" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">{t("recording.pendingTitle")}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              {t("recording.pendingDescription")}
+            </p>
+          </div>
+          <Button
+            onClick={() => void startTranscriptionFlow(recording.id)}
+            disabled={isStarting}
+          >
+            {isStarting ? t("common.starting") : t("recording.startTranscription")}
+          </Button>
+        </div>
       </PageContainer>
     )
   }
@@ -162,6 +201,13 @@ function RecordingFileDetail({ id }: { id: string }) {
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             {recording.errorMessage ?? t("recording.failedDefault")}
           </p>
+          <Button
+            className="mt-4"
+            onClick={() => void startTranscriptionFlow(recording.id)}
+            disabled={isStarting}
+          >
+            {isStarting ? t("common.starting") : t("recording.retryTranscription")}
+          </Button>
         </div>
       </PageContainer>
     )
@@ -170,7 +216,14 @@ function RecordingFileDetail({ id }: { id: string }) {
   return (
     <PageContainer size="wide">
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <RecordingDetailEditor key={recording.id} recording={recording} />
+        <RecordingDetailEditor
+          key={recording.id}
+          recording={recording}
+          onRegenerateTranscription={() =>
+            startTranscriptionFlow(recording.id, { regenerate: true, navigateToDetail: false })
+          }
+          isRegenerating={isStarting}
+        />
       </Suspense>
     </PageContainer>
   )

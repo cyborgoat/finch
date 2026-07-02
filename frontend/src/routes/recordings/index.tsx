@@ -6,6 +6,7 @@ import { RecordingBrowser } from "@/components/files/FileBrowser"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useStartTranscriptionFlow } from "@/hooks/useStartTranscriptionFlow"
 import { useRecordingsList } from "@/hooks/useRecordingsList"
 import {
   useDeleteRecording,
@@ -23,6 +24,7 @@ function FilesPage() {
   const { data, isLoading } = useRecordingsList()
   const deleteRecordingMutation = useDeleteRecording()
   const renameMutation = useRenameRecording()
+  const { startTranscriptionFlow, isStarting } = useStartTranscriptionFlow()
   const [query, setQuery] = useState("")
 
   const items = useMemo(() => data?.items ?? [], [data?.items])
@@ -45,6 +47,13 @@ function FilesPage() {
     }
   }
 
+  const handleTranscribe = async (
+    id: string,
+    options?: { regenerate?: boolean },
+  ) => {
+    await startTranscriptionFlow(id, options)
+  }
+
   return (
     <PageContainer size="wide">
       <div className="mb-6 flex justify-end">
@@ -64,8 +73,10 @@ function FilesPage() {
           query={query}
           onRename={(id, title) => void handleRename(id, title)}
           onDelete={(id) => void handleDelete(id)}
+          onTranscribe={(id, options) => void handleTranscribe(id, options)}
           isRenaming={renameMutation.isPending}
           isDeleting={deleteRecordingMutation.isPending}
+          isTranscribing={isStarting}
         />
       )}
     </PageContainer>

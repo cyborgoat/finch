@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router"
 import { Mail, MessageCircle } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { useNewRecordingDialogs } from "@/components/layout/NewRecordingDialogs"
 import { cn } from "@/lib/utils"
 
 const APP_VERSION = "0.1.0"
@@ -18,12 +19,15 @@ function GitHubIcon({ className }: { className?: string }) {
   )
 }
 
-const productLinks = [
+const staticProductLinks = [
   { to: "/", labelKey: "nav.home" },
   { to: "/recordings", labelKey: "nav.recordings" },
   { to: "/settings", labelKey: "nav.settings" },
-  { to: "/record", labelKey: "nav.recordVoice" },
-  { to: "/upload", labelKey: "nav.uploadAudio" },
+] as const
+
+const dialogProductLinks = [
+  { action: "record" as const, labelKey: "nav.recordVoice" },
+  { action: "upload" as const, labelKey: "nav.uploadAudio" },
 ] as const
 
 const resourceLinks = [
@@ -103,6 +107,7 @@ function FooterExternalLink({
 
 export function Footer() {
   const { t } = useTranslation()
+  const { openUploadDialog, openRecordDialog } = useNewRecordingDialogs()
   const year = new Date().getFullYear()
 
   return (
@@ -153,7 +158,7 @@ export function Footer() {
           </div>
 
           <FooterLinkColumn title={t("footer.sections.product")} className="lg:col-span-2">
-            {productLinks.map(({ to, labelKey }) => (
+            {staticProductLinks.map(({ to, labelKey }) => (
               <li key={to}>
                 <Link
                   to={to}
@@ -161,6 +166,17 @@ export function Footer() {
                 >
                   {t(labelKey)}
                 </Link>
+              </li>
+            ))}
+            {dialogProductLinks.map(({ action, labelKey }) => (
+              <li key={action}>
+                <button
+                  type="button"
+                  onClick={action === "record" ? openRecordDialog : openUploadDialog}
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {t(labelKey)}
+                </button>
               </li>
             ))}
           </FooterLinkColumn>
