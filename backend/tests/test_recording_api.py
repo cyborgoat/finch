@@ -1,9 +1,14 @@
 from io import BytesIO
+import re
 from unittest.mock import patch
 
 import pytest
 
 from tests.support.fakes import FAKE_TRANSCRIPT_TEXT, fake_diarization_turns, fake_ffmpeg_run
+
+RECORDING_TITLE_PATTERN = re.compile(
+    r"^Recording \d{4}-\d{2}-\d{2} \d{2}:\d{2}( \(\d+\))?$"
+)
 
 
 @patch("app.domains.media.audio_service.subprocess.run")
@@ -88,9 +93,68 @@ def test_create_recording_job_adds_transcribing_placeholder(
     transcript = recording_response.json()
     assert transcript["status"] == "transcribing"
     assert transcript["rawText"] == ""
+    assert transcript["title"] == "sample"
 
     list_response = client.get("/api/recordings")
     assert list_response.json()["items"][0]["status"] == "transcribing"
+
+
+@patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
+@patch("app.domains.media.audio_service.subprocess.run")
+def test_create_recording_job_uses_datetime_title_for_mic_recordings(
+    mock_run,
+    mock_worker,
+    client,
+    sample_wav_bytes,
+):
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+
+    upload_response = client.post(
+        "/api/audio/upload",
+        data={"source": "recording"},
+        files={"file": ("recording.webm", BytesIO(sample_wav_bytes), "audio/wav")},
+    )
+    audio_id = upload_response.json()["id"]
+
+    job_response = client.post(
+        "/api/recordings",
+        json={"audioAssetId": audio_id, "language": "auto"},
+    )
+    recording_id = job_response.json()["recordingId"]
+    recording = client.get(f"/api/recordings/{recording_id}").json()
+
+    assert RECORDING_TITLE_PATTERN.match(recording["title"])
+
+
+@patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
+@patch("app.domains.media.audio_service.subprocess.run")
+def test_create_recording_job_uses_unique_titles_for_same_minute(
+    mock_run,
+    mock_worker,
+    client,
+    sample_wav_bytes,
+):
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+
+    titles: list[str] = []
+    for index in range(2):
+        upload_response = client.post(
+            "/api/audio/upload",
+            data={"source": "recording"},
+            files={"file": (f"recording-{index}.webm", BytesIO(sample_wav_bytes), "audio/wav")},
+        )
+        audio_id = upload_response.json()["id"]
+
+        job_response = client.post(
+            "/api/recordings",
+            json={"audioAssetId": audio_id, "language": "auto"},
+        )
+        recording_id = job_response.json()["recordingId"]
+        recording = client.get(f"/api/recordings/{recording_id}").json()
+        titles.append(recording["title"])
+
+    assert titles[0] != titles[1]
+    assert all(RECORDING_TITLE_PATTERN.match(title) for title in titles)
 
 
 @patch("app.domains.transcription.pipeline.DiarizationService.load_pipeline")

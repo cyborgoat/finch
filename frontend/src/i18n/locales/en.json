@@ -101,6 +101,13 @@
     "recordVoice": "Record voice",
     "startRecording": "Start recording",
     "transcribeRecording": "Transcribe recording",
+    "includeSystemAudio": "Include computer audio",
+    "includeSystemAudioHint": "Also capture audio from a tab, window, or screen. Works best in Chrome or Edge — when sharing, enable the tab audio option.",
+    "errors": {
+      "micDenied": "Microphone permission denied",
+      "displayDenied": "Screen or tab sharing was cancelled",
+      "noSystemAudio": "No computer audio was shared. Choose a tab or window and enable audio sharing."
+    },
     "state": {
       "idle": "Idle",
       "recording": "Recording",

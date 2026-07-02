@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { AudioRecorder } from "@/components/audio/AudioRecorder"
@@ -22,7 +22,19 @@ function RecordPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const invalidateRecordings = useInvalidateRecordings()
-  const recorder = useAudioRecorder()
+  const [includeSystemAudio, setIncludeSystemAudio] = useState(false)
+  const recorderErrors = useMemo(
+    () => ({
+      micDenied: t("record.errors.micDenied"),
+      displayDenied: t("record.errors.displayDenied"),
+      noSystemAudio: t("record.errors.noSystemAudio"),
+    }),
+    [t],
+  )
+  const recorder = useAudioRecorder({
+    includeSystemAudio,
+    errors: recorderErrors,
+  })
   const { upload, isUploading } = useAudioUpload()
   const [jobId, setJobId] = useState<string | null>(null)
   const [isTranscribing, setIsTranscribing] = useState(false)
@@ -57,13 +69,9 @@ function RecordPage() {
     if (!recorder.audioBlob) return
     setIsTranscribing(true)
     try {
-      const file = new File(
-        [recorder.audioBlob],
-        `recording-${Date.now()}.webm`,
-        {
-          type: (recorder.audioBlob.type || "audio/webm").split(";", 1)[0],
-        },
-      )
+      const file = new File([recorder.audioBlob], "recording.webm", {
+        type: (recorder.audioBlob.type || "audio/webm").split(";", 1)[0],
+      })
       const asset = await upload(file, "recording")
       setUploadedAssetId(asset.id)
       const { jobId: newJobId, recordingId } = await createRecordingJob({
@@ -97,6 +105,8 @@ function RecordPage() {
           audioBlob={recorder.audioBlob}
           mediaStream={recorder.mediaStream}
           error={recorder.error}
+          includeSystemAudio={includeSystemAudio}
+          onIncludeSystemAudioChange={setIncludeSystemAudio}
           onStart={() => void recorder.start()}
           onPause={recorder.pause}
           onResume={recorder.resume}

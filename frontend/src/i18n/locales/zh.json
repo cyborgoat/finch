@@ -101,6 +101,13 @@
     "recordVoice": "录制语音",
     "startRecording": "开始录制",
     "transcribeRecording": "转录录音",
+    "includeSystemAudio": "包含电脑音频",
+    "includeSystemAudioHint": "同时捕获标签页、窗口或屏幕的音频。Chrome 或 Edge 效果最佳 — 共享时请启用标签页音频选项。",
+    "errors": {
+      "micDenied": "麦克风权限被拒绝",
+      "displayDenied": "屏幕或标签页共享已取消",
+      "noSystemAudio": "未共享电脑音频。请选择标签页或窗口并启用音频共享。"
+    },
     "state": {
       "idle": "空闲",
       "recording": "录制中",

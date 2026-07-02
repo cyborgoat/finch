@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router"
 import { type ColumnDef } from "@tanstack/react-table"
-import { Folder } from "lucide-react"
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { formatDuration } from "@/components/audio/AudioUploader"
@@ -38,9 +37,8 @@ export function useRecordingFileColumns({
           const isFailed = item.status === "failed"
 
           return (
-            <div className="flex min-w-48 max-w-md items-start gap-2 whitespace-normal">
-              <Folder className="mt-1 size-4 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
+            <div className="min-w-48 max-w-md whitespace-normal">
+              <div className="min-w-0">
                 {isTranscribing ? (
                   <span className="text-base font-light text-muted-foreground">
                     {item.title}

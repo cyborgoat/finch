@@ -2,6 +2,8 @@
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { AudioPreview } from "@/components/audio/AudioPreview"
 import { AudioWaveform } from "@/components/audio/AudioWaveform"
 import type { RecorderState } from "@/hooks/useAudioRecorder"
@@ -13,6 +15,8 @@ type AudioRecorderProps = {
   audioBlob: Blob | null
   mediaStream: MediaStream | null
   error: string | null
+  includeSystemAudio: boolean
+  onIncludeSystemAudioChange: (value: boolean) => void
   onStart: () => void
   onPause: () => void
   onResume: () => void
@@ -33,6 +37,8 @@ export function AudioRecorder({
   audioBlob,
   mediaStream,
   error,
+  includeSystemAudio,
+  onIncludeSystemAudioChange,
   onStart,
   onPause,
   onResume,
@@ -43,6 +49,7 @@ export function AudioRecorder({
   const isRecording = state === "recording"
   const isPaused = state === "paused"
   const hasRecording = state === "stopped" && !!audioUrl
+  const canConfigureCapture = state === "idle" || state === "error"
 
   return (
     <Card>
@@ -50,6 +57,24 @@ export function AudioRecorder({
         <CardTitle className="text-base">{t("record.recordVoice")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {canConfigureCapture ? (
+          <div className="space-y-2 rounded-lg border border-border/60 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="include-system-audio" className="text-sm font-normal">
+                {t("record.includeSystemAudio")}
+              </Label>
+              <Switch
+                id="include-system-audio"
+                checked={includeSystemAudio}
+                onCheckedChange={onIncludeSystemAudioChange}
+                aria-label={t("record.includeSystemAudio")}
+              />
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {t("record.includeSystemAudioHint")}
+            </p>
+          </div>
+        ) : null}
         <div className="flex items-center justify-between">
           <span className="font-mono text-2xl tabular-nums">
             {formatTimer(durationSeconds)}

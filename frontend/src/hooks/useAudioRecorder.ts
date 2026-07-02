@@ -10,6 +10,15 @@ export type RecorderState =
   | "uploading"
   | "error"
 
+export type UseAudioRecorderOptions = {
+  includeSystemAudio?: boolean
+  errors?: {
+    micDenied?: string
+    displayDenied?: string
+    noSystemAudio?: string
+  }
+}
+
 function pickMimeType() {
   if (typeof MediaRecorder === "undefined") return ""
   if (MediaRecorder.isTypeSupported("audio/webm")) return "audio/webm"
@@ -17,7 +26,66 @@ function pickMimeType() {
   return ""
 }
 
-export function useAudioRecorder() {
+async function createCaptureStream(
+  includeSystemAudio: boolean,
+  errors: UseAudioRecorderOptions["errors"],
+): Promise<{ stream: MediaStream; cleanup: () => void }> {
+  const micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+
+  if (!includeSystemAudio) {
+    return {
+      stream: micStream,
+      cleanup: () => micStream.getTracks().forEach((track) => track.stop()),
+    }
+  }
+
+  let displayStream: MediaStream
+  try {
+    displayStream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: true,
+    })
+  } catch (err) {
+    micStream.getTracks().forEach((track) => track.stop())
+    if (err instanceof DOMException && err.name === "NotAllowedError") {
+      throw new Error(
+        errors?.displayDenied ?? "Screen or tab sharing was cancelled",
+        { cause: err },
+      )
+    }
+    throw err
+  }
+
+  if (displayStream.getAudioTracks().length === 0) {
+    displayStream.getTracks().forEach((track) => track.stop())
+    micStream.getTracks().forEach((track) => track.stop())
+    throw new Error(
+      errors?.noSystemAudio ??
+        "No computer audio was shared. Choose a tab or window and enable audio sharing.",
+    )
+  }
+
+  const audioContext = new AudioContext()
+  const destination = audioContext.createMediaStreamDestination()
+  audioContext.createMediaStreamSource(micStream).connect(destination)
+  audioContext
+    .createMediaStreamSource(
+      new MediaStream(displayStream.getAudioTracks()),
+    )
+    .connect(destination)
+
+  const cleanup = () => {
+    micStream.getTracks().forEach((track) => track.stop())
+    displayStream.getTracks().forEach((track) => track.stop())
+    void audioContext.close()
+  }
+
+  return { stream: destination.stream, cleanup }
+}
+
+export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
+  const { includeSystemAudio = false, errors } = options
+
   const [state, setState] = useState<RecorderState>("idle")
   const [durationSeconds, setDurationSeconds] = useState(0)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
@@ -31,6 +99,7 @@ export function useAudioRecorder() {
   const startedAtRef = useRef<number>(0)
   const elapsedRef = useRef(0)
   const audioUrlRef = useRef<string | null>(null)
+  const cleanupRef = useRef<(() => void) | null>(null)
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -44,6 +113,12 @@ export function useAudioRecorder() {
       URL.revokeObjectURL(audioUrlRef.current)
       audioUrlRef.current = null
     }
+  }, [])
+
+  const stopCapture = useCallback(() => {
+    cleanupRef.current?.()
+    cleanupRef.current = null
+    recorderRef.current?.stream.getTracks().forEach((track) => track.stop())
   }, [])
 
   const startTimer = useCallback(() => {
@@ -60,15 +135,20 @@ export function useAudioRecorder() {
     return () => {
       clearTimer()
       revokeUrl()
-      recorderRef.current?.stream.getTracks().forEach((t) => t.stop())
+      stopCapture()
     }
-  }, [clearTimer, revokeUrl])
+  }, [clearTimer, revokeUrl, stopCapture])
 
   const start = useCallback(async () => {
     setError(null)
     setState("permission-requested")
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const { stream, cleanup } = await createCaptureStream(
+        includeSystemAudio,
+        errors,
+      )
+      cleanupRef.current = cleanup
+
       const mimeType = pickMimeType()
       const recorder = new MediaRecorder(
         stream,
@@ -89,7 +169,7 @@ export function useAudioRecorder() {
         setAudioUrl(url)
         setState("stopped")
         setMediaStream(null)
-        stream.getTracks().forEach((t) => t.stop())
+        stopCapture()
       }
       recorderRef.current = recorder
       recorder.start()
@@ -99,12 +179,19 @@ export function useAudioRecorder() {
       startTimer()
       setState("recording")
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Microphone permission denied",
-      )
+      stopCapture()
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        setError(errors?.micDenied ?? "Microphone permission denied")
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : (errors?.micDenied ?? "Microphone permission denied"),
+        )
+      }
       setState("error")
     }
-  }, [revokeUrl, startTimer])
+  }, [errors, includeSystemAudio, revokeUrl, startTimer, stopCapture])
 
   const pause = useCallback(() => {
     const recorder = recorderRef.current
@@ -134,7 +221,7 @@ export function useAudioRecorder() {
 
   const reset = useCallback(() => {
     clearTimer()
-    recorderRef.current?.stream.getTracks().forEach((t) => t.stop())
+    stopCapture()
     recorderRef.current = null
     revokeUrl()
     setAudioBlob(null)
@@ -144,7 +231,7 @@ export function useAudioRecorder() {
     setError(null)
     setState("idle")
     elapsedRef.current = 0
-  }, [clearTimer, revokeUrl])
+  }, [clearTimer, revokeUrl, stopCapture])
 
   return {
     state,
