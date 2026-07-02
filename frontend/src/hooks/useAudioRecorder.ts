@@ -12,6 +12,7 @@ export type RecorderState =
 
 export type UseAudioRecorderOptions = {
   includeSystemAudio?: boolean
+  maxDurationSeconds?: number
   errors?: {
     micDenied?: string
     displayDenied?: string
@@ -138,7 +139,7 @@ async function createCaptureStream(
 }
 
 export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
-  const { includeSystemAudio = false, errors } = options
+  const { includeSystemAudio = false, maxDurationSeconds = 7200, errors } = options
 
   const [state, setState] = useState<RecorderState>("idle")
   const [durationSeconds, setDurationSeconds] = useState(0)
@@ -146,6 +147,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null)
+  const [durationLimitReached, setDurationLimitReached] = useState(false)
 
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -175,15 +177,32 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
     recorderRef.current?.stream.getTracks().forEach((track) => track.stop())
   }, [])
 
+  const stop = useCallback(() => {
+    const recorder = recorderRef.current
+    if (!recorder || recorder.state === "inactive") return
+    clearTimer()
+    elapsedRef.current += (Date.now() - startedAtRef.current) / 1000
+    setDurationSeconds(elapsedRef.current)
+    recorder.stop()
+  }, [clearTimer])
+
+  const stopAtDurationLimit = useCallback(() => {
+    setDurationLimitReached(true)
+    stop()
+  }, [stop])
+
   const startTimer = useCallback(() => {
     startedAtRef.current = Date.now()
     clearTimer()
     timerRef.current = window.setInterval(() => {
-      setDurationSeconds(
-        elapsedRef.current + (Date.now() - startedAtRef.current) / 1000,
-      )
+      const elapsed =
+        elapsedRef.current + (Date.now() - startedAtRef.current) / 1000
+      setDurationSeconds(elapsed)
+      if (elapsed >= maxDurationSeconds) {
+        stopAtDurationLimit()
+      }
     }, 200)
-  }, [clearTimer])
+  }, [clearTimer, maxDurationSeconds, stopAtDurationLimit])
 
   useEffect(() => {
     return () => {
@@ -195,6 +214,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
 
   const start = useCallback(async () => {
     setError(null)
+    setDurationLimitReached(false)
     setState("permission-requested")
     try {
       const { stream, cleanup } = await createCaptureStream(
@@ -264,15 +284,6 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
     setState("recording")
   }, [startTimer])
 
-  const stop = useCallback(() => {
-    const recorder = recorderRef.current
-    if (!recorder || recorder.state === "inactive") return
-    clearTimer()
-    elapsedRef.current += (Date.now() - startedAtRef.current) / 1000
-    setDurationSeconds(elapsedRef.current)
-    recorder.stop()
-  }, [clearTimer])
-
   const reset = useCallback(() => {
     clearTimer()
     stopCapture()
@@ -283,6 +294,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
     setMediaStream(null)
     setDurationSeconds(0)
     setError(null)
+    setDurationLimitReached(false)
     setState("idle")
     elapsedRef.current = 0
   }, [clearTimer, revokeUrl, stopCapture])
@@ -294,6 +306,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
     audioUrl,
     mediaStream,
     error,
+    durationLimitReached,
     start,
     pause,
     resume,

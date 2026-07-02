@@ -140,7 +140,10 @@
       "paused": "Paused",
       "stopped": "Ready to save"
     },
-    "floatingBarAriaLabel": "Recording controls"
+    "floatingBarAriaLabel": "Recording controls",
+    "uploadForLongSessions": "For sessions longer than 30 minutes, upload a file (MP3 or M4A) instead of recording in the browser.",
+    "longSessionHint": "Long in-browser recordings use a lot of memory and may be unstable. Upload your audio file for better reliability.",
+    "durationLimitReached": "Recording stopped at the 2-hour limit. Upload a file if you need to capture longer audio."
   },
   "jobs": {
     "step": {

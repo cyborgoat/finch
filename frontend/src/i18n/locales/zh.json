@@ -140,7 +140,10 @@
       "paused": "已暂停",
       "stopped": "待保存"
     },
-    "floatingBarAriaLabel": "录制控制"
+    "floatingBarAriaLabel": "录制控制",
+    "uploadForLongSessions": "超过 30 分钟的会话请上传文件（MP3 或 M4A），不要在浏览器中长时间录制。",
+    "longSessionHint": "长时间在浏览器中录制会占用大量内存，可能不稳定。上传音频文件更可靠。",
+    "durationLimitReached": "录制已在 2 小时上限处停止。如需更长音频，请上传文件。"
   },
   "jobs": {
     "step": {

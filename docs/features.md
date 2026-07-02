@@ -7,8 +7,9 @@ What Finch does today and what is intentionally out of scope.
 ### Audio input
 
 - Upload `.wav`, `.mp3`, `.m4a`, `.webm`, `.ogg`, `.flac`
-- Browser recording with live waveform
+- Browser recording with live waveform (recommended for short sessions; upload for 30+ minutes)
 - ffmpeg normalization to 16 kHz mono WAV
+- Up to **2 hours** / **500 MB** per file — see [long-audio.md](long-audio.md) for expectations and diarization tuning
 
 ### Transcription
 

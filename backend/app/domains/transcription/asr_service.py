@@ -108,23 +108,23 @@ class AsrService:
         import librosa
         import numpy as np
 
-        audio, sample_rate = librosa.load(audio_path, sr=16000, mono=True)
-        chunk_samples = CHUNK_SECONDS * sample_rate
-        min_samples = int(0.5 * sample_rate)
-        total_chunks = max(1, math.ceil(len(audio) / chunk_samples))
+        sample_rate = 16000
+        min_chunk_seconds = 0.5
+        total_chunks = max(1, math.ceil(duration / CHUNK_SECONDS))
 
         texts: list[str] = []
         detected_language: str | None = None
         chunk_index = 0
+        offset = 0.0
 
-        for start in range(0, len(audio), chunk_samples):
-            chunk = audio[start : start + chunk_samples]
-            if len(chunk) < min_samples:
+        while offset < duration:
+            chunk_duration = min(CHUNK_SECONDS, duration - offset)
+            if chunk_duration < min_chunk_seconds:
                 break
 
             chunk_index += 1
-            start_sec = start / sample_rate
-            end_sec = min((start + len(chunk)) / sample_rate, duration)
+            start_sec = offset
+            end_sec = offset + chunk_duration
 
             logger.info(
                 "Transcribing chunk %s/%s (%.1fs - %.1fs)",
@@ -132,6 +132,14 @@ class AsrService:
                 total_chunks,
                 start_sec,
                 end_sec,
+            )
+
+            chunk, _ = librosa.load(
+                audio_path,
+                sr=sample_rate,
+                mono=True,
+                offset=start_sec,
+                duration=chunk_duration,
             )
 
             results = self._model.transcribe(
@@ -156,6 +164,8 @@ class AsrService:
                 texts.append(chunk_text)
             if result.language and not detected_language:
                 detected_language = result.language
+
+            offset += CHUNK_SECONDS
 
         return AsrResult(
             text=" ".join(texts),

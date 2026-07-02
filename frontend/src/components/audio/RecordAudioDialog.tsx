@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { LongRecordingHint } from "@/components/audio/LongRecordingHint"
 import { AudioPreview } from "@/components/audio/AudioPreview"
 import { AudioDialogFooter } from "@/components/audio/AudioDialogControls"
 import { AudioRecordControlsSection } from "@/components/audio/AudioRecordControlsSection"
@@ -96,6 +97,10 @@ export function RecordAudioDialog({ open, onOpenChange }: RecordAudioDialogProps
             <>
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">{t("record.recordHint")}</p>
+                <LongRecordingHint
+                  durationSeconds={session.durationSeconds}
+                  durationLimitReached={session.durationLimitReached}
+                />
 
                 {canConfigureCapture ? (
                   <div className="space-y-3 rounded-lg border border-border/60 p-3">

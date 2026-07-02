@@ -13,12 +13,14 @@ import {
   useAudioRecorder,
   type RecorderState,
 } from "@/hooks/useAudioRecorder"
+import { MAX_BROWSER_RECORDING_SECONDS } from "@/lib/recordingLimits"
 import { useAudioUpload } from "@/hooks/useAudioUpload"
 import { useCreateRecording, useInvalidateRecordings } from "@/hooks/useRecordings"
 
 type RecordingSessionContextValue = {
   state: RecorderState
   durationSeconds: number
+  durationLimitReached: boolean
   mediaStream: MediaStream | null
   audioBlob: Blob | null
   audioUrl: string | null
@@ -63,6 +65,7 @@ export function RecordingSessionProvider({ children }: { children: ReactNode }) 
 
   const recorder = useAudioRecorder({
     includeSystemAudio,
+    maxDurationSeconds: MAX_BROWSER_RECORDING_SECONDS,
     errors: recorderErrors,
   })
 
@@ -128,6 +131,7 @@ export function RecordingSessionProvider({ children }: { children: ReactNode }) 
     () => ({
       state: recorder.state,
       durationSeconds: recorder.durationSeconds,
+      durationLimitReached: recorder.durationLimitReached,
       mediaStream: recorder.mediaStream,
       audioBlob: recorder.audioBlob,
       audioUrl: recorder.audioUrl,

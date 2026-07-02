@@ -20,9 +20,15 @@ def test_ai_action_flow(mock_run, client, sample_wav_bytes):
 
     job_response = client.post(
         "/api/recordings",
-        json={"audioAssetId": audio_id, "language": "auto"},
+        json={"audioAssetId": audio_id},
     )
     recording_id = job_response.json()["recordingId"]
+
+    transcribe_response = client.post(
+        f"/api/recordings/{recording_id}/transcribe",
+        json={"language": "auto"},
+    )
+    assert transcribe_response.status_code == 200
 
     ai_job_response = client.post(
         "/api/ai-actions",

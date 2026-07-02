@@ -172,6 +172,16 @@ uv run pytest
 
 Tests patch external services (ffmpeg, ASR, diarization, LLM) at test time — no model downloads required.
 
+## 11. Long audio (1–2 hours)
+
+Finch supports files up to **2 hours** and **500 MB**. For meetings and podcasts, **upload** a compressed file (MP3/M4A) rather than recording for hours in the browser.
+
+- Transcription may take **tens of minutes to over an hour** depending on hardware and diarization.
+- Keep the Huey worker running; you can leave the page while jobs run.
+- With diarization on long meetings, set `DIARIZATION_MAX_SEGMENTS=50` (or similar) in `.env`.
+
+Full guidance: **[long-audio.md](long-audio.md)**
+
 ## Troubleshooting
 
 | Issue | Fix |
@@ -183,5 +193,6 @@ Tests patch external services (ffmpeg, ASR, diarization, LLM) at test time — n
 | `ffmpeg is not installed` | `brew install ffmpeg` (macOS) |
 | No speaker labels | Run `uv run python scripts/validate_diarization.py` |
 | Speaker names not saving | Click the speaker name on a turn — labels save immediately; enable auto-label in **Settings → Voiceprint profiles** for voiceprints |
-| Slow long audio | Expected on CPU/MPS; ASR chunks ~45s segments |
+| Slow long audio | Expected on CPU/MPS; ASR chunks ~45s segments — see [long-audio.md](long-audio.md) |
 | Failed transcript visible | By design — check `errorMessage`, fix issue, re-transcribe |
+| Browser recording stops at 2 h | Hard cap matches backend max duration — upload for longer content |

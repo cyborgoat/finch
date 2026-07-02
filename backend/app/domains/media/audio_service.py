@@ -76,18 +76,6 @@ class AudioService:
         if source not in {"upload", "recording"}:
             raise AppError("AUDIO_UNSUPPORTED_TYPE", "Invalid audio source.", 400)
 
-        content = file.file.read()
-        if not content:
-            raise AppError("AUDIO_UNSUPPORTED_TYPE", "Uploaded file is empty.", 400)
-
-        max_bytes = self.settings.max_upload_mb * 1024 * 1024
-        if len(content) > max_bytes:
-            raise AppError(
-                "AUDIO_FILE_TOO_LARGE",
-                f"File exceeds maximum size of {self.settings.max_upload_mb} MB.",
-                413,
-            )
-
         mime_type = resolve_mime_type(file.content_type, file.filename)
         if mime_type not in SUPPORTED_MIME_TYPES:
             raise AppError(
@@ -100,14 +88,39 @@ class AudioService:
         extension = EXTENSION_BY_MIME.get(mime_type, Path(file.filename or "").suffix or ".bin")
         filename = f"{audio_id}{extension}"
         original_path = safe_join(self.settings.original_audio_dir, filename)
-        original_path.write_bytes(content)
+
+        max_bytes = self.settings.max_upload_mb * 1024 * 1024
+        write_chunk_size = 1024 * 1024
+        size_bytes = 0
+
+        try:
+            with original_path.open("wb") as destination:
+                while True:
+                    chunk = file.file.read(write_chunk_size)
+                    if not chunk:
+                        break
+                    size_bytes += len(chunk)
+                    if size_bytes > max_bytes:
+                        raise AppError(
+                            "AUDIO_FILE_TOO_LARGE",
+                            f"File exceeds maximum size of {self.settings.max_upload_mb} MB.",
+                            413,
+                        )
+                    destination.write(chunk)
+        except AppError:
+            original_path.unlink(missing_ok=True)
+            raise
+
+        if size_bytes == 0:
+            original_path.unlink(missing_ok=True)
+            raise AppError("AUDIO_UNSUPPORTED_TYPE", "Uploaded file is empty.", 400)
 
         audio_asset = AudioAsset(
             id=audio_id,
             source=source,
             filename=file.filename or filename,
             mime_type=mime_type,
-            size_bytes=len(content),
+            size_bytes=size_bytes,
             original_path=str(original_path),
         )
         self.session.add(audio_asset)
