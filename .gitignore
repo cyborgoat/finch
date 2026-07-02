@@ -222,8 +222,12 @@ __marimo__/
 data/
 backend/data/
 backend/*.db
+backend/*.db-wal
+backend/*.db-shm
 backend/.env
 finch.db
+finch.db-wal
+finch.db-shm
 
 # Local editor / OS
 .DS_Store
