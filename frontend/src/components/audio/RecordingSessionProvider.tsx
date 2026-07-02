@@ -72,7 +72,7 @@ export function RecordingSessionProvider({ children }: { children: ReactNode }) 
       !backgroundNotifiedRef.current
     ) {
       backgroundNotifiedRef.current = true
-      toast.message(t("recording.continuesInBackground"))
+      toast.message(t("record.continuesInBackground"))
     }
     setRecordDialogOpen(false)
   }, [recorder.state, t])

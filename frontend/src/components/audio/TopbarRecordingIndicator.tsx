@@ -65,10 +65,10 @@ export function TopbarRecordingIndicator({
         />
         <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
           {isRecording
-            ? t("recording.indicator.recording")
+            ? t("record.indicator.recording")
             : isPaused
-              ? t("recording.indicator.paused")
-              : t("recording.indicator.stopped")}
+              ? t("record.indicator.paused")
+              : t("record.indicator.stopped")}
         </span>
       </button>
 
@@ -81,7 +81,7 @@ export function TopbarRecordingIndicator({
             onClick={onDiscard}
             disabled={session.isSaving}
           >
-            {t("recording.discardRecording")}
+            {t("record.discardRecording")}
           </Button>
           <Button
             size="sm"
@@ -89,7 +89,7 @@ export function TopbarRecordingIndicator({
             onClick={onSave}
             disabled={session.isSaving}
           >
-            {session.isSaving ? t("common.saving") : t("recording.saveRecording")}
+            {session.isSaving ? t("common.saving") : t("record.saveRecording")}
           </Button>
         </div>
       ) : (
