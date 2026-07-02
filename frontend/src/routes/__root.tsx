@@ -20,7 +20,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Finch" },
       {
         name: "description",
-        content: "Local voice transcription and notes",
+        content: "Voice transcription and notes",
       },
     ],
     links: [

@@ -4,10 +4,23 @@ import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { formatDuration } from "@/components/audio/AudioUploader"
 import { RecordingRowActions } from "@/components/files/FileRowActions"
+import { TranscribeRecordingIconButton } from "@/components/files/TranscribeRecordingIconButton"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { TextShimmer } from "@/components/motion-primitives/text-shimmer"
 import type { RecordingListItem } from "@/lib/recordings"
+import { cn } from "@/lib/utils"
+
+const STATUS_BADGE_CLASS: Record<RecordingListItem["status"], string> = {
+  pending:
+    "bg-amber-500/15 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200",
+  transcribing:
+    "bg-sky-500/15 text-sky-900 dark:bg-sky-500/20 dark:text-sky-200",
+  draft:
+    "bg-emerald-500/15 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-200",
+  failed:
+    "bg-destructive/15 text-destructive dark:bg-destructive/25",
+}
+
 type RecordingFileTableActions = {
   onRename?: (id: string, title: string) => void | Promise<void>
   onDelete: (id: string) => void
@@ -19,24 +32,21 @@ type RecordingFileTableActions = {
 
 function StatusBadge({ status }: { status: RecordingListItem["status"] }) {
   const { t } = useTranslation()
+  const className = cn(
+    "border-transparent text-sm font-normal",
+    STATUS_BADGE_CLASS[status],
+  )
 
   if (status === "transcribing") {
     return (
-      <Badge variant="secondary" className="text-sm font-normal">
+      <Badge className={className}>
         <TextShimmer>{t("recordings.status.transcribing")}</TextShimmer>
       </Badge>
     )
   }
 
-  const variant =
-    status === "failed"
-      ? "destructive"
-      : status === "pending"
-        ? "outline"
-        : "secondary"
-
   return (
-    <Badge variant={variant} className="text-sm font-normal">
+    <Badge className={className}>
       {t(`recordings.status.${status}`)}
     </Badge>
   )
@@ -77,16 +87,21 @@ export function useRecordingFileColumns({
                   {item.title}
                 </Link>
                 {showTranscribeButton ? (
-                  <Button
-                    size="sm"
-                    className="h-7 px-2.5 text-xs"
+                  <TranscribeRecordingIconButton
+                    action={isFailed ? "retry" : "transcribe"}
+                    ariaLabel={
+                      isFailed
+                        ? t("recordings.retryTranscription")
+                        : t("recordings.transcribe")
+                    }
+                    tooltip={
+                      isFailed
+                        ? t("recordings.retryTranscriptionTooltip")
+                        : t("recordings.transcribeTooltip")
+                    }
                     disabled={isTranscribing}
                     onClick={() => void onTranscribe(item.id)}
-                  >
-                    {isFailed
-                      ? t("recordings.retryTranscription")
-                      : t("recordings.transcribe")}
-                  </Button>
+                  />
                 ) : null}
               </div>
               {isFailed && item.errorMessage ? (

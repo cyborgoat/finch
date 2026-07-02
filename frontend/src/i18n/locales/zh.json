@@ -10,12 +10,12 @@
     "source": "来源",
     "untitled": "未命名",
     "appName": "Finch",
-    "tagline": "本地语音笔记",
+    "tagline": "语音笔记",
     "new": "新建",
     "settingsLlmProvider": "设置 → LLM 提供商"
   },
   "footer": {
-    "description": "本地优先的语音转写与笔记。在您的设备上完成转写、整理与摘要，数据留在本地。",
+    "description": "语音转写与笔记。转写、整理并摘要您的录音。",
     "copyright": "© {{year}} Finch。保留所有权利。",
     "version": "v{{version}}",
     "localFirstBadge": "在您的设备本地运行",
@@ -147,7 +147,7 @@
       "completed": "已完成",
       "queued": "排队中"
     },
-    "failedDefault": "任务失败。请重启后端后重试。"
+    "failedDefault": "任务失败，请重试。"
   },
   "recordings": {
     "emptyTitle": "暂无录音",
@@ -166,7 +166,9 @@
     "exportMd": "导出 MD",
     "deleteRecording": "删除录音",
     "transcribe": "转录",
+    "transcribeTooltip": "为此录音开始转录",
     "retryTranscription": "重试",
+    "retryTranscriptionTooltip": "转录失败后重试",
     "regenerateTranscription": "重新生成转录",
     "regenerateTitle": "重新生成转录？",
     "regenerateDescription": "这将用全新的转录替换当前文本、说话人标签和所有编辑内容。",
@@ -180,12 +182,12 @@
   "recording": {
     "sectionTitle": "转录",
     "pendingTitle": "音频已保存",
-    "pendingDescription": "尚未开始转录。准备好后可在本地运行转录。",
+    "pendingDescription": "尚未开始转录。准备好后即可开始。",
     "startTranscription": "开始转录",
     "retryTranscription": "重试转录",
     "transcribing": "转录中…",
     "transcribingHint": "您可以离开此页面并查看录音列表，状态会自动更新。",
-    "failedDefault": "转录过程中出现问题。请查看后端日志并重试。",
+    "failedDefault": "转录过程中出现问题，请重试。",
     "unknownSpeaker": "未知说话人",
     "speakerTurnTitle": "此轮次的说话人",
     "speakerTurnDescription": "分配名称或关联已保存的声纹档案。更改将应用于转录中该声音的所有轮次。",

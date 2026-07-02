@@ -4,6 +4,7 @@ import { TopbarDownloadButton } from "@/components/layout/TopbarDownloadButton"
 import { TopbarRecordingIndicator } from "@/components/audio/TopbarRecordingIndicator"
 import { useRecordingSession } from "@/components/audio/RecordingSessionProvider"
 import { useNewRecordingDialogs } from "@/components/layout/NewRecordingDialogs"
+import { SidebarTrigger } from "@/components/ui/sidebar"
 
 export function Topbar() {
   const session = useRecordingSession()
@@ -11,7 +12,8 @@ export function Topbar() {
 
   return (
     <header className="relative grid h-14 grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border px-6">
-      <div className="min-w-0 justify-self-start">
+      <div className="flex min-w-0 items-center gap-2 justify-self-start">
+        <SidebarTrigger />
         <NavBreadcrumb />
       </div>
 

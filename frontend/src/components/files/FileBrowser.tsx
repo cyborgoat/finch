@@ -5,11 +5,12 @@ import {
   useReactTable,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, Mic, Upload } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { EmptyState } from "@/components/effects/EmptyState"
 import { useRecordingFileColumns } from "@/components/files/transcriptFileTableColumns"
+import { useNewRecordingDialogs } from "@/components/layout/NewRecordingDialogs"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -68,6 +69,7 @@ export function RecordingBrowser({
   isTranscribing,
 }: RecordingBrowserProps) {
   const { t } = useTranslation()
+  const { openUploadDialog, openRecordDialog } = useNewRecordingDialogs()
   const data = useMemo(() => filterRecordings(items, query), [items, query])
   const [sorting, setSorting] = useState<SortingState>([
     { id: "updatedAt", desc: true },
@@ -96,6 +98,18 @@ export function RecordingBrowser({
       <EmptyState
         title={t("recordings.emptyTitle")}
         description={t("recordings.emptyDescription")}
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button size="sm" onClick={openRecordDialog}>
+              <Mic className="size-4" />
+              {t("nav.recordVoice")}
+            </Button>
+            <Button size="sm" variant="outline" onClick={openUploadDialog}>
+              <Upload className="size-4" />
+              {t("nav.uploadAudio")}
+            </Button>
+          </div>
+        }
       />
     )
   }

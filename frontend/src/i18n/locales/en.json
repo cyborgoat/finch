@@ -10,12 +10,12 @@
     "source": "Source",
     "untitled": "Untitled",
     "appName": "Finch",
-    "tagline": "Local voice notes",
+    "tagline": "Voice notes",
     "new": "New",
     "settingsLlmProvider": "Settings → LLM provider"
   },
   "footer": {
-    "description": "Local-first voice transcription and notes. Transcribe, organize, and summarize recordings entirely on your machine.",
+    "description": "Voice transcription and notes. Transcribe, organize, and summarize your recordings.",
     "copyright": "© {{year}} Finch. All rights reserved.",
     "version": "v{{version}}",
     "localFirstBadge": "Runs locally on your device",
@@ -147,7 +147,7 @@
       "completed": "Completed",
       "queued": "Queued"
     },
-    "failedDefault": "Job failed. Restart the backend and try again."
+    "failedDefault": "Job failed. Please try again."
   },
   "recordings": {
     "emptyTitle": "No recordings yet",
@@ -166,7 +166,9 @@
     "exportMd": "Export MD",
     "deleteRecording": "Delete recording",
     "transcribe": "Transcribe",
+    "transcribeTooltip": "Transcribe this recording",
     "retryTranscription": "Retry",
+    "retryTranscriptionTooltip": "Retry transcription after a failure",
     "regenerateTranscription": "Regenerate transcription",
     "regenerateTitle": "Regenerate transcription?",
     "regenerateDescription": "This replaces the current transcript, speaker labels, and any edits with a fresh transcription.",
@@ -180,12 +182,12 @@
   "recording": {
     "sectionTitle": "Transcript",
     "pendingTitle": "Audio saved",
-    "pendingDescription": "Transcription has not started yet. Run it locally when you are ready.",
+    "pendingDescription": "Transcription has not started yet. Start it when you are ready.",
     "startTranscription": "Start transcription",
     "retryTranscription": "Retry transcription",
     "transcribing": "Transcribing…",
     "transcribingHint": "You can leave this page and check the recordings list. The status will update automatically.",
-    "failedDefault": "Something went wrong during transcription. Check backend logs and try again.",
+    "failedDefault": "Something went wrong during transcription. Try again.",
     "unknownSpeaker": "Unknown speaker",
     "speakerTurnTitle": "Speaker for this turn",
     "speakerTurnDescription": "Assign a name or link to a saved voiceprint profile. Changes apply to all turns from this voice on the transcript.",
