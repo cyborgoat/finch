@@ -7,5 +7,5 @@ def setup_logging(*, debug: bool = False) -> None:
         level=logging.DEBUG if debug else logging.INFO,
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
         stream=sys.stdout,
-        force=True,
+        force="pytest" not in sys.modules,
     )

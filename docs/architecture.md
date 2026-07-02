@@ -21,14 +21,16 @@ flowchart TD
     transcriptSvc --> db
     jobSvc --> db
     docSvc --> db
-    api -->|BackgroundTasks| txWorker["transcription_worker"]
-    api -->|BackgroundTasks| aiWorker["ai_action_worker"]
-    txWorker --> diarSvc["DiarizationService optional"]
-    txWorker --> asrSvc["AsrService"]
+    api -->|enqueue| huey["Huey queue (SQLite)"]
+    huey --> txWorker["transcription_worker"]
+    huey --> aiWorker["ai_action_worker"]
+    txWorker --> txPipeline["TranscriptionPipeline"]
+    aiWorker --> aiPipeline["AiActionPipeline"]
+    txPipeline --> diarSvc["DiarizationService optional"]
+    txPipeline --> asrSvc["AsrService"]
     asrSvc --> qwen["Qwen3-ASR-1.7B local"]
     diarSvc --> pyannote["pyannote community-1 optional"]
-    aiWorker --> llmSvc["LlmService"]
-    llmSvc --> provider["LLM provider optional"]
+    aiPipeline --> llm["LLM adapters optional"]
 ```
 
 ## Core principle
@@ -37,6 +39,12 @@ flowchart TD
 - **Diarization is local** when enabled (pyannote). Speaker labels are optional.
 - **Transcript is source of truth.** Edits are stored separately (`editedText`).
 - **LLM is optional.** Only transcript text is sent to the configured provider for AI actions.
+
+## Backend layout
+
+Business logic lives in `backend/app/domains/*` (transcription, voiceprint, recordings, media, jobs, ai, settings). The API layer is thin HTTP routing; workers delegate to domain pipelines.
+
+Startup diagnostics and capability checks live in `backend/app/capabilities/`.
 
 ## Data model
 
@@ -78,7 +86,8 @@ When diarization is enabled (via **Settings → Transcription** or `.env` fallba
 POST /api/recordings { audioAssetId }
   → create Recording placeholder (status=transcribing)
   → create Job, resultId = recording.id
-  → transcription_worker
+  → enqueue run_transcription_task (Huey)
+  → TranscriptionPipeline.run()
        → optional: pyannote diarization → speaker segments
        → optional: voiceprint match → named labels
        → Qwen3-ASR per segment (or full file if diarization off/fallback)
@@ -97,7 +106,8 @@ Segment tuning (`DIARIZATION_MIN_SEGMENT_SECONDS`, `DIARIZATION_MERGE_GAP_SECOND
 ```txt
 POST /api/ai-actions { recordingId, action: "meeting_summary" | "action_items" | ... }
   → Job (ai_action)
-  → ai_action_worker → LlmService (configured provider)
+  → enqueue run_ai_action_task (Huey)
+  → AiActionPipeline.run() → configured LLM provider
   → create Note (typed note)
 ```
 
@@ -105,10 +115,10 @@ POST /api/ai-actions { recordingId, action: "meeting_summary" | "action_items" |
 
 | Layer | Technology | Location |
 |-------|------------|----------|
-| Metadata | SQLite + SQLModel | `backend/finch.db` |
+| Metadata | SQLite + SQLModel + Alembic | `backend/finch.db` |
+| Job queue | Huey + SQLite | `data/huey.db` (default) |
 | Audio files | Filesystem | `backend/data/audio/original`, `.../normalized` |
 | Model cache | Hugging Face cache | `HF_HOME` (default `./data/hf_cache`) |
-| Exports | Filesystem | `backend/data/exports` (reserved) |
 
 Config loads from `backend/.env` and repo root `.env`.
 
@@ -166,13 +176,15 @@ The recording detail page accepts only `recording_` IDs. Lists show recordings o
 
 ## Startup diagnostics
 
-On boot, the backend logs a configuration summary: loaded env files, ASR/diarization/LLM mode, dependency checks (ffmpeg, torch, pyannote-audio), and remediation steps when something is missing. See `app/core/startup_diagnostics.py`.
+On boot, the backend logs a configuration summary: loaded env files, ASR/diarization/LLM mode, dependency checks (ffmpeg, torch, pyannote-audio), and remediation steps when something is missing. See `app/capabilities/startup.py`.
+
+Orphaned jobs (`status=processing`) are re-enqueued on API startup when possible.
 
 ## Technology stack
 
 | Layer | Stack |
 |-------|-------|
-| Backend | FastAPI, uv, SQLModel, SQLite |
+| Backend | FastAPI, uv, SQLModel, SQLite, Alembic, Huey |
 | ASR | `qwen-asr`, PyTorch, Qwen3-ASR-1.7B |
 | Diarization | `pyannote-audio`, `pyannote/speaker-diarization-community-1` |
 | Audio | ffmpeg, librosa |
@@ -181,6 +193,7 @@ On boot, the backend logs a configuration summary: loaded env files, ASR/diariza
 
 ## Deployment notes (MVP)
 
-- Single process: FastAPI + in-process `BackgroundTasks` (no Redis/Celery)
+- Two processes: FastAPI API server + Huey consumer (`-w 1` for one job at a time)
+- SQLite-backed job queue survives API restarts
 - Job polling from clients (no WebSockets)
 - CORS enabled for `http://localhost:3000`

@@ -1,0 +1,100 @@
+from sqlmodel import Session
+
+from app.config import Settings, get_settings
+from app.core.errors import AppError
+from app.domains.recordings.recording_service import RecordingService
+from app.domains.settings.app_preference_service import AppPreferenceService
+from app.domains.transcription.diarization_service import (
+    SpeakerSegment,
+    build_labeled_transcript,
+    speaker_segments_from_json,
+    speaker_segments_to_json,
+)
+from app.domains.voiceprint.profile_service import VoiceprintProfileService
+
+
+class RecordingSpeakerService:
+    def __init__(self, session: Session, settings: Settings | None = None) -> None:
+        self.session = session
+        self.settings = settings or get_settings()
+        self.recording_service = RecordingService(session)
+        self.profile_service = VoiceprintProfileService(session, self.settings)
+        self.preference_service = AppPreferenceService(session)
+        from app.domains.settings.transcription_settings_service import TranscriptionSettingsService
+
+        self.transcription_settings = TranscriptionSettingsService(session, self.settings)
+
+    def update_speakers(
+        self,
+        recording_id: str,
+        mappings: list[dict],
+    ) -> tuple[list[SpeakerSegment], str]:
+        transcript = self.recording_service.get_recording(recording_id)
+        segments = speaker_segments_from_json(transcript.speaker_segments)
+        if not segments:
+            raise AppError(
+                "SPEAKER_UPDATE_FAILED",
+                "Transcript has no speaker segments to update.",
+                400,
+            )
+
+        mapping_by_cluster = {item["cluster_id"]: item for item in mappings}
+
+        for mapping in mappings:
+            profile_id = mapping.get("profile_id")
+            if profile_id:
+                profile = self.profile_service.get_profile(profile_id)
+                if not mapping.get("display_name", "").strip():
+                    mapping["display_name"] = profile.display_name
+            if mapping.get("enroll"):
+                if not self.transcription_settings.is_voiceprint_profiles_enabled():
+                    raise AppError(
+                        "VOICEPRINT_PROFILES_DISABLED",
+                        "Voiceprint profiles are disabled. "
+                        "Enable them in Settings → Transcription.",
+                        400,
+                    )
+                if not self.preference_service.has_voiceprint_profiles_consent():
+                    raise AppError(
+                        "VOICEPRINT_PROFILES_CONSENT_REQUIRED",
+                        "Voiceprint profile consent is required before saving voiceprint samples.",
+                        400,
+                    )
+                profile = self.profile_service.enroll_from_transcript(
+                    recording_id=recording_id,
+                    cluster_id=mapping["cluster_id"],
+                    display_name=mapping["display_name"],
+                    profile_id=mapping.get("profile_id"),
+                    start_sec=mapping.get("enroll_start_sec"),
+                    end_sec=mapping.get("enroll_end_sec"),
+                )
+                mapping["profile_id"] = profile.id
+
+        updated_segments: list[SpeakerSegment] = []
+        for segment in segments:
+            cluster_id = segment.cluster_id or segment.speaker
+            mapping = mapping_by_cluster.get(cluster_id)
+            if mapping is None:
+                updated_segments.append(segment)
+                continue
+
+            updated_segments.append(
+                SpeakerSegment(
+                    speaker=mapping["display_name"].strip(),
+                    start_sec=segment.start_sec,
+                    end_sec=segment.end_sec,
+                    text=segment.text,
+                    cluster_id=segment.cluster_id or cluster_id,
+                    voiceprint_profile_id=mapping.get("profile_id"),
+                    match_confidence=segment.match_confidence,
+                    match_status="manual",
+                )
+            )
+
+        raw_text = build_labeled_transcript(updated_segments)
+        self.recording_service.update_recording(
+            transcript,
+            raw_text=raw_text,
+            speaker_segments=speaker_segments_to_json(updated_segments),
+        )
+        return updated_segments, raw_text

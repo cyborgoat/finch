@@ -2,12 +2,12 @@ import numpy as np
 import pytest
 
 from app.config import Settings
-from app.services.voiceprint_embedding_service import average_embeddings, embedding_to_json
-from app.services.voiceprint_matching_service import (
+from app.domains.voiceprint.embedding_service import average_embeddings
+from app.domains.voiceprint.matching_service import (
     VoiceprintMatchingService,
     cosine_similarity,
 )
-from app.services.voiceprint_profile_service import VoiceprintProfileService
+from app.domains.voiceprint.profile_service import VoiceprintProfileService
 
 
 def test_cosine_similarity_identical_vectors():
@@ -57,7 +57,7 @@ def test_match_embedding_uses_best_stored_embedding(db_session, test_settings):
 
 
 def test_resolve_display_names_matched_and_unknown(db_session, test_settings):
-    from app.services.diarization_service import DiarizationTurn
+    from app.domains.transcription.diarization_service import DiarizationTurn
 
     settings = Settings(**{**test_settings.model_dump(), "speaker_match_threshold": 0.65})
     profile_service = VoiceprintProfileService(db_session, settings)

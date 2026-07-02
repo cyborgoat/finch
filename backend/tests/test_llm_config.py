@@ -1,8 +1,8 @@
 import pytest
 
 from app.core.errors import AppError
-from app.services.llm.config import require_llm_config, resolve_llm_config
-from app.services.llm.runtime import LlmRuntimeSettings
+from app.domains.ai.llm.config import require_llm_config, resolve_llm_config
+from app.domains.ai.llm.runtime import LlmRuntimeSettings
 
 
 def test_resolve_openrouter_with_api_key():

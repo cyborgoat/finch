@@ -3,22 +3,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import (
-    routes_ai_actions,
-    routes_audio,
-    routes_notes,
-    routes_health,
-    routes_jobs,
-    routes_llm_settings,
-    routes_transcription_settings,
-    routes_voiceprint_profiles,
-    routes_recordings,
-    routes_user_settings,
-)
+from app.api.router import api_router
+from app.capabilities.startup import log_startup_summary
 from app.config import get_settings
 from app.core.errors import AppError, app_error_handler
 from app.core.logging import setup_logging
-from app.core.startup_diagnostics import log_startup_summary
+from app.domains.jobs.queue import recover_orphaned_jobs
 from app.storage.database import create_db_and_tables
 from app.storage.file_store import ensure_data_dirs
 
@@ -29,6 +19,7 @@ async def lifespan(_app: FastAPI):
     setup_logging(debug=settings.debug_mode)
     ensure_data_dirs(settings)
     create_db_and_tables()
+    recover_orphaned_jobs()
     log_startup_summary(settings)
     yield
 
@@ -46,16 +37,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    app.include_router(routes_health.router, prefix="/api")
-    app.include_router(routes_audio.router, prefix="/api")
-    app.include_router(routes_recordings.router, prefix="/api")
-    app.include_router(routes_jobs.router, prefix="/api")
-    app.include_router(routes_ai_actions.router, prefix="/api")
-    app.include_router(routes_notes.router, prefix="/api")
-    app.include_router(routes_voiceprint_profiles.router, prefix="/api")
-    app.include_router(routes_user_settings.router, prefix="/api")
-    app.include_router(routes_llm_settings.router, prefix="/api")
-    app.include_router(routes_transcription_settings.router, prefix="/api")
+    app.include_router(api_router, prefix="/api")
 
     return app
 

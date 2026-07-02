@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, Session
+from sqlmodel import Session
 
 from app.config import Settings, get_settings
 from app.main import create_app
@@ -21,16 +21,16 @@ def patch_external_services():
     mock_llm_client.chat.return_value = FAKE_LLM_MARKDOWN
     with (
         patch(
-            "app.workers.transcription_worker.AsrService.transcribe",
+            "app.domains.transcription.pipeline.AsrService.transcribe",
             return_value=fake_asr_result(),
         ),
         patch(
-            "app.services.asr_service.AsrService.transcribe",
+            "app.domains.transcription.asr_service.AsrService.transcribe",
             return_value=fake_asr_result(),
         ),
-        patch("app.services.asr_service.AsrService.load_model"),
+        patch("app.domains.transcription.asr_service.AsrService.load_model"),
         patch(
-            "app.services.llm_service.build_llm_client",
+            "app.domains.ai.action_service.build_llm_client",
             return_value=mock_llm_client,
         ),
     ):
@@ -42,8 +42,7 @@ def test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     data_dir = tmp_path / "data"
     original_dir = data_dir / "audio" / "original"
     normalized_dir = data_dir / "audio" / "normalized"
-    export_dir = data_dir / "exports"
-    for directory in (original_dir, normalized_dir, export_dir):
+    for directory in (original_dir, normalized_dir):
         directory.mkdir(parents=True)
 
     db_path = tmp_path / "test.db"
@@ -52,7 +51,6 @@ def test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
         data_dir=str(data_dir),
         original_audio_dir=str(original_dir),
         normalized_audio_dir=str(normalized_dir),
-        export_dir=str(export_dir),
         diarization_enabled=False,
         voiceprint_profiles_enabled=False,
     )
@@ -61,11 +59,15 @@ def test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.setenv("DATA_DIR", settings.data_dir)
     monkeypatch.setenv("ORIGINAL_AUDIO_DIR", settings.original_audio_dir)
     monkeypatch.setenv("NORMALIZED_AUDIO_DIR", settings.normalized_audio_dir)
-    monkeypatch.setenv("EXPORT_DIR", settings.export_dir)
     monkeypatch.setenv("DIARIZATION_ENABLED", "false")
     monkeypatch.setenv("VOICEPRINT_PROFILES_ENABLED", "false")
+    monkeypatch.setenv("HUEY_DB_PATH", str(tmp_path / "huey.db"))
     get_settings.cache_clear()
+    import app.domains.jobs.queue as job_queue
+
+    job_queue.reset_huey()
     database.reset_engine(settings.database_url)
+    database.create_db_and_tables()
     return settings
 
 
@@ -77,7 +79,6 @@ def client(test_settings: Settings) -> Generator[TestClient]:
             yield test_client
     get_settings.cache_clear()
     database.reset_engine()
-    SQLModel.metadata.drop_all(database.get_engine())
 
 
 @pytest.fixture

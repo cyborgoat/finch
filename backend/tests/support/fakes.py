@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.services.asr_service import AsrResult
-from app.services.diarization_service import DiarizationTurn
+from app.domains.transcription.asr_service import AsrResult
+from app.domains.transcription.diarization_service import DiarizationTurn
 
 FAKE_TRANSCRIPT_TEXT = "Transcribed text for tests."
 FAKE_LLM_MARKDOWN = "# Summary\n\nTest LLM output."

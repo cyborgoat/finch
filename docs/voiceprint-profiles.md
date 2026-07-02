@@ -25,7 +25,7 @@ Voiceprint profiles are **optional**. Enable diarization and voiceprint storage 
 ## Prerequisites
 
 1. **Diarization enabled** — **Settings → Transcription** (or `DIARIZATION_ENABLED=true` in `.env` as fallback; see [diarization.md](diarization.md))
-2. **Voiceprint profiles enabled** — **Settings → Transcription** (or `VOICEPRINT_PROFILES_ENABLED=true` in `.env` as fallback; legacy alias `SPEAKER_MEMORY_ENABLED`)
+2. **Voiceprint profiles enabled** — **Settings → Transcription** (or `VOICEPRINT_PROFILES_ENABLED=true` in `.env` as fallback)
 3. **Auto-label enabled in UI** — **Settings → Voiceprint profiles → Auto-label speaker names** (consent required on first enable)
 4. **HF token** — `HF_TOKEN` in backend `.env` (required when diarization or voiceprints are enabled)
 

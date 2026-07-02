@@ -8,7 +8,6 @@ def ensure_data_dirs(settings: Settings) -> None:
         settings.data_dir,
         settings.original_audio_dir,
         settings.normalized_audio_dir,
-        settings.export_dir,
     ):
         Path(directory).mkdir(parents=True, exist_ok=True)
 

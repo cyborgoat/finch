@@ -89,14 +89,23 @@ export function RecordingNotesTab({
   const generatingJobId =
     activeNote?.status === "generating" ? activeNote.generationJobId ?? null : null;
 
-  const handleGenerationCompleted = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ["notes"] });
-    void queryClient.invalidateQueries({ queryKey: ["recordings"] });
-    setEditorDirty(false);
+  const handleGenerationCompleted = useCallback(async () => {
+    if (activeNoteId) {
+      try {
+        const note = await getNote(activeNoteId)
+        seedNoteInCache(queryClient, recordingId, note)
+      } catch {
+        void queryClient.invalidateQueries({ queryKey: ["notes"] })
+      }
+    } else {
+      void queryClient.invalidateQueries({ queryKey: ["notes"] })
+    }
+    void queryClient.invalidateQueries({ queryKey: ["recordings"] })
+    setEditorDirty(false)
     toast.success(
       t("toasts.noteReady", { title: activeNote?.title ?? t("common.note") }),
-    );
-  }, [activeNote?.title, queryClient, t]);
+    )
+  }, [activeNote?.title, activeNoteId, queryClient, recordingId, t])
 
   const handleGenerationFailed = useCallback(
     (failedJob: { error?: string | null }) => {
@@ -115,7 +124,10 @@ export function RecordingNotesTab({
     },
   );
 
-  const showGeneratingPlaceholder = activeNote?.status === "generating";
+  const showGeneratingPlaceholder =
+    activeNote?.status === "generating" &&
+    (!generationJob ||
+      (generationJob.status !== "completed" && generationJob.status !== "failed"))
   const showFailedPlaceholder = activeNote?.status === "failed";
 
   const notes = useMemo(

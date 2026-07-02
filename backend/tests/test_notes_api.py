@@ -5,7 +5,7 @@ from tests.support.fakes import fake_ffmpeg_run
 
 
 def _create_recording(client, sample_wav: bytes) -> str:
-    with patch("app.services.audio_service.subprocess.run") as mock_run:
+    with patch("app.domains.media.audio_service.subprocess.run") as mock_run:
         mock_run.side_effect = fake_ffmpeg_run(sample_wav)
         upload = client.post(
             "/api/audio/upload",
@@ -14,7 +14,7 @@ def _create_recording(client, sample_wav: bytes) -> str:
         )
     audio_id = upload.json()["id"]
 
-    with patch("app.services.audio_service.subprocess.run") as mock_run:
+    with patch("app.domains.media.audio_service.subprocess.run") as mock_run:
         mock_run.side_effect = fake_ffmpeg_run(sample_wav)
         job = client.post(
             "/api/recordings",
@@ -28,7 +28,7 @@ def _create_summary(client, recording_id: str) -> str:
         "/api/ai-actions",
         json={
             "recordingId": recording_id,
-            "action": "markdown_summary",
+            "action": "meeting_summary",
             "source": "rawText",
         },
     )

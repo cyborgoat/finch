@@ -27,9 +27,17 @@ Diarization and voiceprint profiles are off by default. Enable toggles in **Sett
 
 ## 2. Run the backend
 
+Start the API and job worker in separate terminals:
+
 ```bash
+# Terminal 1 — API server
 uv run uvicorn app.main:app --reload
+
+# Terminal 2 — background job worker (transcription + AI actions)
+uv run huey_consumer app.domains.jobs.queue.huey -w 1
 ```
+
+The worker uses a SQLite-backed Huey queue (`data/huey.db` by default) so jobs survive API restarts.
 
 Verify:
 
@@ -80,6 +88,8 @@ Uploads, polls, prints the transcript, and saves `your-audio.txt` next to the so
 
 ## 5. Run the frontend
 
+The frontend requires the **API server** (step 2, terminal 1) to be running. Start the **Huey consumer** (terminal 2) before transcribing or generating AI notes.
+
 ```bash
 cd frontend
 cp .env.local.example .env.local
@@ -93,7 +103,7 @@ Open http://localhost:3000 — **New** (Record / Upload), **Recordings**, **Sett
 - Open a recording for the **Source** (transcript) and **Notes** (AI templates + blank notes) tabs.
 - Recording URLs use the `recording_` prefix: `/recordings/recording_…`. Notes open on the **Notes** tab (`?tab=notes&noteId=…`).
 
-If you have an old local database from before the ID format change, delete `backend/finch.db` and restart the backend.
+If you have an old local database, delete `backend/finch.db` and restart the backend — Alembic recreates the schema on startup.
 
 ## 6. ASR
 
@@ -148,7 +158,7 @@ Credentials are stored locally in the Finch SQLite database. The API never retur
 Create notes from the **Notes** tab on a recording detail page (`/recordings/{id}?tab=notes`), or via the API:
 
 - `GET /api/ai-actions/templates` — list AI note templates
-- `POST /api/ai-actions` — generate a note (`action`: `meeting_summary`, `action_items`, `key_decisions`, `follow_up_email`; legacy alias `markdown_summary` → `meeting_summary`)
+- `POST /api/ai-actions` — generate a note (`action`: `meeting_summary`, `action_items`, `key_decisions`, `follow_up_email`)
 - `POST /api/notes` — create a blank manual note
 
 User language and summarization preferences from **Settings** are applied to meeting summary prompts automatically.
@@ -166,6 +176,9 @@ Tests patch external services (ffmpeg, ASR, diarization, LLM) at test time — n
 
 | Issue | Fix |
 |-------|-----|
+| Frontend 500 / `ERR_CONNECTION_REFUSED` on `:8000` | Start the API: `cd backend && uv run uvicorn app.main:app --reload` |
+| Transcription stuck at `queued` | Start the Huey consumer: `uv run huey_consumer app.domains.jobs.queue.huey -w 1` |
+| Huey `TaskRegistry` errors | Restart the consumer after pulling updates; stale queue entries may need `rm data/huey.db` |
 | `403` / `gated repo` (diarization) | Accept [pyannote model terms](https://huggingface.co/pyannote/speaker-diarization-community-1); same HF account as `HF_TOKEN` |
 | `ffmpeg is not installed` | `brew install ffmpeg` (macOS) |
 | No speaker labels | Run `uv run python scripts/validate_diarization.py` |

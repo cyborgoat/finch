@@ -4,9 +4,9 @@ from unittest.mock import patch
 
 import numpy as np
 
+from app.domains.transcription.diarization_service import SpeakerSegment, speaker_segments_to_json
 from app.models.audio_asset import AudioAsset
 from app.models.recording import Recording
-from app.services.diarization_service import SpeakerSegment, speaker_segments_to_json
 
 
 def _seed_transcript(db_session, client):
@@ -152,7 +152,7 @@ def test_update_recording_speakers_clears_profile_link_for_new_name(client, db_s
 def test_update_recording_speakers_enroll_without_auto_label(
     client, db_session, monkeypatch
 ):
-    from app.services.voiceprint_profile_service import VoiceprintProfile
+    from app.domains.voiceprint.profile_service import VoiceprintProfile
 
     _seed_transcript(db_session, client)
     client.post("/api/voiceprint-profiles/consent")
@@ -163,7 +163,7 @@ def test_update_recording_speakers_enroll_without_auto_label(
 
     created_profile = VoiceprintProfile(id="profile_enroll", display_name="Robert")
     monkeypatch.setattr(
-        "app.services.recording_speaker_service.VoiceprintProfileService.enroll_from_transcript",
+        "app.domains.recordings.speaker_service.VoiceprintProfileService.enroll_from_transcript",
         lambda self, **kwargs: created_profile,
     )
 
@@ -206,8 +206,8 @@ def test_transcription_settings_stored_in_preferences(client, db_session):
 
 
 def test_enroll_voiceprint_profile_from_audio_sample(client, db_session, sample_wav_bytes):
-    from app.services.app_preference_service import AppPreferenceService
-    from app.services.voiceprint_embedding_service import VoiceprintEmbeddingService
+    from app.domains.settings.app_preference_service import AppPreferenceService
+    from app.domains.voiceprint.embedding_service import VoiceprintEmbeddingService
 
     AppPreferenceService(db_session).record_voiceprint_profiles_consent()
     client.patch(
@@ -215,7 +215,7 @@ def test_enroll_voiceprint_profile_from_audio_sample(client, db_session, sample_
         json={"voiceprintProfilesEnabled": True},
     )
 
-    with patch("app.services.audio_service.subprocess.run") as mock_run:
+    with patch("app.domains.media.audio_service.subprocess.run") as mock_run:
         from tests.support.fakes import fake_ffmpeg_run
 
         mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)

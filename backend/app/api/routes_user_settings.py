@@ -1,21 +1,22 @@
 from fastapi import APIRouter, Depends
-from sqlmodel import Session
 
+from app.api.deps import get_user_settings_service
+from app.domains.settings.user_settings_service import UserSettingsService
 from app.schemas.user_settings import UpdateUserSettingsRequest, UserSettingsResponse
-from app.services.user_settings_service import UserSettingsService
-from app.storage.database import get_session
 
-router = APIRouter(tags=["user-settings"])
+router = APIRouter(prefix="/user-settings", tags=["user-settings"])
 
 
-@router.get("/user-settings", response_model=UserSettingsResponse)
-def get_user_settings(session: Session = Depends(get_session)) -> UserSettingsResponse:
-    return UserSettingsService(session).get_settings()
+@router.get("", response_model=UserSettingsResponse)
+def get_user_settings(
+    service: UserSettingsService = Depends(get_user_settings_service),
+) -> UserSettingsResponse:
+    return service.get_settings()
 
 
-@router.patch("/user-settings", response_model=UserSettingsResponse)
+@router.patch("", response_model=UserSettingsResponse)
 def update_user_settings(
     payload: UpdateUserSettingsRequest,
-    session: Session = Depends(get_session),
+    service: UserSettingsService = Depends(get_user_settings_service),
 ) -> UserSettingsResponse:
-    return UserSettingsService(session).update_settings(payload)
+    return service.update_settings(payload)

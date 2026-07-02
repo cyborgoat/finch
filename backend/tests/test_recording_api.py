@@ -6,7 +6,7 @@ import pytest
 from tests.support.fakes import FAKE_TRANSCRIPT_TEXT, fake_diarization_turns, fake_ffmpeg_run
 
 
-@patch("app.services.audio_service.subprocess.run")
+@patch("app.domains.media.audio_service.subprocess.run")
 def test_transcription_flow(mock_run, client, sample_wav_bytes):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
@@ -58,8 +58,8 @@ def test_transcription_flow(mock_run, client, sample_wav_bytes):
     assert delete_response.json()["ok"] is True
 
 
-@patch("app.api.routes_recordings.run_transcription_job")
-@patch("app.services.audio_service.subprocess.run")
+@patch("app.api.routes_recordings.enqueue_transcription")
+@patch("app.domains.media.audio_service.subprocess.run")
 def test_create_recording_job_adds_transcribing_placeholder(
     mock_run,
     mock_worker,
@@ -93,8 +93,8 @@ def test_create_recording_job_adds_transcribing_placeholder(
     assert list_response.json()["items"][0]["status"] == "transcribing"
 
 
-@patch("app.workers.transcription_worker.DiarizationService.load_pipeline")
-@patch("app.services.audio_service.subprocess.run")
+@patch("app.domains.transcription.pipeline.DiarizationService.load_pipeline")
+@patch("app.domains.media.audio_service.subprocess.run")
 def test_diarization_fallback_when_hf_token_missing(
     mock_run,
     mock_load_pipeline,
@@ -136,9 +136,9 @@ def test_diarization_fallback_when_hf_token_missing(
     assert transcript["rawText"]
 
 
-@patch("app.workers.transcription_worker.DiarizationService.load_pipeline")
-@patch("app.workers.transcription_worker.DiarizationService.diarize")
-@patch("app.services.audio_service.subprocess.run")
+@patch("app.domains.transcription.pipeline.DiarizationService.load_pipeline")
+@patch("app.domains.transcription.pipeline.DiarizationService.diarize")
+@patch("app.domains.media.audio_service.subprocess.run")
 def test_diarization_produces_speaker_labeled_transcript(
     mock_run,
     mock_diarize,
@@ -180,7 +180,7 @@ def test_diarization_produces_speaker_labeled_transcript(
     assert transcript["speakerSegments"][0]["speaker"] == "Speaker 1"
 
 
-@patch("app.services.audio_service.subprocess.run")
+@patch("app.domains.media.audio_service.subprocess.run")
 def test_failed_transcription_keeps_recording_with_error(
     mock_run,
     client,
@@ -198,7 +198,7 @@ def test_failed_transcription_keeps_recording_with_error(
     audio_id = upload_response.json()["id"]
 
     with patch(
-        "app.workers.transcription_worker._transcribe_single_pass",
+        "app.domains.transcription.pipeline.TranscriptionPipeline._transcribe_single_pass",
         side_effect=AppError("ASR_TRANSCRIPTION_FAILED", "Mock ASR failure", 500),
     ):
         job_response = client.post(

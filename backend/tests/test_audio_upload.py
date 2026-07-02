@@ -24,7 +24,7 @@ def test_upload_rejects_unsupported_type(client):
     assert response.json()["error"]["code"] == "AUDIO_UNSUPPORTED_TYPE"
 
 
-@patch("app.services.audio_service.subprocess.run")
+@patch("app.domains.media.audio_service.subprocess.run")
 def test_upload_stores_valid_wav(mock_run, client, sample_wav_bytes):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
@@ -47,7 +47,7 @@ def test_upload_stores_valid_wav(mock_run, client, sample_wav_bytes):
     assert get_response.json()["id"] == body["id"]
 
 
-@patch("app.services.audio_service.subprocess.run")
+@patch("app.domains.media.audio_service.subprocess.run")
 def test_stream_audio_returns_playback_file(mock_run, client, sample_wav_bytes):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
@@ -64,7 +64,7 @@ def test_stream_audio_returns_playback_file(mock_run, client, sample_wav_bytes):
     assert stream_response.content == sample_wav_bytes
 
 
-@patch("app.services.audio_service.subprocess.run")
+@patch("app.domains.media.audio_service.subprocess.run")
 def test_upload_accepts_webm_with_codec_param(mock_run, client, sample_wav_bytes):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
@@ -85,7 +85,7 @@ def test_upload_accepts_webm_with_codec_param(mock_run, client, sample_wav_bytes
     assert response.json()["source"] == "recording"
 
 
-@patch("app.services.audio_service.subprocess.run")
+@patch("app.domains.media.audio_service.subprocess.run")
 def test_upload_accepts_mp3_with_octet_stream(mock_run, client, sample_wav_bytes):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
@@ -105,7 +105,7 @@ def test_upload_accepts_mp3_with_octet_stream(mock_run, client, sample_wav_bytes
     assert response.json()["mimeType"] == "audio/mpeg"
 
 
-@patch("app.services.audio_service.subprocess.run")
+@patch("app.domains.media.audio_service.subprocess.run")
 def test_upload_accepts_audio_mp3(mock_run, client, sample_wav_bytes):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 

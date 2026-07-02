@@ -1,7 +1,6 @@
-import pytest
 
 from app.config import Settings
-from app.services.diarization_service import (
+from app.domains.transcription.diarization_service import (
     DiarizationTurn,
     SpeakerSegment,
     build_labeled_transcript,
@@ -67,7 +66,7 @@ def test_build_labeled_transcript():
 
 
 def test_resolve_hf_token_prefers_settings():
-    from app.services.diarization_service import resolve_hf_token
+    from app.domains.transcription.diarization_service import resolve_hf_token
 
     settings = Settings(hf_token="from-settings")
     assert resolve_hf_token(settings) == "from-settings"

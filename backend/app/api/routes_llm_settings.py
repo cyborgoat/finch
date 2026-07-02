@@ -1,21 +1,22 @@
 from fastapi import APIRouter, Depends
-from sqlmodel import Session
 
+from app.api.deps import get_llm_settings_service
+from app.domains.settings.llm_settings_service import LlmSettingsService
 from app.schemas.llm_settings import LlmSettingsResponse, UpdateLlmSettingsRequest
-from app.services.llm_settings_service import LlmSettingsService
-from app.storage.database import get_session
 
-router = APIRouter(tags=["llm-settings"])
+router = APIRouter(prefix="/llm-settings", tags=["llm-settings"])
 
 
-@router.get("/llm-settings", response_model=LlmSettingsResponse)
-def get_llm_settings(session: Session = Depends(get_session)) -> LlmSettingsResponse:
-    return LlmSettingsService(session).get_settings()
+@router.get("", response_model=LlmSettingsResponse)
+def get_llm_settings(
+    service: LlmSettingsService = Depends(get_llm_settings_service),
+) -> LlmSettingsResponse:
+    return service.get_settings()
 
 
-@router.patch("/llm-settings", response_model=LlmSettingsResponse)
+@router.patch("", response_model=LlmSettingsResponse)
 def update_llm_settings(
     payload: UpdateLlmSettingsRequest,
-    session: Session = Depends(get_session),
+    service: LlmSettingsService = Depends(get_llm_settings_service),
 ) -> LlmSettingsResponse:
-    return LlmSettingsService(session).update_settings(payload)
+    return service.update_settings(payload)

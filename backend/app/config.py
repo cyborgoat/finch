@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     data_dir: str = "./data"
     original_audio_dir: str = "./data/audio/original"
     normalized_audio_dir: str = "./data/audio/normalized"
-    export_dir: str = "./data/exports"
 
     asr_model_id: str = "Qwen/Qwen3-ASR-1.7B"
     asr_device: str = "auto"
@@ -44,19 +43,20 @@ class Settings(BaseSettings):
     diarization_max_segments: int = 0
     hf_token: str | None = None
 
-    voiceprint_profiles_enabled: bool = Field(
-        default=False,
-        validation_alias=AliasChoices(
-            "VOICEPRINT_PROFILES_ENABLED",
-            "SPEAKER_MEMORY_ENABLED",
-        ),
-    )
+    voiceprint_profiles_enabled: bool = False
     speaker_embedding_model_id: str = "pyannote/embedding"
     speaker_match_threshold: float = 0.65
     speaker_min_enroll_seconds: float = 2.0
 
     max_upload_mb: int = 500
     max_audio_duration_seconds: int = 7200
+
+    huey_db_path: str | None = Field(default=None, validation_alias=AliasChoices("HUEY_DB_PATH"))
+
+    def resolve_huey_db_path(self) -> str:
+        if self.huey_db_path:
+            return self.huey_db_path
+        return str(Path(self.data_dir) / "huey.db")
 
 
 @lru_cache

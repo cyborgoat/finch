@@ -21,9 +21,17 @@ uv sync
 
 ## Run
 
+Start the API and job worker in **separate terminals**:
+
 ```bash
+# Terminal 1 — API server
 uv run uvicorn app.main:app --reload
+
+# Terminal 2 — background jobs (transcription + AI actions)
+uv run huey_consumer app.domains.jobs.queue.huey -w 1
 ```
+
+The Huey consumer reads from a SQLite queue (`data/huey.db` by default). Jobs are enqueued by the API and processed by the worker — transcription and AI note generation will not run without terminal 2.
 
 Debug voiceprint matching with verbose logs:
 
@@ -31,9 +39,22 @@ Debug voiceprint matching with verbose logs:
 DEBUG_MODE=true uv run uvicorn app.main:app --reload
 ```
 
-On startup, the terminal prints a **configuration summary**: loaded env files, ASR/diarization/voiceprint/LLM mode, dependency checks, and fix hints (`app/core/startup_diagnostics.py`).
+On startup, the terminal prints a **configuration summary**: loaded env files, ASR/diarization/voiceprint/LLM mode, dependency checks, and fix hints (`app/capabilities/startup.py`).
 
 API docs: http://localhost:8000/docs
+
+## Database migrations
+
+Schema is managed by Alembic. On API startup, `alembic upgrade head` runs automatically.
+
+Manual commands:
+
+```bash
+uv run alembic upgrade head    # apply pending migrations
+uv run alembic stamp head      # mark an existing DB as current (no DDL)
+```
+
+If migration fails on a corrupted local DB, delete `finch.db` and restart — Alembic recreates the schema.
 
 ## Tests
 
@@ -41,7 +62,7 @@ API docs: http://localhost:8000/docs
 uv run pytest
 ```
 
-79 tests; patch `ffmpeg`, ASR, diarization, and LLM services at test time — no model downloads required.
+87 tests; patch `ffmpeg`, ASR, diarization, and LLM services at test time — no model downloads required.
 
 ## Environment
 
@@ -50,11 +71,12 @@ uv run pytest
 | `DEBUG_MODE` | Verbose voiceprint/diarization logs at DEBUG level (default `false`) |
 | `HF_TOKEN` | Hugging Face token for pyannote gated models — set in `.env` only |
 | `DIARIZATION_ENABLED` | Fallback for speaker diarization toggle (prefer **Settings → Transcription**) |
-| `VOICEPRINT_PROFILES_ENABLED` | Fallback for voiceprint profiles toggle (prefer **Settings → Transcription**). `SPEAKER_MEMORY_ENABLED` is still accepted as a legacy alias. |
+| `VOICEPRINT_PROFILES_ENABLED` | Fallback for voiceprint profiles toggle (prefer **Settings → Transcription**) |
 | `SPEAKER_EMBEDDING_MODEL_ID` | Embedding model (default `pyannote/embedding`) |
-| `SPEAKER_MATCH_THRESHOLD` | Cosine similarity threshold for auto-match (default `0.65`) |
+| `SPEAKER_MATCH_THRESHOLD` | Cosine similarity threshold for auto-match (default `0.75`) |
 | `SPEAKER_MIN_ENROLL_SECONDS` | Min speech duration for enrollment samples (default `2.0`) |
 | `DATABASE_URL` | SQLite connection string |
+| `HUEY_DB_PATH` | Huey job queue database (default `{DATA_DIR}/huey.db`) |
 | `MAX_UPLOAD_MB` | Maximum upload size in megabytes |
 
 See [`.env.example`](.env.example) and [../.env.example](../.env.example) for the full list.
@@ -92,6 +114,10 @@ Optional local voiceprint storage for persistent speaker names. Requires diariza
 
 If diarization or speaker matching is unavailable, the worker falls back gracefully and stores a `processingNote` when relevant.
 
+## Package layout
+
+Domain logic lives under `app/domains/`. See [../docs/modules.md](../docs/modules.md) for the full map.
+
 ## API
 
 - `GET /api/health` — liveness + capability flags
@@ -100,7 +126,7 @@ If diarization or speaker matching is unavailable, the worker falls back gracefu
 - `GET/PATCH/DELETE /api/recordings/{id}`
 - `PATCH /api/recordings/{id}/speakers` — rename/link speakers on a transcript
 - `GET /api/jobs/{id}`
-- `POST /api/ai-actions` — generate AI note (`action`: `meeting_summary`, `action_items`, `key_decisions`, `follow_up_email`; legacy alias `markdown_summary`)
+- `POST /api/ai-actions` — generate AI note (`action`: `meeting_summary`, `action_items`, `key_decisions`, `follow_up_email`)
 - `GET /api/ai-actions/templates` — list AI note templates
 - `GET/POST/PATCH/DELETE /api/notes` — note CRUD (POST creates blank manual notes)
 - `GET/PATCH /api/transcription-settings` — diarization and voiceprint profile toggles (SQLite)

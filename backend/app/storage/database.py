@@ -1,42 +1,25 @@
 from collections.abc import Generator
+from pathlib import Path
 
-from sqlalchemy import inspect
-from sqlmodel import Session, SQLModel, create_engine
+from alembic.config import Config
+from sqlmodel import Session, create_engine
 
-from app.config import get_settings
 import app.models  # noqa: F401 — register SQLModel tables
+from alembic import command
+from app.config import get_settings
 
 _engine = None
-
-_SQLITE_COLUMN_PATCHES: dict[str, dict[str, str]] = {
-    "recording": {
-        "speaker_segments": "TEXT",
-        "error_message": "TEXT",
-        "processing_note": "TEXT",
-    },
-    "note": {
-        "status": "TEXT NOT NULL DEFAULT 'ready'",
-        "generation_job_id": "TEXT",
-    },
-}
+_BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
-def _apply_sqlite_column_patches(engine) -> None:
-    if engine.dialect.name != "sqlite":
-        return
+def _alembic_config() -> Config:
+    config = Config(str(_BACKEND_DIR / "alembic.ini"))
+    config.set_main_option("script_location", str(_BACKEND_DIR / "alembic"))
+    return config
 
-    inspector = inspect(engine)
-    with engine.begin() as connection:
-        for table_name, columns in _SQLITE_COLUMN_PATCHES.items():
-            if not inspector.has_table(table_name):
-                continue
-            existing = {column["name"] for column in inspector.get_columns(table_name)}
-            for column_name, column_type in columns.items():
-                if column_name in existing:
-                    continue
-                connection.exec_driver_sql(
-                    f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"
-                )
+
+def _run_alembic_upgrade() -> None:
+    command.upgrade(_alembic_config(), "head")
 
 
 def get_engine():
@@ -44,9 +27,15 @@ def get_engine():
     if _engine is None:
         settings = get_settings()
         connect_args = (
-            {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+            {"check_same_thread": False, "timeout": 30}
+            if settings.database_url.startswith("sqlite")
+            else {}
         )
         _engine = create_engine(settings.database_url, connect_args=connect_args)
+        if settings.database_url.startswith("sqlite"):
+            with _engine.connect() as connection:
+                connection.exec_driver_sql("PRAGMA journal_mode=WAL")
+                connection.commit()
     return _engine
 
 
@@ -55,15 +44,16 @@ def reset_engine(database_url: str | None = None) -> None:
     if database_url is None:
         _engine = None
         return
-    connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
+    connect_args = {"check_same_thread": False, "timeout": 30} if database_url.startswith("sqlite") else {}
     _engine = create_engine(database_url, connect_args=connect_args)
-    SQLModel.metadata.create_all(_engine)
+    if database_url.startswith("sqlite"):
+        with _engine.connect() as connection:
+            connection.exec_driver_sql("PRAGMA journal_mode=WAL")
+            connection.commit()
 
 
 def create_db_and_tables() -> None:
-    engine = get_engine()
-    SQLModel.metadata.create_all(engine)
-    _apply_sqlite_column_patches(engine)
+    _run_alembic_upgrade()
 
 
 def get_session() -> Generator[Session]:

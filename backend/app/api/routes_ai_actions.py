@@ -1,20 +1,24 @@
-from fastapi import APIRouter, BackgroundTasks, Depends
-from sqlmodel import Session
+from fastapi import APIRouter, Depends
 
+from app.api.deps import (
+    get_ai_action_service,
+    get_job_service,
+    get_note_service,
+    get_recording_service,
+)
 from app.core.errors import AppError
+from app.domains.ai.action_service import AiActionService
+from app.domains.ai.presets import get_preset, list_presets, resolve_action_id
+from app.domains.jobs.job_service import JobService
+from app.domains.jobs.queue import enqueue_ai_action
+from app.domains.recordings.note_service import NoteService
+from app.domains.recordings.recording_service import RecordingService
 from app.schemas.ai_action import (
     AiActionTemplate,
     AiActionTemplateListResponse,
     CreateAiActionRequest,
     CreateAiActionResponse,
 )
-from app.services.ai_action_presets import get_preset, list_presets, resolve_action_id
-from app.services.ai_action_service import AiActionService
-from app.services.note_service import NoteService
-from app.services.job_service import JobService
-from app.services.recording_service import RecordingService
-from app.storage.database import get_session
-from app.workers.ai_action_worker import run_ai_action_job
 
 router = APIRouter(prefix="/ai-actions", tags=["ai-actions"])
 
@@ -36,25 +40,23 @@ def list_ai_action_templates() -> AiActionTemplateListResponse:
 @router.post("", response_model=CreateAiActionResponse)
 def create_ai_action_job(
     payload: CreateAiActionRequest,
-    background_tasks: BackgroundTasks,
-    session: Session = Depends(get_session),
+    recording_service: RecordingService = Depends(get_recording_service),
+    job_service: JobService = Depends(get_job_service),
+    ai_action_service: AiActionService = Depends(get_ai_action_service),
+    note_service: NoteService = Depends(get_note_service),
 ) -> CreateAiActionResponse:
     resolved_action = resolve_action_id(payload.action)
     preset = get_preset(resolved_action)
     if preset is None:
         raise AppError("AI_ACTION_INVALID", f"Unknown action: {payload.action}.", 400)
 
-    recording_service = RecordingService(session)
     transcript = recording_service.get_recording(payload.recording_id)
 
-    job_service = JobService(session)
     job = job_service.create_job("ai_action")
 
-    ai_action_service = AiActionService(session)
     placeholder_title = ai_action_service.build_title(preset.title_prefix, transcript)
-    resolved_model = payload.model or ai_action_service.llm_service.resolve_default_model()
+    resolved_model = payload.model or ai_action_service.resolve_default_model()
 
-    note_service = NoteService(session)
     document = note_service.create_generating_note(
         recording_id=transcript.id,
         title=placeholder_title,
@@ -64,8 +66,7 @@ def create_ai_action_job(
     )
     job_service.update_job(job, result_id=document.id)
 
-    background_tasks.add_task(
-        run_ai_action_job,
+    enqueue_ai_action(
         job.id,
         payload.recording_id,
         payload.action,

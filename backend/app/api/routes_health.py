@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
+from app.capabilities.status import get_capability_status_with_session
 from app.config import get_settings
-from app.core.startup_diagnostics import get_capability_status_with_session
 from app.storage.database import get_session
 
-router = APIRouter(tags=["health"])
+router = APIRouter(prefix="/health", tags=["health"])
 
 
-@router.get("/health")
+@router.get("")
 def health(session: Session = Depends(get_session)) -> dict:
     settings = get_settings()
     capabilities = get_capability_status_with_session(session, settings)

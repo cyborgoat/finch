@@ -1,13 +1,12 @@
 from datetime import UTC, datetime
 
-from app.models.audio_asset import AudioAsset
-from app.models.recording import Recording
-from app.services.diarization_service import SpeakerSegment, speaker_segments_to_json
-from app.services.transcript_text_service import (
+from app.domains.recordings.transcript_text_service import (
     build_labeled_transcript_with_profile_names,
-    propagate_profile_display_name,
     resolve_transcript_text,
 )
+from app.domains.transcription.diarization_service import SpeakerSegment, speaker_segments_to_json
+from app.models.audio_asset import AudioAsset
+from app.models.recording import Recording
 
 
 def test_build_labeled_transcript_with_profile_names():

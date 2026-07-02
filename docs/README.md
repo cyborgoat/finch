@@ -26,6 +26,8 @@ AudioAsset → Recording → Note(s) (optional)
 
 The transcript on a recording is the durable artifact. LLM-generated and manual Markdown notes are optional derivatives linked to the source recording.
 
+**Local dev requires two backend processes:** the FastAPI server and the Huey job consumer (see [quickstart.md](quickstart.md)).
+
 ## Frontend routes
 
 | Route | Purpose |

@@ -1,5 +1,5 @@
 from app.core.errors import AppError
-from app.services.voiceprint_profile_service import VoiceprintProfileService
+from app.domains.voiceprint.profile_service import VoiceprintProfileService
 
 
 def test_voiceprint_profile_requires_consent_for_enroll(db_session, test_settings):

@@ -1,8 +1,8 @@
-from app.services.llm.anthropic import AnthropicMessagesClient
-from app.services.llm.config import resolve_llm_config
-from app.services.llm.factory import build_llm_client, build_llm_client_from_config
-from app.services.llm.openai_compatible import OpenAiCompatibleClient
-from app.services.llm.runtime import LlmRuntimeSettings
+from app.domains.ai.llm.anthropic import AnthropicMessagesClient
+from app.domains.ai.llm.config import resolve_llm_config
+from app.domains.ai.llm.factory import build_llm_client, build_llm_client_from_config
+from app.domains.ai.llm.openai_compatible import OpenAiCompatibleClient
+from app.domains.ai.llm.runtime import LlmRuntimeSettings
 
 
 def test_build_openrouter_client():

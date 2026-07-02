@@ -3,11 +3,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.core.errors import AppError
+from app.domains.ai.action_service import AiActionService
+from app.domains.recordings import transcript_text_service
+from app.domains.transcription.diarization_service import SpeakerSegment, speaker_segments_to_json
 from app.models.recording import Recording
 from app.schemas.user_settings import UserSettingsResponse
-from app.services.ai_action_service import AiActionService
-from app.services.diarization_service import SpeakerSegment, speaker_segments_to_json
-from app.services import transcript_text_service
 from tests.support.fakes import FAKE_LLM_MARKDOWN
 
 
@@ -30,7 +30,7 @@ def test_run_meeting_summary_includes_user_preferences_in_prompt():
     )
 
     mock_llm = MagicMock(return_value=FAKE_LLM_MARKDOWN)
-    service.llm_service.chat_completion = mock_llm
+    service.chat_completion = mock_llm
 
     service.run_action(
         transcript,
@@ -63,7 +63,7 @@ def test_run_action_items_includes_content_language():
     user_settings = UserSettingsResponse(content_language="zh")
 
     mock_llm = MagicMock(return_value=FAKE_LLM_MARKDOWN)
-    service.llm_service.chat_completion = mock_llm
+    service.chat_completion = mock_llm
 
     service.run_action(
         transcript,
@@ -92,28 +92,6 @@ def test_run_action_rejects_unknown_action():
         service.run_action(transcript, action="unknown_action", source="rawText")
     assert exc_info.value.code == "AI_ACTION_INVALID"
 
-
-def test_run_action_supports_legacy_markdown_summary_alias():
-    service = AiActionService(MagicMock())
-
-    transcript = Recording(
-        id="recording_test12345678",
-        audio_asset_id="audio_test1234567890",
-        title="Team sync",
-        raw_text="We discussed the roadmap.",
-        status="draft",
-    )
-
-    mock_llm = MagicMock(return_value=FAKE_LLM_MARKDOWN)
-    service.llm_service.chat_completion = mock_llm
-
-    _title, note_type, _markdown = service.run_action(
-        transcript,
-        action="markdown_summary",
-        source="rawText",
-    )
-
-    assert note_type == "meeting_summary"
 
 
 def test_resolve_transcript_text_uses_voice_profile_names():
@@ -180,7 +158,7 @@ def test_run_action_uses_profile_names_in_prompt():
     )
 
     mock_llm = MagicMock(return_value=FAKE_LLM_MARKDOWN)
-    service.llm_service.chat_completion = mock_llm
+    service.chat_completion = mock_llm
 
     with patch.object(
         transcript_text_service,

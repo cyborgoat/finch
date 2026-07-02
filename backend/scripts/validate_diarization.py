@@ -13,8 +13,9 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app.config import get_settings
-from app.core.startup_diagnostics import check_dependencies, get_capability_status
-from app.services.diarization_service import (
+from app.capabilities.checker import check_dependencies
+from app.capabilities.status import get_capability_status
+from app.domains.transcription.diarization_service import (
     DiarizationService,
     merge_adjacent_turns,
     resolve_hf_token,
@@ -115,7 +116,7 @@ def run_diarization_probe(audio_path: Path) -> list[str]:
     service = DiarizationService(settings)
 
     try:
-        from app.services.audio_service import AudioService
+        from app.domains.media.audio_service import AudioService
 
         duration = AudioService(None, settings).get_duration(str(audio_path))
         turns = service.diarize(str(audio_path), duration)

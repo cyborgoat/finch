@@ -4,7 +4,7 @@ from unittest.mock import patch
 from tests.support.fakes import fake_ffmpeg_run
 
 
-@patch("app.services.audio_service.subprocess.run")
+@patch("app.domains.media.audio_service.subprocess.run")
 def test_ai_action_flow(mock_run, client, sample_wav_bytes):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
@@ -34,7 +34,7 @@ def test_ai_action_flow(mock_run, client, sample_wav_bytes):
         "/api/ai-actions",
         json={
             "recordingId": recording_id,
-            "action": "markdown_summary",
+            "action": "meeting_summary",
             "source": "rawText",
         },
     )

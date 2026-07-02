@@ -80,7 +80,6 @@ export type UserSettings = {
 export type NoteType =
   | "note"
   | "meeting_summary"
-  | "markdown_summary"
   | "action_items"
   | "key_decisions"
   | "follow_up_email"
