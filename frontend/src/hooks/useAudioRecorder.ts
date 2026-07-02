@@ -26,6 +26,72 @@ function pickMimeType() {
   return ""
 }
 
+type DisplayMediaOptions = DisplayMediaStreamOptions & {
+  preferCurrentTab?: boolean
+  monitorTypeSurfaces?: "include" | "exclude"
+  systemAudio?: "include" | "exclude"
+  surfaceSwitching?: "include" | "exclude"
+  selfBrowserSurface?: "include" | "exclude"
+}
+
+function streamWithAudioOnly(
+  stream: MediaStream,
+  errors: UseAudioRecorderOptions["errors"],
+): MediaStream {
+  if (stream.getAudioTracks().length === 0) {
+    stream.getTracks().forEach((track) => track.stop())
+    throw new Error(
+      errors?.noSystemAudio ??
+        "No system audio was shared. Choose Entire screen and enable system audio.",
+    )
+  }
+
+  stream.getVideoTracks().forEach((track) => track.stop())
+  return new MediaStream(stream.getAudioTracks())
+}
+
+async function captureDisplayAudio(
+  errors: UseAudioRecorderOptions["errors"],
+): Promise<MediaStream> {
+  // Browsers require a video track to access system audio. We discard it immediately.
+  const captureAttempts: DisplayMediaOptions[] = [
+    {
+      audio: { suppressLocalAudioPlayback: false },
+      video: {
+        width: { max: 1 },
+        height: { max: 1 },
+        frameRate: { max: 1 },
+      },
+      systemAudio: "include",
+    },
+    {
+      audio: true,
+      video: {
+        width: { max: 1 },
+        height: { max: 1 },
+        frameRate: { max: 1 },
+      },
+    },
+  ]
+
+  let lastError: unknown
+  for (const constraints of captureAttempts) {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia(constraints)
+      return streamWithAudioOnly(stream, errors)
+    } catch (err) {
+      lastError = err
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        throw err
+      }
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(errors?.displayDenied ?? "Screen sharing was cancelled")
+}
+
 async function createCaptureStream(
   includeSystemAudio: boolean,
   errors: UseAudioRecorderOptions["errors"],
@@ -41,28 +107,16 @@ async function createCaptureStream(
 
   let displayStream: MediaStream
   try {
-    displayStream = await navigator.mediaDevices.getDisplayMedia({
-      video: true,
-      audio: true,
-    })
+    displayStream = await captureDisplayAudio(errors)
   } catch (err) {
     micStream.getTracks().forEach((track) => track.stop())
     if (err instanceof DOMException && err.name === "NotAllowedError") {
       throw new Error(
-        errors?.displayDenied ?? "Screen or tab sharing was cancelled",
+        errors?.displayDenied ?? "Screen sharing was cancelled",
         { cause: err },
       )
     }
     throw err
-  }
-
-  if (displayStream.getAudioTracks().length === 0) {
-    displayStream.getTracks().forEach((track) => track.stop())
-    micStream.getTracks().forEach((track) => track.stop())
-    throw new Error(
-      errors?.noSystemAudio ??
-        "No computer audio was shared. Choose a tab or window and enable audio sharing.",
-    )
   }
 
   const audioContext = new AudioContext()

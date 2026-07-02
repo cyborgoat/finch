@@ -78,6 +78,7 @@ export function RecordingSessionProvider({ children }: { children: ReactNode }) 
   }, [recorder.state, t])
 
   const openRecordDialog = useCallback(() => {
+    setIncludeSystemAudio(false)
     setRecordDialogOpen(true)
   }, [])
 
@@ -85,6 +86,13 @@ export function RecordingSessionProvider({ children }: { children: ReactNode }) 
     setDismissedError(false)
     backgroundNotifiedRef.current = false
     await recorder.start()
+  }, [recorder])
+
+  const reset = useCallback(() => {
+    recorder.reset()
+    setIncludeSystemAudio(false)
+    backgroundNotifiedRef.current = false
+    setDismissedError(false)
   }, [recorder])
 
   const saveRecording = useCallback(async () => {
@@ -99,7 +107,7 @@ export function RecordingSessionProvider({ children }: { children: ReactNode }) 
       })
       invalidateRecordings()
       toast.success(t("toasts.recordingSaved"))
-      recorder.reset()
+      reset()
       setRecordDialogOpen(false)
       backgroundNotifiedRef.current = false
       return created.recordingId
@@ -110,16 +118,11 @@ export function RecordingSessionProvider({ children }: { children: ReactNode }) 
   }, [
     createRecordingMutation,
     invalidateRecordings,
-    recorder,
+    recorder.audioBlob,
+    reset,
     t,
     upload,
   ])
-
-  const reset = useCallback(() => {
-    recorder.reset()
-    backgroundNotifiedRef.current = false
-    setDismissedError(false)
-  }, [recorder])
 
   const value = useMemo<RecordingSessionContextValue>(
     () => ({

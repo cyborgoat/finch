@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/layout/Sidebar"
 import { Topbar } from "@/components/layout/Topbar"
 import { Footer } from "@/components/layout/Footer"
+import { FloatingRecordingBar } from "@/components/audio/FloatingRecordingBar"
 import { TopbarActionsProvider } from "@/components/layout/TopbarActionsContext"
 import { RecordingSessionProvider } from "@/components/audio/RecordingSessionProvider"
 import { NewRecordingDialogsProvider } from "@/components/layout/NewRecordingDialogs"
@@ -19,6 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {children}
               </main>
               <Footer />
+              <FloatingRecordingBar />
             </SidebarInset>
           </SidebarProvider>
         </TopbarActionsProvider>

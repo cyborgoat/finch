@@ -98,7 +98,7 @@ export function RecordAudioDialog({ open, onOpenChange }: RecordAudioDialogProps
                 <p className="text-sm text-muted-foreground">{t("record.recordHint")}</p>
 
                 {canConfigureCapture ? (
-                  <div className="space-y-2 rounded-lg border border-border/60 p-3">
+                  <div className="space-y-3 rounded-lg border border-border/60 p-3">
                     <div className="flex items-center justify-between gap-3">
                       <Label htmlFor="dialog-include-system-audio" className="text-sm font-normal">
                         {t("record.includeSystemAudio")}
@@ -113,6 +113,18 @@ export function RecordAudioDialog({ open, onOpenChange }: RecordAudioDialogProps
                     <p className="text-xs leading-relaxed text-muted-foreground">
                       {t("record.includeSystemAudioHint")}
                     </p>
+                    {session.includeSystemAudio ? (
+                      <div className="space-y-2 rounded-md border border-border/50 bg-muted/20 px-3 py-3 text-xs leading-relaxed text-muted-foreground">
+                        <p className="font-medium text-foreground">
+                          {t("record.includeSystemAudioInstructionsTitle")}
+                        </p>
+                        <ol className="list-decimal space-y-1.5 pl-4">
+                          <li>{t("record.includeSystemAudioInstructions1")}</li>
+                          <li>{t("record.includeSystemAudioInstructions2")}</li>
+                          <li>{t("record.includeSystemAudioInstructions3")}</li>
+                        </ol>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 

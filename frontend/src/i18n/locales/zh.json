@@ -118,11 +118,15 @@
     "discardRecording": "丢弃",
     "continuesInBackground": "录制将在后台继续",
     "includeSystemAudio": "包含电脑音频",
-    "includeSystemAudioHint": "同时捕获标签页、窗口或屏幕的音频。Chrome 或 Edge 效果最佳 — 共享时请启用标签页音频选项。",
+    "includeSystemAudioHint": "同时录制电脑上任意来源的声音 — 会议、应用或其他标签页。",
+    "includeSystemAudioInstructionsTitle": "如何共享电脑音频",
+    "includeSystemAudioInstructions1": "浏览器会要求共享屏幕。这是访问系统音频所必需的 — Finch 无法通过其他方式获取。",
+    "includeSystemAudioInstructions2": "选择整个屏幕（或您的显示器），然后开启“同时共享系统音频”（各浏览器措辞可能不同）。",
+    "includeSystemAudioInstructions3": "Finch 会立即丢弃视频轨道。仅录制并保存音频 — 不会存储任何屏幕画面。",
     "errors": {
       "micDenied": "麦克风权限被拒绝",
-      "displayDenied": "屏幕或标签页共享已取消",
-      "noSystemAudio": "未共享电脑音频。请选择标签页或窗口并启用音频共享。"
+      "displayDenied": "屏幕共享已取消",
+      "noSystemAudio": "未共享系统音频。请选择整个屏幕并启用系统音频共享。"
     },
     "state": {
       "idle": "空闲",
@@ -135,7 +139,8 @@
       "recording": "录制中",
       "paused": "已暂停",
       "stopped": "待保存"
-    }
+    },
+    "floatingBarAriaLabel": "录制控制"
   },
   "jobs": {
     "step": {

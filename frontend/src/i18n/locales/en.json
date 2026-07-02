@@ -118,11 +118,15 @@
     "discardRecording": "Discard",
     "continuesInBackground": "Recording continues in the background",
     "includeSystemAudio": "Include computer audio",
-    "includeSystemAudioHint": "Also capture audio from a tab, window, or screen. Works best in Chrome or Edge — when sharing, enable the tab audio option.",
+    "includeSystemAudioHint": "Also records sound playing anywhere on your computer — meetings, apps, or other tabs.",
+    "includeSystemAudioInstructionsTitle": "How to share computer audio",
+    "includeSystemAudioInstructions1": "Your browser will ask to share your screen. This is required to access system audio — Finch cannot read it any other way.",
+    "includeSystemAudioInstructions2": "Choose Entire screen (or your display), then turn on Also share system audio (wording varies by browser).",
+    "includeSystemAudioInstructions3": "Finch discards the video track immediately. Only audio is recorded and saved — nothing from your screen is stored.",
     "errors": {
       "micDenied": "Microphone permission denied",
-      "displayDenied": "Screen or tab sharing was cancelled",
-      "noSystemAudio": "No computer audio was shared. Choose a tab or window and enable audio sharing."
+      "displayDenied": "Screen sharing was cancelled",
+      "noSystemAudio": "No system audio was shared. Choose Entire screen and enable system audio sharing."
     },
     "state": {
       "idle": "Idle",
@@ -135,7 +139,8 @@
       "recording": "Recording",
       "paused": "Paused",
       "stopped": "Ready to save"
-    }
+    },
+    "floatingBarAriaLabel": "Recording controls"
   },
   "jobs": {
     "step": {
