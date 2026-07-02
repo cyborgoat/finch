@@ -1,11 +1,10 @@
 import { useEffect, useRef } from "react"
 import type { RecorderState } from "@/hooks/useAudioRecorder"
 import {
-  buildLiveLevels,
+  drawOscilloscopeWaveform,
   drawWaveform,
   downsamplePeaks,
   getPrimaryColor,
-  measureFrequencyBands,
   measurePeak,
   WAVEFORM_SAMPLE_INTERVAL_MS,
 } from "@/components/audio/waveform-utils"
@@ -24,14 +23,12 @@ export function MiniAudioWaveform({
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const peaksHistoryRef = useRef<number[]>([])
-  const frozenLevelsRef = useRef<number[]>([])
   const lastSampleAtRef = useRef(0)
   const rafRef = useRef(0)
 
   useEffect(() => {
     if (state === "recording" && stream) {
       peaksHistoryRef.current = []
-      frozenLevelsRef.current = []
       lastSampleAtRef.current = 0
     }
   }, [state, stream])
@@ -44,7 +41,6 @@ export function MiniAudioWaveform({
     let audioContext: AudioContext | null = null
     let analyser: AnalyserNode | null = null
     let source: MediaStreamAudioSourceNode | null = null
-    let freqData: Uint8Array<ArrayBuffer> | null = null
     let timeData: Uint8Array<ArrayBuffer> | null = null
     let cancelled = false
 
@@ -67,38 +63,40 @@ export function MiniAudioWaveform({
       drawWaveform(setup.ctx, setup.width, setup.height, levels, getPrimaryColor(container))
     }
 
+    const renderOscilloscope = () => {
+      const setup = setupCanvas()
+      if (!setup || !timeData) return
+      drawOscilloscopeWaveform(
+        setup.ctx,
+        setup.width,
+        setup.height,
+        timeData,
+        getPrimaryColor(container),
+      )
+    }
+
     const startLiveLoop = () => {
       if (!stream) return
 
       audioContext = new AudioContext()
       analyser = audioContext.createAnalyser()
       analyser.fftSize = 2048
-      analyser.smoothingTimeConstant = 0.55
+      analyser.smoothingTimeConstant = 0.68
       source = audioContext.createMediaStreamSource(stream)
       source.connect(analyser)
-      freqData = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>
       timeData = new Uint8Array(analyser.fftSize) as Uint8Array<ArrayBuffer>
 
       const tick = (now: number) => {
-        if (cancelled || !analyser || !freqData || !timeData) return
-
-        const barCount = Math.max(12, Math.min(32, Math.floor(container.clientWidth / 3)))
+        if (cancelled || !analyser || !timeData) return
 
         if (state === "recording") {
           if (now - lastSampleAtRef.current >= WAVEFORM_SAMPLE_INTERVAL_MS) {
             peaksHistoryRef.current.push(measurePeak(analyser, timeData))
             lastSampleAtRef.current = now
           }
-
-          const frequencyBands = measureFrequencyBands(analyser, freqData, barCount)
-          frozenLevelsRef.current = buildLiveLevels(
-            peaksHistoryRef.current,
-            frequencyBands,
-            barCount,
-          )
-          renderLevels(frozenLevelsRef.current)
+          renderOscilloscope()
         } else if (state === "paused") {
-          renderLevels(frozenLevelsRef.current)
+          renderLevels(downsamplePeaks(peaksHistoryRef.current, 64))
         }
 
         rafRef.current = requestAnimationFrame(tick)
@@ -110,16 +108,16 @@ export function MiniAudioWaveform({
     if (state === "recording" || state === "paused") {
       startLiveLoop()
     } else if (state === "stopped") {
-      renderLevels(downsamplePeaks(peaksHistoryRef.current, 24))
+      renderLevels(downsamplePeaks(peaksHistoryRef.current, 64))
     } else {
       renderLevels([])
     }
 
     const resizeObserver = new ResizeObserver(() => {
-      if (state === "recording" || state === "paused") {
-        renderLevels(frozenLevelsRef.current)
-      } else if (state === "stopped") {
-        renderLevels(downsamplePeaks(peaksHistoryRef.current, 24))
+      if (state === "recording") {
+        renderOscilloscope()
+      } else if (state === "paused" || state === "stopped") {
+        renderLevels(downsamplePeaks(peaksHistoryRef.current, 64))
       } else {
         renderLevels([])
       }
