@@ -12,7 +12,6 @@ from app.core.errors import AppError
 from app.domains.jobs.job_service import JobService
 from app.domains.media.audio_service import AudioService
 from app.domains.recordings.recording_service import RecordingService
-from app.domains.settings.app_preference_service import AppPreferenceService
 from app.domains.settings.transcription_settings_service import TranscriptionSettingsService
 from app.domains.transcription.asr_service import AsrService
 from app.domains.transcription.diarization_service import (
@@ -21,21 +20,20 @@ from app.domains.transcription.diarization_service import (
     extract_audio_slice,
     merge_adjacent_turns,
 )
+from app.domains.transcription.pipeline_diarization import (
+    build_diarization_fallback_note,
+    should_fallback_from_diarization,
+)
+from app.domains.transcription.pipeline_voiceprint import apply_voiceprint_labels
 from app.domains.transcription.types import (
     DiarizationTurn,
     SpeakerSegment,
     build_labeled_transcript,
     speaker_segments_to_json,
 )
-from app.domains.voiceprint.embedding_service import VoiceprintEmbeddingService
-from app.domains.voiceprint.matching_service import (
-    VoiceprintMatchingService,
-    VoiceprintMatchResult,
-)
+from app.domains.voiceprint.matching_service import VoiceprintMatchResult
 
 logger = logging.getLogger(__name__)
-
-DIARIZATION_FALLBACK_CODES = {"DIARIZATION_MODEL_LOAD_FAILED", "DIARIZATION_FAILED"}
 
 
 class TranscriptionPipeline:
@@ -96,17 +94,14 @@ class TranscriptionPipeline:
                         processing_note = voiceprint_note
                 except AppError as exc:
                     self.diarization_service.unload_pipeline()
-                    if exc.code in DIARIZATION_FALLBACK_CODES:
+                    if should_fallback_from_diarization(exc):
                         logger.warning(
                             "Diarization unavailable (%s) — falling back to "
                             "full-file ASR without speaker labels",
                             exc.message,
                         )
                         log_error_guidance(exc.code, exc.message)
-                        processing_note = (
-                            f"Speaker labels unavailable: {exc.message} "
-                            "Set HF_TOKEN in .env or run huggingface-cli login, then re-transcribe."
-                        )
+                        processing_note = build_diarization_fallback_note(exc)
                         raw_text, detected_language, segments = self._transcribe_single_pass(
                             job=job,
                             normalized_path=audio_asset.normalized_path,
@@ -275,63 +270,15 @@ class TranscriptionPipeline:
             ]
 
         cluster_resolutions: dict[str, VoiceprintMatchResult] = {}
-        voiceprint_note: str | None = None
-
-        preference_service = AppPreferenceService(self.session)
-        voiceprint_profiles_enabled = self.transcription_settings.is_voiceprint_profiles_enabled()
-        voiceprint_auto_label_enabled = (
-            self.transcription_settings.is_voiceprint_auto_label_enabled()
+        merged_turns, cluster_resolutions, voiceprint_note = apply_voiceprint_labels(
+            session=self.session,
+            settings=self.settings,
+            job_service=self.job_service,
+            transcription_settings=self.transcription_settings,
+            job=job,
+            diarization_path=diarization_path,
+            merged_turns=merged_turns,
         )
-        consent_given = preference_service.has_voiceprint_profiles_consent()
-        voiceprint_profiles_active = (
-            voiceprint_profiles_enabled and voiceprint_auto_label_enabled and consent_given
-        )
-        logger.debug(
-            "Voiceprint auto-label gate: active=%s profiles_enabled=%s "
-            "auto_label=%s consent=%s diarization_path=%s clusters=%d",
-            voiceprint_profiles_active,
-            voiceprint_profiles_enabled,
-            voiceprint_auto_label_enabled,
-            consent_given,
-            diarization_path,
-            len(merged_turns),
-        )
-        if voiceprint_profiles_active:
-            self.job_service.update_job(job, progress=0.27, stage="running_voiceprint_matching")
-            try:
-                embedding_service = VoiceprintEmbeddingService(
-                    self.settings,
-                    hf_token=self.transcription_settings.get_hf_token(),
-                )
-                cluster_embeddings = embedding_service.extract_cluster_embeddings(
-                    diarization_path,
-                    merged_turns,
-                )
-                matching_service = VoiceprintMatchingService(self.session, self.settings)
-                cluster_resolutions = matching_service.resolve_display_names(
-                    merged_turns,
-                    cluster_embeddings,
-                )
-                merged_turns = matching_service.apply_names_to_turns(
-                    merged_turns,
-                    cluster_resolutions,
-                )
-                matched_count = sum(
-                    1
-                    for resolution in cluster_resolutions.values()
-                    if resolution.match_status == "matched"
-                )
-                if cluster_resolutions and matched_count == 0:
-                    voiceprint_note = (
-                        "Voiceprint auto-label ran but no speaker matched the saved threshold. "
-                        "Try re-recording your voiceprint or assign a speaker manually on a turn."
-                    )
-                embedding_service.unload_model()
-            except AppError as exc:
-                logger.warning(
-                    "Speaker matching unavailable (%s) — using generic speaker labels",
-                    exc.message,
-                )
 
         self.diarization_service.unload_pipeline()
         self.job_service.update_job(job, progress=0.28, stage="loading_model")

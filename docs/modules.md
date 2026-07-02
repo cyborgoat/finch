@@ -44,7 +44,7 @@ Loads settings from `backend/.env` and repo root `.env`.
 | `voiceprint_profiles_enabled` | `false` | Voiceprint profiles (fallback; prefer Settings → Transcription) |
 | `speaker_embedding_model_id` | `pyannote/embedding` | Voiceprint model |
 | `speaker_min_enroll_seconds` | `2.0` | Min speech for enrollment sample |
-| `speaker_match_threshold` | `0.75` | Cosine similarity threshold for auto-match |
+| `speaker_match_threshold` | `0.65` | Cosine similarity threshold for auto-match |
 | `hf_token` | — | Hugging Face token for gated pyannote models — set `HF_TOKEN` in `.env` only (not in Settings UI) |
 | `huey_db_path` | `{data_dir}/huey.db` | SQLite-backed job queue database |
 
@@ -63,9 +63,7 @@ LLM and transcription toggles are stored in SQLite via the frontend — not in `
 | `routes_ai_actions.py` | `POST /api/ai-actions`, `GET /api/ai-actions/templates` |
 | `routes_notes.py` | `GET/POST/PATCH/DELETE /api/notes` |
 | `routes_voiceprint_profiles.py` | Voiceprint profiles + consent/status helpers |
-| `routes_user_settings.py` | `GET/PATCH /api/user-settings` |
-| `routes_llm_settings.py` | `GET/PATCH /api/llm-settings` (local SQLite storage) |
-| `routes_transcription_settings.py` | `GET/PATCH /api/transcription-settings` (diarization, voiceprint toggles) |
+| `routes_settings.py` | `GET/PATCH /api/user-settings`, `/api/llm-settings`, `/api/transcription-settings` |
 
 ## `capabilities/`
 
@@ -82,11 +80,11 @@ LLM and transcription toggles are stored in SQLite via the frontend — not in `
 |--------|-------------|
 | `transcription/` | `asr_service`, `diarization_service`, `pipeline`, `types` |
 | `voiceprint/` | `embedding_service`, `matching_service`, `profile_service` |
-| `recordings/` | `recording_service`, `speaker_service`, `transcript_text_service` |
+| `recordings/` | `recording_service`, `note_service`, `speaker_service`, `transcript_text_service`, `presenter` |
 | `media/` | `audio_service` |
-| `jobs/` | `job_service`, `queue` (Huey) |
-| `ai/` | `action_service`, `presets`, `prompt_context`, `pipeline`, `llm/` |
-| `settings/` | `preference_store`, `*_settings_service`, `app_preference_service` |
+| `jobs/` | `job_service`, `transcription_jobs`, `queue` (Huey) |
+| `ai/` | `action_service`, `action_presets`, `action_jobs`, `prompt_context`, `pipeline`, `llm/` |
+| `settings/` | `preference_store`, `settings_utils`, `*_settings_service`, `app_preference_service` |
 
 ## `workers/`
 
@@ -104,11 +102,11 @@ uv run huey_consumer app.domains.jobs.queue.huey -w 1
 ## `storage/database.py`
 
 - Alembic migrations on startup (`alembic upgrade head`)
-- Test helper `reset_engine()` uses `create_all` for isolated DB fixtures
+- Test helper `reset_engine()` recreates the engine and runs Alembic upgrade for isolated DB fixtures
 
 ## `tests/`
 
-87 tests covering health, upload, recordings, diarization, voiceprint, settings, AI actions, notes, LLM providers, DB migration, startup diagnostics, preference store, and job queue.
+87 tests covering health, upload, recordings, diarization, voiceprint, settings, AI actions, notes, LLM providers, DB migration, startup diagnostics, preference store, job queue, capability status, and schema parity.
 
 ## `scripts/`
 

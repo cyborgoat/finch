@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from app.capabilities.status import get_capability_status_with_session
+from app.capabilities.hf_hints import format_health_diarization_reason
+from app.capabilities.status import get_capability_status
 from app.config import get_settings
 from app.storage.database import get_session
 
@@ -11,16 +12,14 @@ router = APIRouter(prefix="/health", tags=["health"])
 @router.get("")
 def health(session: Session = Depends(get_session)) -> dict:
     settings = get_settings()
-    capabilities = get_capability_status_with_session(session, settings)
+    capabilities = get_capability_status(settings, session)
     diarization_reason: str | None = capabilities.diarization_reason
     if (
         capabilities.diarization_enabled
         and not capabilities.diarization_ready
         and diarization_reason
     ):
-        diarization_reason = (
-            f"{diarization_reason} Set HF_TOKEN in backend .env."
-        )
+        diarization_reason = format_health_diarization_reason(diarization_reason)
 
     return {
         "status": "ok",

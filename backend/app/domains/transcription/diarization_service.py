@@ -15,18 +15,17 @@ from app.storage.file_store import safe_join
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MIN_SEGMENT_SECONDS = 0.3
 
-PYANOTE_COMMUNITY_MODEL = "pyannote/speaker-diarization-community-1"
-PYANOTE_COMMUNITY_MODEL_URL = f"https://huggingface.co/{PYANOTE_COMMUNITY_MODEL}"
+def pyannote_community_model_url(settings: Settings | None = None) -> str:
+    resolved = settings or get_settings()
+    return f"https://huggingface.co/{resolved.diarization_pipeline_id}"
+
 
 __all__ = [
     "DiarizationTurn",
     "SpeakerSegment",
     "DiarizationService",
-    "PYANOTE_COMMUNITY_MODEL",
-    "PYANOTE_COMMUNITY_MODEL_URL",
-    "DEFAULT_MIN_SEGMENT_SECONDS",
+    "pyannote_community_model_url",
     "build_labeled_transcript",
     "speaker_segments_from_json",
     "speaker_segments_to_json",
@@ -239,10 +238,12 @@ class DiarizationService:
 def merge_adjacent_turns(
     turns: list[DiarizationTurn],
     *,
-    min_segment_seconds: float = DEFAULT_MIN_SEGMENT_SECONDS,
+    min_segment_seconds: float | None = None,
     merge_gap_seconds: float = 0.0,
     max_segments: int = 0,
 ) -> list[DiarizationTurn]:
+    if min_segment_seconds is None:
+        min_segment_seconds = get_settings().diarization_min_segment_seconds
     if not turns:
         return []
 
@@ -288,7 +289,8 @@ def extract_audio_slice(
     output_dir: str,
     segment_id: str,
 ) -> str:
-    duration = max(end_sec - start_sec, DEFAULT_MIN_SEGMENT_SECONDS)
+    min_segment_seconds = get_settings().diarization_min_segment_seconds
+    duration = max(end_sec - start_sec, min_segment_seconds)
     output_path = safe_join(output_dir, f"{segment_id}.wav")
 
     try:

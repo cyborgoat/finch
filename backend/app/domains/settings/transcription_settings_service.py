@@ -8,7 +8,7 @@ from app.capabilities.status import (
 )
 from app.config import Settings, get_settings
 from app.domains.settings.app_preference_service import AppPreferenceService
-from app.domains.settings.preference_store import JsonPreferenceStore
+from app.domains.settings.settings_utils import JsonSettingsRepository
 from app.domains.transcription.diarization_service import resolve_hf_token
 from app.schemas.transcription_settings import (
     TranscriptionSettingsResponse,
@@ -22,11 +22,11 @@ class TranscriptionSettingsService:
     def __init__(self, session: Session, settings: Settings | None = None) -> None:
         self.session = session
         self.settings = settings or get_settings()
-        self.store = JsonPreferenceStore(session)
+        self.repository = JsonSettingsRepository(session, TRANSCRIPTION_SETTINGS_KEY)
         self.preferences = AppPreferenceService(session)
 
     def get_settings(self) -> TranscriptionSettingsResponse:
-        stored = self._load_raw()
+        stored = self.repository.load()
         diarization_enabled = bool(stored.get("diarization_enabled"))
         voiceprint_profiles_enabled = self._resolve_voiceprint_profiles_enabled(stored)
         voiceprint_auto_label_enabled = self._resolve_voiceprint_auto_label_enabled(stored)
@@ -58,37 +58,41 @@ class TranscriptionSettingsService:
         self,
         payload: UpdateTranscriptionSettingsRequest,
     ) -> TranscriptionSettingsResponse:
-        current = self._load_raw()
         patch = payload.model_dump(exclude_unset=True)
 
-        if "diarization_enabled" in patch:
-            current["diarization_enabled"] = bool(patch["diarization_enabled"])
+        def apply_patch(current: dict[str, Any]) -> dict[str, Any]:
+            if "diarization_enabled" in patch:
+                current["diarization_enabled"] = bool(patch["diarization_enabled"])
 
-        if "voiceprint_profiles_enabled" in patch:
-            current["voiceprint_profiles_enabled"] = bool(patch["voiceprint_profiles_enabled"])
+            if "voiceprint_profiles_enabled" in patch:
+                current["voiceprint_profiles_enabled"] = bool(
+                    patch["voiceprint_profiles_enabled"]
+                )
 
-        if "voiceprint_auto_label_enabled" in patch:
-            enabled = bool(patch["voiceprint_auto_label_enabled"])
-            current["voiceprint_auto_label_enabled"] = enabled
-            self.preferences.set_voiceprint_auto_label_enabled(enabled)
+            if "voiceprint_auto_label_enabled" in patch:
+                current["voiceprint_auto_label_enabled"] = bool(
+                    patch["voiceprint_auto_label_enabled"]
+                )
 
-        self._save_raw(current)
+            return current
+
+        self.repository.update(apply_patch)
         return self.get_settings()
 
     def is_diarization_enabled(self) -> bool:
-        stored = self._load_raw()
+        stored = self.repository.load()
         if stored:
             return bool(stored.get("diarization_enabled"))
         return self.settings.diarization_enabled
 
     def is_voiceprint_profiles_enabled(self) -> bool:
-        stored = self._load_raw()
+        stored = self.repository.load()
         if stored:
             return self._resolve_voiceprint_profiles_enabled(stored)
         return self.settings.voiceprint_profiles_enabled
 
     def is_voiceprint_auto_label_enabled(self) -> bool:
-        stored = self._load_raw()
+        stored = self.repository.load()
         return self._resolve_voiceprint_auto_label_enabled(stored)
 
     def get_hf_token(self) -> str | None:
@@ -102,7 +106,12 @@ class TranscriptionSettingsService:
     def _resolve_voiceprint_auto_label_enabled(self, stored: dict[str, Any]) -> bool:
         if "voiceprint_auto_label_enabled" in stored:
             return bool(stored["voiceprint_auto_label_enabled"])
-        return self.preferences.is_voiceprint_auto_label_enabled()
+        legacy = self.preferences.is_voiceprint_auto_label_enabled()
+        if legacy:
+            stored = dict(stored)
+            stored["voiceprint_auto_label_enabled"] = True
+            self.repository.save(stored)
+        return legacy
 
     def _diarization_status(
         self,
@@ -119,7 +128,4 @@ class TranscriptionSettingsService:
         )
 
     def _load_raw(self) -> dict[str, Any]:
-        return self.store.load(TRANSCRIPTION_SETTINGS_KEY)
-
-    def _save_raw(self, data: dict[str, Any]) -> None:
-        self.store.save(TRANSCRIPTION_SETTINGS_KEY, data)
+        return self.repository.load()

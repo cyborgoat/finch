@@ -5,9 +5,9 @@ from sqlmodel import Session
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
+from app.domains.ai.action_presets import get_preset
 from app.domains.ai.llm import build_llm_client, require_llm_config
 from app.domains.ai.llm.runtime import LlmRuntimeSettings
-from app.domains.ai.presets import get_preset, resolve_action_id
 from app.domains.ai.prompt_context import (
     apply_user_context,
     build_content_language_context,
@@ -106,7 +106,7 @@ class AiActionService:
         session: Session | None = None,
         user_settings: UserSettingsResponse | None = None,
     ) -> tuple[str, str, str]:
-        resolved_action = resolve_action_id(action)
+        resolved_action = action.strip()
         preset = get_preset(resolved_action)
         if preset is None:
             raise AppError(
@@ -147,7 +147,7 @@ class AiActionService:
         user_settings: UserSettingsResponse,
         recording_id: str,
     ) -> tuple[str, str, str]:
-        resolved_action = resolve_action_id(action)
+        resolved_action = action.strip()
         preset = get_preset(resolved_action)
         if preset is None:
             raise AppError(

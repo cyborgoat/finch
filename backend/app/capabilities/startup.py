@@ -8,7 +8,7 @@ from app.capabilities.status import (
 )
 from app.config import _ENV_CANDIDATES, Settings, get_settings
 from app.core.errors import AppError
-from app.domains.transcription.diarization_service import PYANOTE_COMMUNITY_MODEL_URL
+from app.domains.transcription.diarization_service import pyannote_community_model_url
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +113,9 @@ def log_startup_summary(settings: Settings | None = None) -> None:
                 )
                 if capabilities.diarization_reason:
                     _log_bullet(f"Reason: {capabilities.diarization_reason}")
-                _log_action(f"Open {PYANOTE_COMMUNITY_MODEL_URL} while logged into Hugging Face")
+                _log_action(
+                    f"Open {pyannote_community_model_url(settings)} while logged into Hugging Face"
+                )
                 _log_action("Click 'Agree and access repository' (same account as HF_TOKEN)")
                 _log_action("Create a read token: https://huggingface.co/settings/tokens")
                 _log_action("Set HF_TOKEN=hf_... in .env, restart backend, re-transcribe")

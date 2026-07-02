@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from sqlmodel import Session, select
@@ -5,7 +6,14 @@ from sqlmodel import Session, select
 from app.core.enums import RecordingStatus
 from app.core.errors import AppError
 from app.core.ids import generate_recording_id
+from app.models.audio_asset import AudioAsset
 from app.models.recording import Recording
+
+
+@dataclass(frozen=True)
+class RecordingWithDuration:
+    recording: Recording
+    duration_seconds: float | None
 
 
 class _Unset:
@@ -47,6 +55,25 @@ class RecordingService:
     def list_recordings(self) -> list[Recording]:
         statement = select(Recording).order_by(Recording.created_at.desc())
         return list(self.session.exec(statement).all())
+
+    def list_with_durations(self) -> list[RecordingWithDuration]:
+        recordings = self.list_recordings()
+        audio_ids = {recording.audio_asset_id for recording in recordings}
+        duration_by_audio_id: dict[str, float | None] = {}
+        if audio_ids:
+            audio_assets = self.session.exec(
+                select(AudioAsset).where(AudioAsset.id.in_(audio_ids))
+            ).all()
+            duration_by_audio_id = {
+                asset.id: asset.duration_seconds for asset in audio_assets
+            }
+        return [
+            RecordingWithDuration(
+                recording=recording,
+                duration_seconds=duration_by_audio_id.get(recording.audio_asset_id),
+            )
+            for recording in recordings
+        ]
 
     def get_recording(self, recording_id: str) -> Recording:
         recording = self.session.get(Recording, recording_id)

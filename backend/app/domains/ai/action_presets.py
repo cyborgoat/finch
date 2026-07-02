@@ -50,12 +50,8 @@ PRESETS: dict[str, AiActionPreset] = {
 }
 
 
-def resolve_action_id(action: str) -> str:
-    return action.strip()
-
-
 def get_preset(action: str) -> AiActionPreset | None:
-    return PRESETS.get(resolve_action_id(action))
+    return PRESETS.get(action.strip())
 
 
 def list_presets() -> list[AiActionPreset]:

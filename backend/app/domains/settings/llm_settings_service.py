@@ -6,7 +6,7 @@ from app.core.errors import AppError
 from app.domains.ai.llm.config import resolve_llm_config
 from app.domains.ai.llm.presets import ALLOWED_PROVIDERS, PRESETS, get_preset
 from app.domains.ai.llm.runtime import DEFAULT_LLM_PROVIDER, LlmRuntimeSettings
-from app.domains.settings.preference_store import JsonPreferenceStore
+from app.domains.settings.settings_utils import JsonSettingsRepository
 from app.schemas.llm_settings import (
     LlmProviderInfo,
     LlmSettingsResponse,
@@ -18,11 +18,10 @@ LLM_SETTINGS_KEY = "llm_settings"
 
 class LlmSettingsService:
     def __init__(self, session: Session) -> None:
-        self.session = session
-        self.store = JsonPreferenceStore(session)
+        self.repository = JsonSettingsRepository(session, LLM_SETTINGS_KEY)
 
     def get_settings(self) -> LlmSettingsResponse:
-        stored = self._load_raw()
+        stored = self.repository.load()
         runtime = self.get_runtime_settings()
         config = resolve_llm_config(runtime)
         provider = runtime.provider.strip().lower()  # type: ignore[union-attr]
@@ -44,38 +43,42 @@ class LlmSettingsService:
         )
 
     def update_settings(self, payload: UpdateLlmSettingsRequest) -> LlmSettingsResponse:
-        current = self._load_raw()
         patch = payload.model_dump(exclude_unset=True)
 
-        if "provider" in patch:
-            provider = patch["provider"]
-            if provider not in ALLOWED_PROVIDERS:
-                allowed = ", ".join(ALLOWED_PROVIDERS)
-                raise AppError(
-                    "LLM_INVALID_PROVIDER",
-                    f"Unknown provider: {provider}. Use one of: {allowed}.",
-                    400,
+        def apply_patch(current: dict[str, Any]) -> dict[str, Any]:
+            if "provider" in patch:
+                provider = patch["provider"]
+                if provider not in ALLOWED_PROVIDERS:
+                    allowed = ", ".join(ALLOWED_PROVIDERS)
+                    raise AppError(
+                        "LLM_INVALID_PROVIDER",
+                        f"Unknown provider: {provider}. Use one of: {allowed}.",
+                        400,
+                    )
+                current["provider"] = provider
+
+            if "api_key" in patch:
+                api_key = patch["api_key"]
+                if api_key is not None:
+                    current["api_key"] = api_key.strip()
+
+            if "base_url" in patch:
+                base_url = patch["base_url"]
+                current["base_url"] = base_url.strip() if base_url is not None else ""
+
+            if "default_model" in patch:
+                default_model = patch["default_model"]
+                current["default_model"] = (
+                    default_model.strip() if default_model is not None else ""
                 )
-            current["provider"] = provider
 
-        if "api_key" in patch:
-            api_key = patch["api_key"]
-            if api_key is not None:
-                current["api_key"] = api_key.strip()
+            return current
 
-        if "base_url" in patch:
-            base_url = patch["base_url"]
-            current["base_url"] = base_url.strip() if base_url is not None else ""
-
-        if "default_model" in patch:
-            default_model = patch["default_model"]
-            current["default_model"] = default_model.strip() if default_model is not None else ""
-
-        self._save_raw(current)
+        self.repository.update(apply_patch)
         return self.get_settings()
 
     def get_runtime_settings(self) -> LlmRuntimeSettings:
-        stored = self._load_raw()
+        stored = self.repository.load()
         if not stored:
             return LlmRuntimeSettings()
 
@@ -101,9 +104,3 @@ class LlmSettingsService:
             )
             for preset in PRESETS.values()
         ]
-
-    def _load_raw(self) -> dict[str, Any]:
-        return self.store.load(LLM_SETTINGS_KEY)
-
-    def _save_raw(self, settings: dict[str, Any]) -> None:
-        self.store.save(LLM_SETTINGS_KEY, settings)

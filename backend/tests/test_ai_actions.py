@@ -1,6 +1,7 @@
 from io import BytesIO
 from unittest.mock import patch
 
+from tests.support.api_helpers import configure_llm
 from tests.support.fakes import fake_ffmpeg_run
 
 
@@ -8,14 +9,7 @@ from tests.support.fakes import fake_ffmpeg_run
 def test_ai_action_flow(mock_run, client, sample_wav_bytes):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    client.patch(
-        "/api/llm-settings",
-        json={
-            "provider": "openai",
-            "apiKey": "sk-test",
-            "defaultModel": "gpt-4.1-mini",
-        },
-    )
+    configure_llm(client)
 
     upload_response = client.post(
         "/api/audio/upload",

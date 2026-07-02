@@ -41,6 +41,14 @@ ERROR_GUIDANCE: dict[str, list[str]] = {
         "Ensure HF_TOKEN in .env matches the account that accepted model terms",
         "Restart backend after installing dependencies",
     ],
+    "VOICEPRINT_PROFILE_NOT_FOUND": [
+        "Check the profile ID in Settings or on the transcript speaker turn",
+        "Create a new voiceprint profile and enroll a sample if needed",
+    ],
+    "AI_ACTION_INVALID": [
+        "Choose a supported action template from GET /api/ai-actions/templates",
+        "Ensure the selected transcript source contains text",
+    ],
 }
 
 

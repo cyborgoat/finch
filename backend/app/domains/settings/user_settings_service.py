@@ -3,7 +3,7 @@ from typing import Any
 from sqlmodel import Session
 
 from app.core.errors import AppError
-from app.domains.settings.preference_store import JsonPreferenceStore
+from app.domains.settings.settings_utils import JsonSettingsRepository
 from app.domains.voiceprint.profile_service import VoiceprintProfileService
 from app.schemas.user_settings import UpdateUserSettingsRequest, UserSettingsResponse
 
@@ -30,20 +30,23 @@ def _merge_user_settings(parsed: dict[str, Any]) -> dict[str, Any]:
 
 class UserSettingsService:
     def __init__(self, session: Session) -> None:
-        self.session = session
-        self.store = JsonPreferenceStore(session)
+        self.repository = JsonSettingsRepository(
+            session,
+            USER_SETTINGS_KEY,
+            default=DEFAULT_USER_SETTINGS,
+            merge_default=_merge_user_settings,
+        )
 
     def get_settings(self) -> UserSettingsResponse:
-        return UserSettingsResponse.model_validate(self._load_raw())
+        return UserSettingsResponse.model_validate(self.repository.load())
 
     def update_settings(self, payload: UpdateUserSettingsRequest) -> UserSettingsResponse:
-        current = self._load_raw()
         patch = payload.model_dump(exclude_unset=True)
 
         if "user_voiceprint_profile_id" in patch:
             profile_id = patch["user_voiceprint_profile_id"]
             if profile_id is not None:
-                VoiceprintProfileService(self.session).get_profile(profile_id)
+                VoiceprintProfileService(self.repository.session).get_profile(profile_id)
 
         if "user_name" in patch and patch["user_name"] is not None:
             name = patch["user_name"].strip()
@@ -54,46 +57,42 @@ class UserSettingsService:
                 )
             patch["user_name"] = name
 
-        for key, value in patch.items():
-            if key not in DEFAULT_USER_SETTINGS:
-                continue
-            if key in {"ui_language", "content_language"} and value not in {"en", "zh"}:
-                raise AppError("INVALID_LANGUAGE", "Language must be 'en' or 'zh'.")
-            if key == "summary_style" and value not in {"concise", "balanced", "detailed"}:
-                raise AppError(
-                    "INVALID_SUMMARY_STYLE",
-                    "Summary style must be concise, balanced, or detailed.",
-                )
-            if key == "summary_format" and value not in {"paragraphs", "bullets"}:
-                raise AppError(
-                    "INVALID_SUMMARY_FORMAT",
-                    "Summary format must be paragraphs or bullets.",
-                )
-            current[key] = value
+        def apply_patch(current: dict[str, Any]) -> dict[str, Any]:
+            for key, value in patch.items():
+                if key not in DEFAULT_USER_SETTINGS:
+                    continue
+                if key in {"ui_language", "content_language"} and value not in {"en", "zh"}:
+                    raise AppError("INVALID_LANGUAGE", "Language must be 'en' or 'zh'.")
+                if key == "summary_style" and value not in {"concise", "balanced", "detailed"}:
+                    raise AppError(
+                        "INVALID_SUMMARY_STYLE",
+                        "Summary style must be concise, balanced, or detailed.",
+                    )
+                if key == "summary_format" and value not in {"paragraphs", "bullets"}:
+                    raise AppError(
+                        "INVALID_SUMMARY_FORMAT",
+                        "Summary format must be paragraphs or bullets.",
+                    )
+                current[key] = value
+            return current
 
-        self._save_raw(current)
-        return UserSettingsResponse.model_validate(current)
+        updated = self.repository.update(apply_patch)
+        return UserSettingsResponse.model_validate(updated)
 
     def clear_user_voiceprint_profile(self, profile_id: str) -> None:
-        current = self._load_raw()
-        if current.get("user_voiceprint_profile_id") != profile_id:
-            return
-        current["user_voiceprint_profile_id"] = None
-        self._save_raw(current)
+        def apply_clear(current: dict[str, Any]) -> dict[str, Any]:
+            if current.get("user_voiceprint_profile_id") != profile_id:
+                return current
+            current["user_voiceprint_profile_id"] = None
+            return current
+
+        self.repository.update(apply_clear)
 
     def clear_user_voiceprint_profile_if_set(self) -> None:
-        current = self._load_raw()
-        if not current.get("user_voiceprint_profile_id"):
-            return
-        current["user_voiceprint_profile_id"] = None
-        self._save_raw(current)
+        def apply_clear(current: dict[str, Any]) -> dict[str, Any]:
+            if not current.get("user_voiceprint_profile_id"):
+                return current
+            current["user_voiceprint_profile_id"] = None
+            return current
 
-    def _load_raw(self) -> dict[str, Any]:
-        return self.store.load(
-            USER_SETTINGS_KEY,
-            default=DEFAULT_USER_SETTINGS,
-            merge_default=_merge_user_settings,
-        )
-
-    def _save_raw(self, settings: dict[str, Any]) -> None:
-        self.store.save(USER_SETTINGS_KEY, settings)
+        self.repository.update(apply_clear)

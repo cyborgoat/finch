@@ -11,6 +11,7 @@ from app.domains.settings.transcription_settings_service import TranscriptionSet
 from app.domains.settings.user_settings_service import UserSettingsService
 from app.domains.voiceprint.profile_service import VoiceprintProfileService
 from app.schemas.audio import OkResponse
+from app.schemas.transcription_settings import UpdateTranscriptionSettingsRequest
 from app.schemas.user_settings import UpdateUserSettingsRequest
 from app.schemas.voiceprint import (
     CreateVoiceprintProfileRequest,
@@ -51,7 +52,7 @@ def _voiceprint_profiles_status(
     transcription = transcription_service.get_settings()
     consent_at = preference_service.get_voiceprint_profiles_consent_at()
     return VoiceprintProfilesStatusResponse(
-        enabled=preference_service.is_voiceprint_auto_label_enabled(),
+        enabled=transcription.voiceprint_auto_label_enabled,
         consent_given=preference_service.has_voiceprint_profiles_consent(),
         consent_at=consent_at,
         profile_count=profile_service.count_profiles(),
@@ -149,7 +150,9 @@ def toggle_voiceprint_profiles(
         get_transcription_settings_service
     ),
 ) -> VoiceprintProfilesStatusResponse:
-    preference_service.set_voiceprint_auto_label_enabled(payload.enabled)
+    transcription_service.update_settings(
+        UpdateTranscriptionSettingsRequest(voiceprint_auto_label_enabled=payload.enabled)
+    )
     return _voiceprint_profiles_status(
         preference_service,
         profile_service,

@@ -73,7 +73,7 @@ uv run pytest
 | `DIARIZATION_ENABLED` | Fallback for speaker diarization toggle (prefer **Settings → Transcription**) |
 | `VOICEPRINT_PROFILES_ENABLED` | Fallback for voiceprint profiles toggle (prefer **Settings → Transcription**) |
 | `SPEAKER_EMBEDDING_MODEL_ID` | Embedding model (default `pyannote/embedding`) |
-| `SPEAKER_MATCH_THRESHOLD` | Cosine similarity threshold for auto-match (default `0.75`) |
+| `SPEAKER_MATCH_THRESHOLD` | Cosine similarity threshold for auto-match (default `0.65`) |
 | `SPEAKER_MIN_ENROLL_SECONDS` | Min speech duration for enrollment samples (default `2.0`) |
 | `DATABASE_URL` | SQLite connection string |
 | `HUEY_DB_PATH` | Huey job queue database (default `{DATA_DIR}/huey.db`) |

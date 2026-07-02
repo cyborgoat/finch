@@ -1,59 +1,19 @@
-from io import BytesIO
-from unittest.mock import patch
 
-from tests.support.fakes import fake_ffmpeg_run
-
-
-def _create_recording(client, sample_wav: bytes) -> str:
-    with patch("app.domains.media.audio_service.subprocess.run") as mock_run:
-        mock_run.side_effect = fake_ffmpeg_run(sample_wav)
-        upload = client.post(
-            "/api/audio/upload",
-            data={"source": "upload"},
-            files={"file": ("sample.wav", BytesIO(sample_wav), "audio/wav")},
-        )
-    audio_id = upload.json()["id"]
-
-    with patch("app.domains.media.audio_service.subprocess.run") as mock_run:
-        mock_run.side_effect = fake_ffmpeg_run(sample_wav)
-        job = client.post(
-            "/api/recordings",
-            json={"audioAssetId": audio_id, "language": "auto"},
-        )
-    return job.json()["recordingId"]
-
-
-def _create_summary(client, recording_id: str) -> str:
-    response = client.post(
-        "/api/ai-actions",
-        json={
-            "recordingId": recording_id,
-            "action": "meeting_summary",
-            "source": "rawText",
-        },
-    )
-    assert response.status_code == 200
-    job_id = response.json()["jobId"]
-    job = client.get(f"/api/jobs/{job_id}").json()
-    assert job["status"] == "completed"
-    return job["resultId"]
+from tests.support.api_helpers import (
+    configure_llm,
+    create_meeting_summary,
+    create_recording,
+)
 
 
 def test_list_notes_filters_by_recording_id(client, sample_wav_bytes):
-    client.patch(
-        "/api/llm-settings",
-        json={
-            "provider": "openai",
-            "apiKey": "sk-test",
-            "defaultModel": "gpt-4.1-mini",
-        },
-    )
+    configure_llm(client)
 
-    recording_a = _create_recording(client, sample_wav_bytes)
-    recording_b = _create_recording(client, sample_wav_bytes)
+    recording_a = create_recording(client, sample_wav_bytes)
+    recording_b = create_recording(client, sample_wav_bytes)
 
-    note_a = _create_summary(client, recording_a)
-    note_b = _create_summary(client, recording_b)
+    note_a = create_meeting_summary(client, recording_a)
+    note_b = create_meeting_summary(client, recording_b)
     assert note_a != note_b
 
     filtered_a = client.get(f"/api/notes?recordingId={recording_a}").json()
@@ -71,7 +31,7 @@ def test_list_notes_filters_by_recording_id(client, sample_wav_bytes):
 
 
 def test_create_manual_note_and_delete_one_of_many(client, sample_wav_bytes):
-    recording_id = _create_recording(client, sample_wav_bytes)
+    recording_id = create_recording(client, sample_wav_bytes)
 
     create_a = client.post(
         "/api/notes",

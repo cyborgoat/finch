@@ -117,15 +117,12 @@ def get_capability_status(
     diarization_enabled = settings.diarization_enabled
     voiceprint_profiles_enabled = settings.voiceprint_profiles_enabled
     hf_token = resolve_hf_token(settings)
-    voiceprint_auto_label = False
-
     if session is not None:
         from app.domains.settings.transcription_settings_service import TranscriptionSettingsService
 
         transcription_settings = TranscriptionSettingsService(session, settings)
         diarization_enabled = transcription_settings.is_diarization_enabled()
         voiceprint_profiles_enabled = transcription_settings.is_voiceprint_profiles_enabled()
-        voiceprint_auto_label = transcription_settings.is_voiceprint_auto_label_enabled()
         hf_token = transcription_settings.get_hf_token() or hf_token
 
     diarization_ready, diarization_reason = get_diarization_status(
@@ -154,7 +151,7 @@ def get_capability_status(
         llm_provider=llm_provider,
         llm_configured=llm_configured,
         openrouter_configured=llm_configured and llm_provider == "openrouter",
-        voiceprint_profiles_enabled=voiceprint_auto_label,
+        voiceprint_profiles_enabled=voiceprint_profiles_enabled,
         voiceprint_profiles_ready=profiles_status.ready and voiceprint_profiles_enabled,
         voiceprint_profiles_reason=profiles_status.reason,
         voiceprint_profiles_consent_given=consent_given,
@@ -186,8 +183,3 @@ def get_voiceprint_profiles_status(
     )
 
 
-def get_capability_status_with_session(
-    session,
-    settings: Settings | None = None,
-) -> CapabilityStatus:
-    return get_capability_status(settings, session)

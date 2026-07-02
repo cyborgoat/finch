@@ -44,7 +44,11 @@ def reset_engine(database_url: str | None = None) -> None:
     if database_url is None:
         _engine = None
         return
-    connect_args = {"check_same_thread": False, "timeout": 30} if database_url.startswith("sqlite") else {}
+    connect_args = (
+        {"check_same_thread": False, "timeout": 30}
+        if database_url.startswith("sqlite")
+        else {}
+    )
     _engine = create_engine(database_url, connect_args=connect_args)
     if database_url.startswith("sqlite"):
         with _engine.connect() as connection:

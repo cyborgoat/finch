@@ -58,7 +58,7 @@ def test_transcription_flow(mock_run, client, sample_wav_bytes):
     assert delete_response.json()["ok"] is True
 
 
-@patch("app.api.routes_recordings.enqueue_transcription")
+@patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
 @patch("app.domains.media.audio_service.subprocess.run")
 def test_create_recording_job_adds_transcribing_placeholder(
     mock_run,
