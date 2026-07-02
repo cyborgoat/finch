@@ -149,7 +149,7 @@ function RecordingFileDetail({ id }: { id: string }) {
   if (recording.status === "pending") {
     return (
       <PageContainer size="wide">
-        <RecordingPageAudio audioAssetId={recording.audioAssetId} />
+        <RecordingPageAudio audioAssetId={recording.audioAssetId} title={recording.title} />
         <div className="surface-card flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center">
           <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted">
             <FileText className="size-5 text-muted-foreground" />
@@ -174,7 +174,7 @@ function RecordingFileDetail({ id }: { id: string }) {
   if (recording.status === "transcribing") {
     return (
       <PageContainer size="wide">
-        <RecordingPageAudio audioAssetId={recording.audioAssetId} />
+        <RecordingPageAudio audioAssetId={recording.audioAssetId} title={recording.title} />
         <div className="surface-card space-y-6">
           <div>
             <p className="text-sm font-medium">
@@ -195,7 +195,7 @@ function RecordingFileDetail({ id }: { id: string }) {
   if (recording.status === "failed") {
     return (
       <PageContainer size="wide">
-        <RecordingPageAudio audioAssetId={recording.audioAssetId} />
+        <RecordingPageAudio audioAssetId={recording.audioAssetId} title={recording.title} />
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
           <p className="text-sm font-medium text-destructive">{t("common.error")}</p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

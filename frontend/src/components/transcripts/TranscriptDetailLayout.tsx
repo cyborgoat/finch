@@ -213,7 +213,7 @@ export function RecordingDetailLayout({
         <TabsContent value="source" className="mt-0 pt-6">
           <BlurFade className="section-stack">
             <RecordingAudioPlayer
-              filename={audioAsset?.filename}
+              filename={title}
               audioRef={playback.audioRef}
               src={playback.src}
               isPlaying={playback.isPlaying}

@@ -5,10 +5,15 @@ import { useRecordingPlayback } from "@/hooks/useRecordingPlayback"
 
 type RecordingPageAudioProps = {
   audioAssetId: string
+  title: string
   className?: string
 }
 
-export function RecordingPageAudio({ audioAssetId, className }: RecordingPageAudioProps) {
+export function RecordingPageAudio({
+  audioAssetId,
+  title,
+  className,
+}: RecordingPageAudioProps) {
   const { data: audioAsset } = useAudioAsset(audioAssetId)
   const playback = useRecordingPlayback(
     audioAssetId,
@@ -18,7 +23,7 @@ export function RecordingPageAudio({ audioAssetId, className }: RecordingPageAud
   return (
     <RecordingAudioPlayer
       className={className}
-      filename={audioAsset?.filename}
+      filename={title}
       audioRef={playback.audioRef}
       src={playback.src}
       isPlaying={playback.isPlaying}
