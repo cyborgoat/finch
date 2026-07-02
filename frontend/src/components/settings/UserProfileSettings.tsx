@@ -65,7 +65,8 @@ export function UserProfileSettings({
   }
 
   const controlsDisabled = !ready || disabled
-  const enrollDisabled = controlsDisabled || !voiceprintReady
+  const enrollDisabled =
+    controlsDisabled || !voiceprintReady || !preferences.userName.trim()
 
   return (
     <>
@@ -126,7 +127,7 @@ export function UserProfileSettings({
         notReadyReason={voiceprintNotReadyReason}
         consentGiven={voiceprintConsentGiven}
         disabled={controlsDisabled}
-        defaultDisplayName={preferences.userName}
+        profileDisplayName={preferences.userName}
         uiLanguage={preferences.uiLanguage}
         forUserProfile
         onConsentRequired={onVoiceprintConsentRequired}

@@ -404,7 +404,6 @@ function SettingsPage() {
           notReadyReason={voiceprintNotReadyReason}
           consentGiven={voiceprintProfilesStatus?.consentGiven ?? false}
           disabled={settingsBusy || togglePending}
-          defaultDisplayName={preferences.userName}
           uiLanguage={preferences.uiLanguage}
           onConsentRequired={() => requestConsent("enrollment")}
         />

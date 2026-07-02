@@ -15,7 +15,7 @@ type VoiceprintEnrollmentDialogProps = {
   notReadyReason?: string | null
   consentGiven: boolean
   disabled?: boolean
-  defaultDisplayName?: string
+  profileDisplayName?: string
   uiLanguage: "en" | "zh"
   forUserProfile?: boolean
   onConsentRequired: () => void
@@ -38,7 +38,7 @@ export function VoiceprintEnrollmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {forUserProfile
@@ -48,14 +48,16 @@ export function VoiceprintEnrollmentDialog({
           <DialogDescription>
             {forUserProfile
               ? t("settings.recordMyVoiceprintDescription")
-              : t("voiceprints.enrollmentDescription")}
+              : t("voiceprints.enrollmentDialogDescription")}
           </DialogDescription>
         </DialogHeader>
         <VoiceprintEnrollmentPanel
           {...panelProps}
+          open={open}
           inDialog
           forUserProfile={forUserProfile}
           onEnrolled={handleEnrolled}
+          onCancel={() => onOpenChange(false)}
         />
       </DialogContent>
     </Dialog>
