@@ -14,6 +14,13 @@ from app.domains.media.audio_service import AudioService
 from app.domains.recordings.recording_service import RecordingService
 from app.domains.settings.transcription_settings_service import TranscriptionSettingsService
 from app.domains.transcription.asr_service import AsrService
+from app.domains.transcription.audio_purification_service import (
+    AudioPurificationService,
+    PurifiedAudio,
+    cleanup_purified,
+    format_purification_note,
+    remap_turns_to_original,
+)
 from app.domains.transcription.diarization_service import (
     DiarizationService,
     cleanup_temp_dir,
@@ -47,6 +54,7 @@ class TranscriptionPipeline:
         stored_hf_token = self.transcription_settings.get_hf_token()
         self.asr_service = AsrService(self.settings)
         self.diarization_service = DiarizationService(self.settings, hf_token=stored_hf_token)
+        self.audio_purification_service = AudioPurificationService(self.settings)
 
     def run(self, job_id: str, audio_asset_id: str, language: str = "auto") -> None:
         job = self.job_service.get_job(job_id)
@@ -248,91 +256,128 @@ class TranscriptionPipeline:
                 500,
             )
 
-        duration = self.audio_service.get_duration(diarization_path)
-        self.job_service.update_job(job, progress=0.25, stage="running_diarization")
-        turns = self.diarization_service.diarize(diarization_path, duration)
-        merged_turns = merge_adjacent_turns(
-            turns,
-            min_segment_seconds=self.settings.diarization_min_segment_seconds,
-            merge_gap_seconds=self.settings.diarization_merge_gap_seconds,
-            max_segments=self.settings.diarization_max_segments,
-        )
-
-        min_segment = self.settings.diarization_min_segment_seconds
-        if not merged_turns:
-            merged_turns = [
-                DiarizationTurn(
-                    "Speaker 1",
-                    0.0,
-                    max(duration or min_segment, min_segment),
-                    cluster_id="SPEAKER_00",
-                )
-            ]
-
-        cluster_resolutions: dict[str, VoiceprintMatchResult] = {}
-        merged_turns, cluster_resolutions, voiceprint_note = apply_voiceprint_labels(
-            session=self.session,
-            settings=self.settings,
-            job_service=self.job_service,
-            transcription_settings=self.transcription_settings,
-            job=job,
-            diarization_path=diarization_path,
-            merged_turns=merged_turns,
-        )
-
-        self.diarization_service.unload_pipeline()
-        self.job_service.update_job(job, progress=0.28, stage="loading_model")
-        self.asr_service.load_model()
-
-        temp_dir = Path(tempfile.mkdtemp(prefix="finch_segments_"))
-        segments: list[SpeakerSegment] = []
-        detected_language: str | None = None
-        total = max(len(merged_turns), 1)
-
+        purified: PurifiedAudio | None = None
+        purification_note: str | None = None
         try:
-            for index, turn in enumerate(merged_turns, start=1):
-                progress = 0.3 + (0.45 * index / total)
-                self.job_service.update_job(
-                    job,
-                    progress=progress,
-                    stage=f"running_asr_segment_{index}_of_{total}",
-                )
-                slice_path = extract_audio_slice(
-                    audio_asset.normalized_path or diarization_path,
-                    turn.start_sec,
-                    turn.end_sec,
-                    str(temp_dir),
-                    f"seg_{index}",
-                )
-                result = self.asr_service.transcribe(slice_path, language=language)
-                if result.language and not detected_language:
-                    detected_language = result.language
-                cluster_id = turn.cluster_id or turn.speaker
-                resolution = cluster_resolutions.get(cluster_id)
-                speaker_label = (
-                    resolution.display_name
-                    if resolution is not None
-                    else turn.speaker
-                )
-                segments.append(
-                    SpeakerSegment(
-                        speaker=speaker_label,
-                        start_sec=turn.start_sec,
-                        end_sec=turn.end_sec,
-                        text=result.text.strip(),
-                        cluster_id=turn.cluster_id,
-                        voiceprint_profile_id=(
-                            resolution.voiceprint_profile_id if resolution else None
-                        ),
-                        match_confidence=(
-                            resolution.match_confidence if resolution else None
-                        ),
-                        match_status=resolution.match_status if resolution else None,
-                    )
-                )
-        finally:
-            cleanup_temp_dir(temp_dir)
-            temp_dir.rmdir()
+            duration = self.audio_service.get_duration(diarization_path)
+            diarize_path = diarization_path
+            diarize_duration = duration
 
-        raw_text = build_labeled_transcript(segments)
-        return raw_text, detected_language, segments, voiceprint_note
+            if self.settings.audio_purification_enabled:
+                self.job_service.update_job(job, progress=0.2, stage="purifying_audio")
+                try:
+                    purified = self.audio_purification_service.prepare_for_diarization(
+                        diarization_path
+                    )
+                    if purified is not None:
+                        diarize_path = purified.path
+                        diarize_duration = purified.duration_sec
+                        purification_note = format_purification_note(
+                            purified.original_duration_sec,
+                            purified.duration_sec,
+                        )
+                except Exception as exc:
+                    logger.warning(
+                        "Audio purification failed (%s) — using original audio for diarization",
+                        exc,
+                    )
+
+            self.job_service.update_job(job, progress=0.25, stage="running_diarization")
+            turns = self.diarization_service.diarize(diarize_path, diarize_duration)
+            if purified is not None and purified.time_map:
+                turns = remap_turns_to_original(turns, purified.time_map)
+
+            merged_turns = merge_adjacent_turns(
+                turns,
+                min_segment_seconds=self.settings.diarization_min_segment_seconds,
+                merge_gap_seconds=self.settings.diarization_merge_gap_seconds,
+                max_segments=self.settings.diarization_max_segments,
+            )
+
+            min_segment = self.settings.diarization_min_segment_seconds
+            if not merged_turns:
+                merged_turns = [
+                    DiarizationTurn(
+                        "Speaker 1",
+                        0.0,
+                        max(duration or min_segment, min_segment),
+                        cluster_id="SPEAKER_00",
+                    )
+                ]
+
+            cluster_resolutions: dict[str, VoiceprintMatchResult] = {}
+            merged_turns, cluster_resolutions, voiceprint_note = apply_voiceprint_labels(
+                session=self.session,
+                settings=self.settings,
+                job_service=self.job_service,
+                transcription_settings=self.transcription_settings,
+                job=job,
+                diarization_path=diarization_path,
+                merged_turns=merged_turns,
+            )
+
+            self.diarization_service.unload_pipeline()
+            self.job_service.update_job(job, progress=0.28, stage="loading_model")
+            self.asr_service.load_model()
+
+            temp_dir = Path(tempfile.mkdtemp(prefix="finch_segments_"))
+            segments: list[SpeakerSegment] = []
+            detected_language: str | None = None
+            total = max(len(merged_turns), 1)
+
+            try:
+                for index, turn in enumerate(merged_turns, start=1):
+                    progress = 0.3 + (0.45 * index / total)
+                    self.job_service.update_job(
+                        job,
+                        progress=progress,
+                        stage=f"running_asr_segment_{index}_of_{total}",
+                    )
+                    slice_path = extract_audio_slice(
+                        audio_asset.normalized_path or diarization_path,
+                        turn.start_sec,
+                        turn.end_sec,
+                        str(temp_dir),
+                        f"seg_{index}",
+                    )
+                    result = self.asr_service.transcribe(slice_path, language=language)
+                    if result.language and not detected_language:
+                        detected_language = result.language
+                    cluster_id = turn.cluster_id or turn.speaker
+                    resolution = cluster_resolutions.get(cluster_id)
+                    speaker_label = (
+                        resolution.display_name
+                        if resolution is not None
+                        else turn.speaker
+                    )
+                    segments.append(
+                        SpeakerSegment(
+                            speaker=speaker_label,
+                            start_sec=turn.start_sec,
+                            end_sec=turn.end_sec,
+                            text=result.text.strip(),
+                            cluster_id=turn.cluster_id,
+                            voiceprint_profile_id=(
+                                resolution.voiceprint_profile_id if resolution else None
+                            ),
+                            match_confidence=(
+                                resolution.match_confidence if resolution else None
+                            ),
+                            match_status=resolution.match_status if resolution else None,
+                        )
+                    )
+            finally:
+                cleanup_temp_dir(temp_dir)
+                temp_dir.rmdir()
+
+            raw_text = build_labeled_transcript(segments)
+            combined_note = purification_note
+            if voiceprint_note:
+                combined_note = (
+                    f"{purification_note}\n{voiceprint_note}"
+                    if purification_note
+                    else voiceprint_note
+                )
+            return raw_text, detected_language, segments, combined_note
+        finally:
+            cleanup_purified(purified)

@@ -88,12 +88,15 @@ POST /api/recordings { audioAssetId }
   → create Job, resultId = recording.id
   → enqueue run_transcription_task (Huey)
   → TranscriptionPipeline.run()
+       → optional: audio purification (denoise + VAD compress)
        → optional: pyannote diarization → speaker segments
        → optional: voiceprint match → named labels
        → Qwen3-ASR per segment (or full file if diarization off/fallback)
        → update Recording (rawText, speakerSegments, status=draft)
        → Job completed
 ```
+
+When `AUDIO_PURIFICATION_ENABLED=true`, silence is removed before diarization on a temporary compressed file. Speaker-turn timestamps are remapped to the original normalized timeline for ASR slicing and playback sync. See [diarization.md](diarization.md#audio-purification).
 
 On failure, the recording is kept with `status=failed` and `errorMessage` (not deleted).
 

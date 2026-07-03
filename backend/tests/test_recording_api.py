@@ -1,5 +1,6 @@
 from io import BytesIO
 import re
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -260,6 +261,74 @@ def test_diarization_produces_speaker_labeled_transcript(
     assert transcript["speakerSegments"] is not None
     assert len(transcript["speakerSegments"]) == 2
     assert transcript["speakerSegments"][0]["speaker"] == "Speaker 1"
+
+
+@patch("app.domains.transcription.pipeline.AudioPurificationService.prepare_for_diarization")
+@patch("app.domains.transcription.pipeline.DiarizationService.load_pipeline")
+@patch("app.domains.transcription.pipeline.DiarizationService.diarize")
+@patch("app.domains.transcription.pipeline.extract_audio_slice")
+@patch("app.domains.media.audio_service.subprocess.run")
+def test_diarization_with_purification_remaps_timestamps(
+    mock_run,
+    mock_extract_slice,
+    mock_diarize,
+    mock_load_pipeline,
+    mock_prepare,
+    client,
+    sample_wav_bytes,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    from app.config import get_settings
+    from app.domains.transcription.audio_purification_service import (
+        PurifiedAudio,
+        build_time_map,
+    )
+    from app.domains.transcription.types import DiarizationTurn
+
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+    mock_extract_slice.return_value = str(tmp_path / "slice.wav")
+
+    time_map = build_time_map([(100.0, 105.0), (200.0, 205.0)])
+    purified_path = tmp_path / "purified.wav"
+    purified_path.write_bytes(sample_wav_bytes)
+    mock_prepare.return_value = PurifiedAudio(
+        path=str(purified_path),
+        duration_sec=10.0,
+        time_map=time_map,
+        temp_dir=tmp_path,
+        original_duration_sec=300.0,
+    )
+    mock_diarize.return_value = [
+        DiarizationTurn("Speaker 1", 0.0, 5.0, cluster_id="SPEAKER_00"),
+        DiarizationTurn("Speaker 2", 5.0, 10.0, cluster_id="SPEAKER_01"),
+    ]
+
+    monkeypatch.setenv("DIARIZATION_ENABLED", "true")
+    monkeypatch.setenv("AUDIO_PURIFICATION_ENABLED", "true")
+    get_settings.cache_clear()
+
+    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = _create_pending(client, audio_id).json()["recordingId"]
+    job_id = _start_transcription(client, recording_id).json()["jobId"]
+
+    job = client.get(f"/api/jobs/{job_id}").json()
+    assert job["status"] == "completed"
+
+    mock_diarize.assert_called_once()
+    assert mock_diarize.call_args.args[0] == str(purified_path)
+
+    assert mock_extract_slice.call_count == 2
+    first_call = mock_extract_slice.call_args_list[0]
+    assert first_call.args[1] == pytest.approx(100.0)
+    assert first_call.args[2] == pytest.approx(105.0)
+    second_call = mock_extract_slice.call_args_list[1]
+    assert second_call.args[1] == pytest.approx(200.0)
+    assert second_call.args[2] == pytest.approx(205.0)
+
+    transcript = client.get(f"/api/recordings/{job['resultId']}").json()
+    assert transcript["speakerSegments"][0]["startSec"] == pytest.approx(100.0)
+    assert transcript["speakerSegments"][1]["startSec"] == pytest.approx(200.0)
 
 
 @patch("app.domains.media.audio_service.subprocess.run")

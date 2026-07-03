@@ -121,6 +121,19 @@ def log_startup_summary(settings: Settings | None = None) -> None:
                 _log_action("Set HF_TOKEN=hf_... in .env, restart backend, re-transcribe")
                 _log_action("Install dependency: cd backend && uv add pyannote-audio")
 
+            if settings.audio_purification_enabled:
+                _log_bullet("Audio purification: ENABLED (VAD compress before diarization)")
+                _log_bullet(
+                    f"Purification tuning: denoise={settings.audio_purification_denoise}, "
+                    f"min_speech={settings.audio_purification_min_speech_ms}ms, "
+                    f"min_silence={settings.audio_purification_min_silence_ms}ms"
+                )
+            else:
+                _log_bullet(
+                    "Audio purification: disabled — set AUDIO_PURIFICATION_ENABLED=true to "
+                    "remove silence before diarization"
+                )
+
         _log_section("Voiceprint profiles")
         if not settings.voiceprint_profiles_enabled:
             _log_bullet("Disabled — configure in Settings → Transcription in the app.")
@@ -198,9 +211,15 @@ def log_transcription_pipeline(
 
     if capabilities.diarization_enabled:
         if capabilities.diarization_ready:
-            logger.info(
-                "Transcription pipeline: diarization → per-speaker ASR → labeled transcript"
-            )
+            if settings.audio_purification_enabled:
+                logger.info(
+                    "Transcription pipeline: audio purification → diarization → "
+                    "per-speaker ASR → labeled transcript"
+                )
+            else:
+                logger.info(
+                    "Transcription pipeline: diarization → per-speaker ASR → labeled transcript"
+                )
         else:
             logger.warning(
                 "Transcription pipeline: diarization NOT READY (%s) — "

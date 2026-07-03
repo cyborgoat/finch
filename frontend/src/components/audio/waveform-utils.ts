@@ -1,11 +1,19 @@
-export function getPrimaryColor(element: HTMLElement) {
+function readThemeColor(element: HTMLElement, className: string, fallback: string) {
   const probe = document.createElement("span")
-  probe.className = "text-primary"
+  probe.className = className
   probe.style.display = "none"
   element.appendChild(probe)
   const color = getComputedStyle(probe).color
   probe.remove()
-  return color || "rgb(59, 130, 246)"
+  return color || fallback
+}
+
+export function getPrimaryColor(element: HTMLElement) {
+  return readThemeColor(element, "text-primary", "rgb(59, 130, 246)")
+}
+
+export function getMutedForegroundColor(element: HTMLElement) {
+  return readThemeColor(element, "text-muted-foreground", "rgb(113, 113, 122)")
 }
 
 function clamp01(value: number) {
@@ -105,19 +113,17 @@ function drawIdleLine(
   ctx.globalAlpha = 1
 }
 
-export function drawWaveform(
-  ctx: CanvasRenderingContext2D,
+type WaveformShape = {
+  topPoints: Array<{ x: number; y: number }>
+  centerY: number
+}
+
+function buildWaveformShape(
   width: number,
   height: number,
   levels: number[],
-  color: string,
-) {
-  ctx.clearRect(0, 0, width, height)
-
-  if (levels.length === 0) {
-    drawIdleLine(ctx, width, height, color)
-    return
-  }
+): WaveformShape | null {
+  if (levels.length === 0) return null
 
   const pointCount = Math.max(40, Math.floor(width * 0.9))
   const smoothed = boostLevels(
@@ -131,6 +137,18 @@ export function drawWaveform(
     y: centerY - clamp01(level) * amplitude,
   }))
 
+  return { topPoints, centerY }
+}
+
+function paintWaveformShape(
+  ctx: CanvasRenderingContext2D,
+  shape: WaveformShape,
+  color: string,
+  fillAlpha: number,
+  strokeAlpha: number,
+) {
+  const { topPoints, centerY } = shape
+
   ctx.beginPath()
   ctx.moveTo(0, centerY)
   drawSmoothCurve(ctx, topPoints)
@@ -142,7 +160,7 @@ export function drawWaveform(
 
   ctx.closePath()
   ctx.fillStyle = color
-  ctx.globalAlpha = 0.16
+  ctx.globalAlpha = fillAlpha
   ctx.fill()
 
   ctx.beginPath()
@@ -151,9 +169,58 @@ export function drawWaveform(
   ctx.lineWidth = 1.5
   ctx.lineJoin = "round"
   ctx.lineCap = "round"
-  ctx.globalAlpha = 0.88
+  ctx.globalAlpha = strokeAlpha
   ctx.stroke()
   ctx.globalAlpha = 1
+}
+
+export function drawWaveform(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  levels: number[],
+  color: string,
+) {
+  ctx.clearRect(0, 0, width, height)
+
+  const shape = buildWaveformShape(width, height, levels)
+  if (!shape) {
+    drawIdleLine(ctx, width, height, color)
+    return
+  }
+
+  paintWaveformShape(ctx, shape, color, 0.16, 0.88)
+}
+
+export function drawWaveformWithProgress(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  levels: number[],
+  progress: number,
+  color: string,
+  mutedColor: string,
+) {
+  ctx.clearRect(0, 0, width, height)
+
+  const progressX = clamp01(progress) * width
+  const shape = buildWaveformShape(width, height, levels)
+
+  if (!shape) {
+    drawIdleLine(ctx, width, height, mutedColor)
+    return
+  }
+
+  paintWaveformShape(ctx, shape, mutedColor, 0.08, 0.32)
+
+  if (progressX > 0) {
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(0, 0, progressX, height)
+    ctx.clip()
+    paintWaveformShape(ctx, shape, color, 0.18, 0.92)
+    ctx.restore()
+  }
 }
 
 export function drawOscilloscopeWaveform(

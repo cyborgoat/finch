@@ -1,5 +1,6 @@
 import { ChevronDown, Pause, Play, RotateCcw, RotateCw } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { PlaybackWaveform } from "@/components/audio/PlaybackWaveform"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -71,7 +72,6 @@ export function RecordingAudioPlayer({
   const { t } = useTranslation()
   const max = duration > 0 ? duration : 0
   const canControl = Boolean(src) && (isReady || max > 0)
-  const progress = max > 0 ? (currentTime / max) * 100 : 0
 
   return (
     <div className={cn("surface-card space-y-4 p-4", className)}>
@@ -94,19 +94,15 @@ export function RecordingAudioPlayer({
       ) : null}
 
       <div className="space-y-2">
-        <input
-          type="range"
-          min={0}
-          max={max || 1}
-          step={0.1}
-          value={Math.min(currentTime, max || 0)}
+        <PlaybackWaveform
+          src={src}
+          audioRef={audioRef}
+          isPlaying={isPlaying}
+          currentTime={currentTime}
+          duration={max}
           disabled={!canControl || max <= 0}
-          onChange={(event) => onSeekInput(Number(event.target.value))}
-          className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-slider-thumb]:size-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+          onSeek={onSeekInput}
           aria-label={t("common.seekAriaLabel")}
-          style={{
-            background: `linear-gradient(to right, var(--primary) ${progress}%, var(--muted) ${progress}%)`,
-          }}
         />
         <div className="flex items-center justify-between font-mono text-xs tabular-nums text-muted-foreground">
           <span>{formatPlaybackTime(currentTime)}</span>

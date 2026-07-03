@@ -43,6 +43,13 @@ class Settings(BaseSettings):
     diarization_max_segments: int = 0
     hf_token: str | None = None
 
+    audio_purification_enabled: bool = False
+    audio_purification_denoise: bool = True
+    audio_purification_min_speech_ms: int = 250
+    audio_purification_min_silence_ms: int = 500
+    audio_purification_speech_pad_ms: int = 100
+    audio_purification_merge_gap_seconds: float = 0.3
+
     voiceprint_profiles_enabled: bool = False
     speaker_embedding_model_id: str = "pyannote/embedding"
     speaker_match_threshold: float = 0.65

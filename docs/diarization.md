@@ -62,7 +62,9 @@ On backend startup, the uvicorn terminal prints diarization readiness. Use `GET 
 
 ```txt
 Upload → normalize WAV
+  → optional: audio purification (denoise + VAD compress)
   → pyannote diarization (speaker turns)
+  → remap timestamps to original timeline (when purification enabled)
   → merge/filter segments
   → ffmpeg slice per segment
   → Qwen3-ASR per segment
@@ -70,6 +72,41 @@ Upload → normalize WAV
 ```
 
 If diarization fails (missing token, model access, pyannote error), the worker **falls back** to full-file ASR and saves a `processingNote` on the transcript. Re-transcribe after fixing config.
+
+## Audio purification
+
+Optional pre-diarization step that removes silence and noise so pyannote runs on speech-only audio. This can improve diarization quality and speed on long meetings with dead air.
+
+Enable in `.env`:
+
+```env
+AUDIO_PURIFICATION_ENABLED=true
+```
+
+### What it does
+
+1. **Optional denoise** (`AUDIO_PURIFICATION_DENOISE=true`, default): ffmpeg `afftdn` on the diarization input.
+2. **Silero VAD**: detect speech regions.
+3. **Compress**: concatenate speech into a temporary WAV (silence removed).
+4. **Diarize** the shorter file with pyannote.
+5. **Remap** speaker-turn timestamps back to the original normalized timeline before ASR slicing and playback.
+
+Purified audio is **not** stored permanently and does **not** change the audio player source. A `processingNote` on the recording summarizes compression (e.g. `62.0 min → 41.0 min speech`).
+
+If purification fails or finds no speech, the pipeline falls back to the original audio for diarization.
+
+### Purification tuning
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `AUDIO_PURIFICATION_ENABLED` | `false` | Enable VAD compress before diarization |
+| `AUDIO_PURIFICATION_DENOISE` | `true` | Apply ffmpeg noise reduction before VAD |
+| `AUDIO_PURIFICATION_MIN_SPEECH_MS` | `250` | Minimum speech region length for Silero VAD |
+| `AUDIO_PURIFICATION_MIN_SILENCE_MS` | `500` | Minimum silence between speech regions |
+| `AUDIO_PURIFICATION_SPEECH_PAD_MS` | `100` | Pad VAD cuts to avoid clipping word edges |
+| `AUDIO_PURIFICATION_MERGE_GAP_SECONDS` | `0.3` | Merge adjacent speech regions separated by smaller gaps |
+
+Purification applies only when diarization is enabled. Full-file ASR (no diarization) is unchanged.
 
 ## Tuning
 
