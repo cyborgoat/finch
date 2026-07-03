@@ -23,6 +23,7 @@ from app.schemas.recording import (
     CreateRecordingResponse,
     RecordingListResponse,
     RecordingResponse,
+    SpeakerSegmentSchema,
     StartTranscriptionRequest,
     StartTranscriptionResponse,
     UpdateRecordingRequest,
@@ -160,7 +161,9 @@ def update_recording_speakers(
     transcript = recording_service.get_recording(recording_id)
     return UpdateRecordingSpeakersResponse(
         id=transcript.id,
-        speaker_segments=[segment.to_api() for segment in segments],
+        speaker_segments=[
+            SpeakerSegmentSchema.model_validate(segment.model_dump()) for segment in segments
+        ],
         raw_text=raw_text,
         updated_at=transcript.updated_at,
     )

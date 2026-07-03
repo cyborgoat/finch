@@ -1,18 +1,12 @@
+import type { UserSettings } from "@/lib/types"
+
 export type AppLanguage = "en" | "zh"
 
 export type SummaryStyle = "concise" | "balanced" | "detailed"
 
 export type SummaryFormat = "paragraphs" | "bullets"
 
-export type UserPreferences = {
-  uiLanguage: AppLanguage
-  contentLanguage: AppLanguage
-  summaryStyle: SummaryStyle
-  summaryFormat: SummaryFormat
-  userName: string
-  userVoiceprintProfileId: string | null
-  notesAutoSave: boolean
-}
+export type UserPreferences = UserSettings
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   uiLanguage: "en",

@@ -10,6 +10,10 @@ from app.domains.transcription.diarization_service import (
     speaker_segments_from_json,
     speaker_segments_to_json,
 )
+from app.domains.voiceprint.guards import (
+    require_voiceprint_profiles_consent,
+    require_voiceprint_profiles_enabled,
+)
 from app.domains.voiceprint.profile_service import VoiceprintProfileService
 
 
@@ -47,19 +51,8 @@ class RecordingSpeakerService:
                 if not mapping.get("display_name", "").strip():
                     mapping["display_name"] = profile.display_name
             if mapping.get("enroll"):
-                if not self.transcription_settings.is_voiceprint_profiles_enabled():
-                    raise AppError(
-                        "VOICEPRINT_PROFILES_DISABLED",
-                        "Voiceprint profiles are disabled. "
-                        "Enable them in Settings → Transcription.",
-                        400,
-                    )
-                if not self.preference_service.has_voiceprint_profiles_consent():
-                    raise AppError(
-                        "VOICEPRINT_PROFILES_CONSENT_REQUIRED",
-                        "Voiceprint profile consent is required before saving voiceprint samples.",
-                        400,
-                    )
+                require_voiceprint_profiles_enabled(self.transcription_settings)
+                require_voiceprint_profiles_consent(self.preference_service)
                 profile = self.profile_service.enroll_from_transcript(
                     recording_id=recording_id,
                     cluster_id=mapping["cluster_id"],

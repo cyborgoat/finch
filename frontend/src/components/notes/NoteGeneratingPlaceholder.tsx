@@ -1,4 +1,4 @@
-import { JobProgress } from "@/components/jobs/JobProgress"
+import { CompactJobProgress } from "@/components/jobs/CompactJobProgress"
 import { useTranslation } from "react-i18next"
 import type { Job } from "@/lib/types"
 
@@ -20,7 +20,7 @@ export function NoteGeneratingPlaceholder({
       <p className="text-center text-sm text-muted-foreground">
         {t("notes.generatingTitle", { title: templateTitle })}
       </p>
-      <JobProgress job={job} error={error} jobType="ai_action" />
+      <CompactJobProgress job={job} error={error} jobType="ai_action" />
       <p className="text-center text-xs text-muted-foreground">{t("notes.generatingHint")}</p>
     </div>
   )

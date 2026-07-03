@@ -1,6 +1,8 @@
 import { MoreHorizontal } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
+import { ConfirmDeleteDialog } from "@/components/recordings/ConfirmDeleteDialog"
+import { RenameRecordingDialog } from "@/components/recordings/RenameRecordingDialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,22 +15,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import type { RecordingListItem } from "@/lib/recordings"
 
 type RecordingRowActionsProps = {
@@ -117,44 +109,15 @@ export function RecordingRowActions({
       </DropdownMenu>
 
       {onRename ? (
-        <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t("recordings.renameTitle")}</DialogTitle>
-              <DialogDescription>
-                {t("recordings.renameDescription")}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="field-stack py-2">
-              <Label htmlFor={`rename-${item.id}`}>{t("common.title")}</Label>
-              <Input
-                id={`rename-${item.id}`}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void handleRename()
-                }}
-                disabled={isRenaming}
-                autoFocus
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setRenameOpen(false)}
-                disabled={isRenaming}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                onClick={() => void handleRename()}
-                disabled={isRenaming || !title.trim()}
-              >
-                {isRenaming ? t("common.saving") : t("common.save")}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <RenameRecordingDialog
+          open={renameOpen}
+          onOpenChange={setRenameOpen}
+          title={title}
+          onTitleChange={setTitle}
+          onSave={handleRename}
+          inputId={`rename-${item.id}`}
+          isPending={isRenaming}
+        />
       ) : null}
 
       {canRegenerate ? (
@@ -182,29 +145,18 @@ export function RecordingRowActions({
         </AlertDialog>
       ) : null}
 
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("recordings.deleteTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("recordings.deleteDescription")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={isDeleting}
-              onClick={() => {
-                onDelete(item.id)
-                setDeleteOpen(false)
-              }}
-            >
-              {isDeleting ? t("common.deleting") : t("recordings.deleteRecording")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={t("recordings.deleteTitle")}
+        description={t("recordings.deleteDescription")}
+        confirmLabel={t("recordings.deleteRecording")}
+        isPending={isDeleting}
+        onConfirm={() => {
+          onDelete(item.id)
+          setDeleteOpen(false)
+        }}
+      />
     </>
   )
 }

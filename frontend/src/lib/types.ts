@@ -29,35 +29,6 @@ export type VoiceprintProfileSummary = {
   updatedAt: string
 }
 
-export type VoiceprintEmbeddingSummary = {
-  id: string
-  modelId: string
-  sourceRecordingId?: string | null
-  sourceClusterId?: string | null
-  durationSec?: number | null
-  dimensions: number
-  createdAt: string
-}
-
-export type RelatedRecordingSummary = {
-  id: string
-  title: string
-  segmentCount: number
-  updatedAt: string
-}
-
-export type VoiceprintProfileDetail = {
-  id: string
-  displayName: string
-  notes?: string | null
-  embeddingCount: number
-  embeddingDescription: string
-  embeddings: VoiceprintEmbeddingSummary[]
-  relatedRecordings: RelatedRecordingSummary[]
-  createdAt: string
-  updatedAt: string
-}
-
 export type VoiceprintProfilesStatus = {
   enabled: boolean
   consentGiven: boolean

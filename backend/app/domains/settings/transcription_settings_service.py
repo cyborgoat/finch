@@ -7,7 +7,10 @@ from app.capabilities.status import (
     get_voiceprint_profiles_status_for_preferences,
 )
 from app.config import Settings, get_settings
-from app.domains.settings.app_preference_service import AppPreferenceService
+from app.domains.settings.app_preference_service import (
+    AppPreferenceService,
+    VOICEPRINT_AUTO_LABEL_KEY,
+)
 from app.domains.settings.settings_utils import JsonSettingsRepository
 from app.domains.transcription.diarization_service import resolve_hf_token
 from app.schemas.transcription_settings import (
@@ -106,12 +109,18 @@ class TranscriptionSettingsService:
     def _resolve_voiceprint_auto_label_enabled(self, stored: dict[str, Any]) -> bool:
         if "voiceprint_auto_label_enabled" in stored:
             return bool(stored["voiceprint_auto_label_enabled"])
-        legacy = self.preferences.is_voiceprint_auto_label_enabled()
-        if legacy:
-            stored = dict(stored)
-            stored["voiceprint_auto_label_enabled"] = True
-            self.repository.save(stored)
-        return legacy
+
+        legacy = self.preferences.get(VOICEPRINT_AUTO_LABEL_KEY)
+        if legacy is None:
+            return False
+
+        legacy_enabled = legacy.lower() in {"1", "true", "yes", "on"}
+        if legacy_enabled:
+            updated = dict(stored)
+            updated["voiceprint_auto_label_enabled"] = True
+            self.repository.save(updated)
+            self.preferences.delete(VOICEPRINT_AUTO_LABEL_KEY)
+        return legacy_enabled
 
     def _diarization_status(
         self,

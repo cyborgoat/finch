@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 from app.core.enums import RecordingStatus
 from app.core.errors import AppError
+from app.core.naming import ensure_unique_title
 from app.domains.jobs.job_service import JobService
 from app.domains.jobs.queue import enqueue_transcription
 from app.domains.media.audio_service import AudioService
@@ -25,28 +26,12 @@ TRANSCRIBABLE_STATUSES = frozenset(
 
 def default_recording_title(existing_titles: set[str]) -> str:
     base_title = datetime.now(UTC).strftime("Recording %Y-%m-%d %H:%M")
-    if base_title not in existing_titles:
-        return base_title
-
-    suffix = 2
-    while True:
-        candidate = f"{base_title} ({suffix})"
-        if candidate not in existing_titles:
-            return candidate
-        suffix += 1
+    return ensure_unique_title(base_title, existing_titles)
 
 
 def upload_recording_title(filename: str, existing_titles: set[str]) -> str:
     base_title = filename.rsplit(".", 1)[0] or "Untitled Recording"
-    if base_title not in existing_titles:
-        return base_title
-
-    suffix = 2
-    while True:
-        candidate = f"{base_title} ({suffix})"
-        if candidate not in existing_titles:
-            return candidate
-        suffix += 1
+    return ensure_unique_title(base_title, existing_titles)
 
 
 def resolve_recording_title(
@@ -136,16 +121,3 @@ class TranscriptionJobService:
         self.job_service.update_job(job, result_id=recording.id)
         enqueue_transcription(job.id, recording.audio_asset_id, language)
         return TranscriptionJobResult(job=job, recording=recording)
-
-    def create_job(
-        self,
-        *,
-        audio_asset_id: str,
-        language: str = "auto",
-    ) -> TranscriptionJobResult:
-        """Legacy helper: create pending recording and start transcription immediately."""
-        pending = self.create_recording(audio_asset_id=audio_asset_id)
-        return self.start_transcription(
-            pending.recording.id,
-            language=language,
-        )

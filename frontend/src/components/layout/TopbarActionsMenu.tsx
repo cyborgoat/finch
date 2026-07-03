@@ -1,6 +1,9 @@
 import { useState } from "react"
 import { MoreHorizontal, Pencil, RefreshCw, Trash2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { useTopbarActions } from "@/components/layout/TopbarActionsContext"
+import { ConfirmDeleteDialog } from "@/components/recordings/ConfirmDeleteDialog"
+import { RenameRecordingDialog } from "@/components/recordings/RenameRecordingDialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,23 +16,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useTopbarActions } from "@/components/layout/TopbarActionsContext"
 
 export function TopbarActionsMenu() {
   const { t } = useTranslation()
@@ -106,44 +98,14 @@ export function TopbarActionsMenu() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("recordings.renameTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("recordings.renameDescription")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="field-stack py-2">
-            <Label htmlFor="recording-rename-title">{t("common.title")}</Label>
-            <Input
-              id="recording-rename-title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") void handleRename()
-              }}
-              disabled={actions.isRenaming}
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setRenameOpen(false)}
-              disabled={actions.isRenaming}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onClick={() => void handleRename()}
-              disabled={actions.isRenaming || !title.trim()}
-            >
-              {actions.isRenaming ? t("common.saving") : t("common.save")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RenameRecordingDialog
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+        title={title}
+        onTitleChange={setTitle}
+        onSave={handleRename}
+        isPending={actions.isRenaming}
+      />
 
       {actions.onRegenerateTranscription ? (
         <AlertDialog open={regenerateOpen} onOpenChange={setRegenerateOpen}>
@@ -170,29 +132,18 @@ export function TopbarActionsMenu() {
         </AlertDialog>
       ) : null}
 
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("recordings.deleteTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("recordings.deleteDescription")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={actions.isDeleting}
-              onClick={() => {
-                actions.onDelete()
-                setDeleteOpen(false)
-              }}
-            >
-              {actions.isDeleting ? t("common.deleting") : t("recordings.deleteRecording")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={t("recordings.deleteTitle")}
+        description={t("recordings.deleteDescription")}
+        confirmLabel={t("recordings.deleteRecording")}
+        isPending={actions.isDeleting}
+        onConfirm={() => {
+          actions.onDelete()
+          setDeleteOpen(false)
+        }}
+      />
     </>
   )
 }

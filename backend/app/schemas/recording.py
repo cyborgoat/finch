@@ -1,17 +1,11 @@
 from datetime import datetime
 
+from app.domains.transcription.types import SpeakerSegment
 from app.schemas import CamelModel
 
 
-class SpeakerSegmentSchema(CamelModel):
-    speaker: str
-    start_sec: float
-    end_sec: float
-    text: str = ""
-    cluster_id: str | None = None
-    voiceprint_profile_id: str | None = None
-    match_confidence: float | None = None
-    match_status: str | None = None
+class SpeakerSegmentSchema(SpeakerSegment, CamelModel):
+    pass
 
 
 class CreateRecordingRequest(CamelModel):

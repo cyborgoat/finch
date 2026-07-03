@@ -1,5 +1,5 @@
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 import {
   createRecording,
   deleteRecording,
@@ -10,6 +10,13 @@ import { recordingQuery } from "@/lib/queries/recordings"
 import { recordingsListQuery } from "@/lib/queries/recordingsList"
 import { recentRecordings, type RecordingListItem } from "@/lib/recordings"
 import type { Recording } from "@/lib/types"
+
+function invalidateRecordingQueries(queryClient: QueryClient, id?: string) {
+  void queryClient.invalidateQueries({ queryKey: ["recordings"] })
+  if (id) {
+    void queryClient.invalidateQueries({ queryKey: ["recordings", id] })
+  }
+}
 
 function hasTranscribing(items: RecordingListItem[]) {
   return items.some((item) => item.status === "transcribing")
@@ -45,7 +52,7 @@ export function useCreateRecording() {
   return useMutation({
     mutationFn: createRecording,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["recordings"] })
+      invalidateRecordingQueries(queryClient)
     },
   })
 }
@@ -63,8 +70,7 @@ export function useStartTranscription() {
       regenerate?: boolean
     }) => startTranscription(recordingId, { language, regenerate }),
     onSuccess: (_data, { recordingId }) => {
-      void queryClient.invalidateQueries({ queryKey: ["recordings"] })
-      void queryClient.invalidateQueries({ queryKey: ["recordings", recordingId] })
+      invalidateRecordingQueries(queryClient, recordingId)
     },
   })
 }
@@ -76,8 +82,7 @@ export function useUpdateRecording(id: string) {
       input: Partial<Pick<Recording, "title" | "editedText">>,
     ) => updateRecording(id, input),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["recordings"] })
-      void queryClient.invalidateQueries({ queryKey: ["recordings", id] })
+      invalidateRecordingQueries(queryClient, id)
     },
   })
 }
@@ -88,8 +93,7 @@ export function useRenameRecording() {
     mutationFn: ({ id, title }: { id: string; title: string }) =>
       updateRecording(id, { title }),
     onSuccess: (_data, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: ["recordings"] })
-      void queryClient.invalidateQueries({ queryKey: ["recordings", id] })
+      invalidateRecordingQueries(queryClient, id)
     },
   })
 }
@@ -99,7 +103,7 @@ export function useDeleteRecording() {
   return useMutation({
     mutationFn: deleteRecording,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["recordings"] })
+      invalidateRecordingQueries(queryClient)
       void queryClient.invalidateQueries({ queryKey: ["notes"] })
     },
   })

@@ -49,16 +49,6 @@ class AppPreferenceService:
         self.set(VOICEPRINT_PROFILES_CONSENT_KEY, now.isoformat())
         return now
 
-    def is_voiceprint_auto_label_enabled(self) -> bool:
-        raw = self.get(VOICEPRINT_AUTO_LABEL_KEY)
-        if raw is None:
-            return False
-        return raw.lower() in {"1", "true", "yes", "on"}
-
-    def set_voiceprint_auto_label_enabled(self, enabled: bool) -> None:
-        value = "true" if enabled else "false"
-        self.set(VOICEPRINT_AUTO_LABEL_KEY, value)
-
     def clear_voiceprint_profiles_preferences(self) -> None:
         for key in (VOICEPRINT_PROFILES_CONSENT_KEY, VOICEPRINT_AUTO_LABEL_KEY):
             self.delete(key)

@@ -22,11 +22,6 @@ class SpeakerSegment(BaseModel):
     match_confidence: float | None = None
     match_status: str | None = None
 
-    def to_api(self):
-        from app.schemas.recording import SpeakerSegmentSchema
-
-        return SpeakerSegmentSchema.model_validate(self.model_dump())
-
 
 def speaker_segments_to_json(segments: list[SpeakerSegment]) -> str:
     return json.dumps([segment.model_dump() for segment in segments])

@@ -1,4 +1,3 @@
-
 import { useTranslation } from "react-i18next"
 import {
   AlertDialog,
@@ -9,40 +8,31 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
 
-type DeleteConfirmDialogProps = {
+type ConfirmDeleteDialogProps = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
   title: string
   description: string
   onConfirm: () => void
-  triggerLabel?: string
   confirmLabel?: string
   isPending?: boolean
-  variant?: "destructive" | "ghost" | "outline"
 }
 
-export function DeleteConfirmDialog({
+export function ConfirmDeleteDialog({
+  open,
+  onOpenChange,
   title,
   description,
   onConfirm,
-  triggerLabel,
   confirmLabel,
   isPending,
-  variant = "destructive",
-}: DeleteConfirmDialogProps) {
+}: ConfirmDeleteDialogProps) {
   const { t } = useTranslation()
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger
-        render={
-          <Button variant={variant} size="sm" disabled={isPending}>
-            {triggerLabel ?? t("common.delete")}
-          </Button>
-        }
-      />
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

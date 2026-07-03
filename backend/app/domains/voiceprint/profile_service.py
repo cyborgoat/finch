@@ -5,6 +5,10 @@ from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
+from app.domains.voiceprint.guards import (
+    require_voiceprint_profiles_consent,
+    require_voiceprint_profiles_enabled,
+)
 from app.core.ids import generate_voiceprint_embedding_id, generate_voiceprint_profile_id
 from app.domains.media.audio_service import AudioService
 from app.domains.settings.app_preference_service import AppPreferenceService
@@ -163,12 +167,7 @@ class VoiceprintProfileService:
         from app.domains.recordings.recording_service import RecordingService
 
         preference_service = AppPreferenceService(self.session)
-        if not preference_service.has_voiceprint_profiles_consent():
-            raise AppError(
-                "VOICEPRINT_PROFILES_CONSENT_REQUIRED",
-                "Voiceprint profile consent is required before saving voiceprint samples.",
-                400,
-            )
+        require_voiceprint_profiles_consent(preference_service)
 
         recording_service = RecordingService(self.session)
         transcript = recording_service.get_recording(recording_id)
@@ -244,20 +243,10 @@ class VoiceprintProfileService:
         from app.domains.settings.transcription_settings_service import TranscriptionSettingsService
 
         preference_service = AppPreferenceService(self.session)
-        if not preference_service.has_voiceprint_profiles_consent():
-            raise AppError(
-                "VOICEPRINT_PROFILES_CONSENT_REQUIRED",
-                "Voiceprint profile consent is required before saving voiceprint samples.",
-                400,
-            )
+        require_voiceprint_profiles_consent(preference_service)
 
         transcription_settings = TranscriptionSettingsService(self.session, self.settings)
-        if not transcription_settings.is_voiceprint_profiles_enabled():
-            raise AppError(
-                "VOICEPRINT_PROFILES_DISABLED",
-                "Voiceprint profiles are disabled. Enable them in Settings → Transcription.",
-                400,
-            )
+        require_voiceprint_profiles_enabled(transcription_settings)
 
         audio_service = AudioService(self.session, self.settings)
         audio_asset = audio_service.get_audio(audio_asset_id)

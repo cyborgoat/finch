@@ -1,17 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useMemo, useState } from "react"
-import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { RecordingBrowser } from "@/components/files/FileBrowser"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useStartTranscriptionFlow } from "@/hooks/useStartTranscriptionFlow"
+import { useRecordingListActions } from "@/hooks/useRecordingListActions"
 import { useRecordingsList } from "@/hooks/useRecordings"
-import {
-  useDeleteRecording,
-  useRenameRecording,
-} from "@/hooks/useRecordings"
 import { recordingsListQuery } from "@/lib/queries/recordingsList"
 
 export const Route = createFileRoute("/recordings/")({
@@ -22,37 +17,17 @@ export const Route = createFileRoute("/recordings/")({
 function FilesPage() {
   const { t } = useTranslation()
   const { data, isLoading } = useRecordingsList()
-  const deleteRecordingMutation = useDeleteRecording()
-  const renameMutation = useRenameRecording()
-  const { startTranscriptionFlow, isStarting } = useStartTranscriptionFlow()
+  const {
+    handleRename,
+    handleDelete,
+    handleTranscribe,
+    isRenaming,
+    isDeleting,
+    isTranscribing,
+  } = useRecordingListActions()
   const [query, setQuery] = useState("")
 
   const items = useMemo(() => data?.items ?? [], [data?.items])
-
-  const handleRename = async (id: string, title: string) => {
-    try {
-      await renameMutation.mutateAsync({ id, title })
-      toast.success(t("toasts.recordingRenamed"))
-    } catch {
-      toast.error(t("toasts.recordingRenameFailed"))
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteRecordingMutation.mutateAsync(id)
-      toast.success(t("toasts.recordingDeleted"))
-    } catch {
-      toast.error(t("toasts.recordingDeleteFailed"))
-    }
-  }
-
-  const handleTranscribe = async (
-    id: string,
-    options?: { regenerate?: boolean },
-  ) => {
-    await startTranscriptionFlow(id, options)
-  }
 
   return (
     <PageContainer size="wide">
@@ -74,9 +49,9 @@ function FilesPage() {
           onRename={(id, title) => void handleRename(id, title)}
           onDelete={(id) => void handleDelete(id)}
           onTranscribe={(id, options) => void handleTranscribe(id, options)}
-          isRenaming={renameMutation.isPending}
-          isDeleting={deleteRecordingMutation.isPending}
-          isTranscribing={isStarting}
+          isRenaming={isRenaming}
+          isDeleting={isDeleting}
+          isTranscribing={isTranscribing}
         />
       )}
     </PageContainer>

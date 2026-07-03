@@ -1,6 +1,9 @@
 from app.capabilities.status import get_capability_status
 from app.config import Settings
-from app.domains.settings.app_preference_service import AppPreferenceService
+from app.domains.settings.app_preference_service import (
+    AppPreferenceService,
+    VOICEPRINT_AUTO_LABEL_KEY,
+)
 from app.domains.settings.transcription_settings_service import TranscriptionSettingsService
 from app.schemas.transcription_settings import UpdateTranscriptionSettingsRequest
 
@@ -44,8 +47,9 @@ def test_capability_status_auto_label_does_not_replace_profiles_enabled(db_sessi
 def test_transcription_settings_migrates_legacy_auto_label_preference(db_session):
     settings = Settings()
     preferences = AppPreferenceService(db_session)
-    preferences.set_voiceprint_auto_label_enabled(True)
+    preferences.set(VOICEPRINT_AUTO_LABEL_KEY, "true")
 
     transcription_service = TranscriptionSettingsService(db_session, settings)
     assert transcription_service.is_voiceprint_auto_label_enabled() is True
     assert transcription_service._load_raw().get("voiceprint_auto_label_enabled") is True
+    assert preferences.get(VOICEPRINT_AUTO_LABEL_KEY) is None

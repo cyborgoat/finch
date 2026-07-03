@@ -11,6 +11,9 @@ import {
   voiceprintProfilesListQuery,
   voiceprintProfilesStatusQuery,
 } from "@/lib/queries/voiceprints"
+import { healthQuery } from "@/lib/queries/health"
+import { transcriptionSettingsQuery } from "@/lib/queries/transcriptionSettings"
+import { userSettingsQuery } from "@/lib/queries/userSettings"
 
 export function useVoiceprintProfiles() {
   return useQuery(voiceprintProfilesListQuery())
@@ -26,8 +29,10 @@ export function useRecordVoiceprintConsent() {
     mutationFn: recordVoiceprintProfilesConsent,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: voiceprintProfilesStatusQuery().queryKey })
-      void queryClient.invalidateQueries({ queryKey: ["transcription-settings"] })
-      void queryClient.invalidateQueries({ queryKey: ["health"] })
+      void queryClient.invalidateQueries({
+        queryKey: transcriptionSettingsQuery().queryKey,
+      })
+      void queryClient.invalidateQueries({ queryKey: healthQuery().queryKey })
     },
   })
 }
@@ -38,8 +43,10 @@ export function useToggleVoiceprintProfiles() {
     mutationFn: toggleVoiceprintProfiles,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: voiceprintProfilesStatusQuery().queryKey })
-      void queryClient.invalidateQueries({ queryKey: ["transcription-settings"] })
-      void queryClient.invalidateQueries({ queryKey: ["health"] })
+      void queryClient.invalidateQueries({
+        queryKey: transcriptionSettingsQuery().queryKey,
+      })
+      void queryClient.invalidateQueries({ queryKey: healthQuery().queryKey })
     },
   })
 }
@@ -67,7 +74,7 @@ export function useDeleteVoiceprintProfile() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: voiceprintProfilesListQuery().queryKey })
       void queryClient.invalidateQueries({ queryKey: voiceprintProfilesStatusQuery().queryKey })
-      void queryClient.invalidateQueries({ queryKey: ["user-settings"] })
+      void queryClient.invalidateQueries({ queryKey: userSettingsQuery().queryKey })
     },
   })
 }
@@ -79,8 +86,8 @@ export function useEnrollVoiceprintProfileSample() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: voiceprintProfilesListQuery().queryKey })
       void queryClient.invalidateQueries({ queryKey: voiceprintProfilesStatusQuery().queryKey })
-      void queryClient.invalidateQueries({ queryKey: ["user-settings"] })
-      void queryClient.invalidateQueries({ queryKey: ["health"] })
+      void queryClient.invalidateQueries({ queryKey: userSettingsQuery().queryKey })
+      void queryClient.invalidateQueries({ queryKey: healthQuery().queryKey })
     },
   })
 }

@@ -3,7 +3,7 @@ import { Suspense, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { FileText } from "lucide-react"
-import { JobProgress } from "@/components/jobs/JobProgress"
+import { CompactJobProgress } from "@/components/jobs/CompactJobProgress"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { RecordingDetailLayout } from "@/components/transcripts/TranscriptDetailLayout"
 import { RecordingPageAudio } from "@/components/transcripts/TranscriptPageAudio"
@@ -224,7 +224,7 @@ function RecordingFileDetail({ id }: { id: string }) {
       <PageContainer size="wide">
         <RecordingSourceCard audio={audio} bodyClassName="space-y-3 p-4 sm:p-6">
           <p className="text-sm font-medium">{t("recording.transcribing")}</p>
-          <JobProgress job={job} error={jobError} jobType="transcription" />
+          <CompactJobProgress job={job} error={jobError} jobType="transcription" />
           <p className="text-xs text-muted-foreground">
             {t("recording.transcribingHint")}
           </p>

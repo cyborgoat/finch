@@ -29,6 +29,32 @@ def upload_sample_audio(client: TestClient, sample_wav: bytes) -> str:
     return upload.json()["id"]
 
 
+def upload_audio(
+    client: TestClient,
+    sample_wav: bytes,
+    *,
+    source: str = "upload",
+    filename: str = "sample.wav",
+):
+    """POST audio upload; caller should patch ffmpeg when normalization runs."""
+    return client.post(
+        "/api/audio/upload",
+        data={"source": source},
+        files={"file": (filename, BytesIO(sample_wav), "audio/wav")},
+    )
+
+
+def create_pending_recording(client: TestClient, audio_id: str):
+    return client.post("/api/recordings", json={"audioAssetId": audio_id})
+
+
+def start_recording_transcription(client: TestClient, recording_id: str, **payload):
+    return client.post(
+        f"/api/recordings/{recording_id}/transcribe",
+        json={"language": "auto", **payload},
+    )
+
+
 def create_recording(client: TestClient, sample_wav: bytes) -> str:
     audio_id = upload_sample_audio(client, sample_wav)
     with patch("app.domains.media.audio_service.subprocess.run") as mock_run:

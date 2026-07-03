@@ -1,10 +1,14 @@
-from io import BytesIO
 import re
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
+from tests.support.api_helpers import (
+    create_pending_recording,
+    start_recording_transcription,
+    upload_audio,
+)
 from tests.support.fakes import FAKE_TRANSCRIPT_TEXT, fake_diarization_turns, fake_ffmpeg_run
 
 RECORDING_TITLE_PATTERN = re.compile(
@@ -12,38 +16,19 @@ RECORDING_TITLE_PATTERN = re.compile(
 )
 
 
-def _upload_audio(client, sample_wav_bytes, *, source="upload", filename="sample.wav"):
-    return client.post(
-        "/api/audio/upload",
-        data={"source": source},
-        files={"file": (filename, BytesIO(sample_wav_bytes), "audio/wav")},
-    )
-
-
-def _create_pending(client, audio_id):
-    return client.post("/api/recordings", json={"audioAssetId": audio_id})
-
-
-def _start_transcription(client, recording_id, **payload):
-    return client.post(
-        f"/api/recordings/{recording_id}/transcribe",
-        json={"language": "auto", **payload},
-    )
-
-
 @patch("app.domains.media.audio_service.subprocess.run")
 def test_transcription_flow(mock_run, client, sample_wav_bytes):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    upload_response = _upload_audio(client, sample_wav_bytes)
+    upload_response = upload_audio(client, sample_wav_bytes)
     assert upload_response.status_code == 200
     audio_id = upload_response.json()["id"]
 
-    create_response = _create_pending(client, audio_id)
+    create_response = create_pending_recording(client, audio_id)
     assert create_response.status_code == 200
     recording_id = create_response.json()["recordingId"]
 
-    job_response = _start_transcription(client, recording_id)
+    job_response = start_recording_transcription(client, recording_id)
     assert job_response.status_code == 200
     job_id = job_response.json()["jobId"]
 
@@ -86,8 +71,8 @@ def test_create_recording_returns_pending(
 ):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
-    create_response = _create_pending(client, audio_id)
+    audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
+    create_response = create_pending_recording(client, audio_id)
     assert create_response.status_code == 200
     body = create_response.json()
     assert body["status"] == "pending"
@@ -101,7 +86,7 @@ def test_create_recording_returns_pending(
 
 @patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
 @patch("app.domains.media.audio_service.subprocess.run")
-def test_start_transcription_sets_transcribing_status(
+def teststart_recording_transcription_sets_transcribing_status(
     mock_run,
     mock_worker,
     client,
@@ -109,10 +94,10 @@ def test_start_transcription_sets_transcribing_status(
 ):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
-    recording_id = _create_pending(client, audio_id).json()["recordingId"]
+    audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
 
-    transcribe_response = _start_transcription(client, recording_id)
+    transcribe_response = start_recording_transcription(client, recording_id)
     assert transcribe_response.status_code == 200
     assert transcribe_response.json()["recordingId"] == recording_id
 
@@ -130,10 +115,10 @@ def test_transcribing_recording_includes_active_job_id(
 ):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
-    recording_id = _create_pending(client, audio_id).json()["recordingId"]
+    audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
 
-    transcribe_response = _start_transcription(client, recording_id)
+    transcribe_response = start_recording_transcription(client, recording_id)
     assert transcribe_response.status_code == 200
     job_id = transcribe_response.json()["jobId"]
 
@@ -152,13 +137,13 @@ def test_create_recording_uses_datetime_title_for_mic_recordings(
 ):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    audio_id = _upload_audio(
+    audio_id = upload_audio(
         client,
         sample_wav_bytes,
         source="recording",
         filename="recording.webm",
     ).json()["id"]
-    recording_id = _create_pending(client, audio_id).json()["recordingId"]
+    recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
     recording = client.get(f"/api/recordings/{recording_id}").json()
 
     assert RECORDING_TITLE_PATTERN.match(recording["title"])
@@ -176,13 +161,13 @@ def test_create_recording_uses_unique_titles_for_same_minute(
 
     titles: list[str] = []
     for index in range(2):
-        audio_id = _upload_audio(
+        audio_id = upload_audio(
             client,
             sample_wav_bytes,
             source="recording",
             filename=f"recording-{index}.webm",
         ).json()["id"]
-        recording_id = _create_pending(client, audio_id).json()["recordingId"]
+        recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
         recording = client.get(f"/api/recordings/{recording_id}").json()
         titles.append(recording["title"])
 
@@ -198,9 +183,9 @@ def test_regenerate_transcription_clears_existing_text(
 ):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
-    recording_id = _create_pending(client, audio_id).json()["recordingId"]
-    _start_transcription(client, recording_id)
+    audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
+    start_recording_transcription(client, recording_id)
 
     recording = client.get(f"/api/recordings/{recording_id}").json()
     assert recording["rawText"] == FAKE_TRANSCRIPT_TEXT
@@ -210,7 +195,7 @@ def test_regenerate_transcription_clears_existing_text(
         json={"editedText": "User edits"},
     )
 
-    _start_transcription(client, recording_id, regenerate=True)
+    start_recording_transcription(client, recording_id, regenerate=True)
     recording = client.get(f"/api/recordings/{recording_id}").json()
     assert recording["status"] == "draft"
     assert recording["editedText"] == ""
@@ -239,9 +224,9 @@ def test_diarization_fallback_when_hf_token_missing(
     monkeypatch.setenv("DIARIZATION_ENABLED", "true")
     get_settings.cache_clear()
 
-    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
-    recording_id = _create_pending(client, audio_id).json()["recordingId"]
-    job_id = _start_transcription(client, recording_id).json()["jobId"]
+    audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
+    job_id = start_recording_transcription(client, recording_id).json()["jobId"]
 
     job = client.get(f"/api/jobs/{job_id}").json()
     assert job["status"] == "completed"
@@ -270,9 +255,9 @@ def test_diarization_produces_speaker_labeled_transcript(
     monkeypatch.setenv("DIARIZATION_ENABLED", "true")
     get_settings.cache_clear()
 
-    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
-    recording_id = _create_pending(client, audio_id).json()["recordingId"]
-    job_id = _start_transcription(client, recording_id).json()["jobId"]
+    audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
+    job_id = start_recording_transcription(client, recording_id).json()["jobId"]
 
     job = client.get(f"/api/jobs/{job_id}").json()
     assert job["status"] == "completed"
@@ -330,9 +315,9 @@ def test_diarization_with_purification_remaps_timestamps(
     monkeypatch.setenv("AUDIO_PURIFICATION_ENABLED", "true")
     get_settings.cache_clear()
 
-    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
-    recording_id = _create_pending(client, audio_id).json()["recordingId"]
-    job_id = _start_transcription(client, recording_id).json()["jobId"]
+    audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
+    job_id = start_recording_transcription(client, recording_id).json()["jobId"]
 
     job = client.get(f"/api/jobs/{job_id}").json()
     assert job["status"] == "completed"
@@ -363,14 +348,14 @@ def test_failed_transcription_keeps_recording_with_error(
 
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
-    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
-    recording_id = _create_pending(client, audio_id).json()["recordingId"]
+    audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
 
     with patch(
         "app.domains.transcription.pipeline.TranscriptionPipeline._transcribe_single_pass",
         side_effect=AppError("ASR_TRANSCRIPTION_FAILED", "Mock ASR failure", 500),
     ):
-        job_response = _start_transcription(client, recording_id)
+        job_response = start_recording_transcription(client, recording_id)
 
     job_id = job_response.json()["jobId"]
 

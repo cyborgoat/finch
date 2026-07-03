@@ -1,6 +1,6 @@
 from app.domains.transcription.diarization_service import speaker_segments_from_json
 from app.models.recording import Recording
-from app.schemas.recording import RecordingResponse, RecordingSummary
+from app.schemas.recording import RecordingResponse, RecordingSummary, SpeakerSegmentSchema
 
 LEGACY_TRANSCRIBED_STATUSES = frozenset({"final", "completed"})
 
@@ -57,7 +57,11 @@ def to_recording_response(
         edited_text=recording.edited_text,
         language=recording.language,
         status=normalize_recording_status(recording.status),
-        speaker_segments=[segment.to_api() for segment in segments] if segments else None,
+        speaker_segments=[
+            SpeakerSegmentSchema.model_validate(segment.model_dump()) for segment in segments
+        ]
+        if segments
+        else None,
         error_message=recording.error_message,
         processing_note=recording.processing_note,
         transcription_job_id=_resolve_transcription_job_id(

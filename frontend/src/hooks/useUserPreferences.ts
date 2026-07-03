@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createSettingsMutationHook } from "@/hooks/createSettingsHook"
 import { updateUserSettings } from "@/lib/api"
 import { userSettingsQuery } from "@/lib/queries/userSettings"
 import {
@@ -6,25 +6,24 @@ import {
   type UserPreferences,
 } from "@/lib/userPreferences"
 
+const useUserSettingsMutation = createSettingsMutationHook<
+  UserPreferences,
+  Partial<UserPreferences>
+>({
+  getQueryOptions: userSettingsQuery,
+  mutationFn: updateUserSettings,
+  invalidateKeys: [],
+})
+
 export function useUserPreferences() {
-  const queryClient = useQueryClient()
-  const { data, isSuccess, isLoading } = useQuery(userSettingsQuery())
-
-  const mutation = useMutation({
-    mutationFn: (patch: Partial<UserPreferences>) => updateUserSettings(patch),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(userSettingsQuery().queryKey, updated)
-    },
-  })
-
-  const updatePreferences = (patch: Partial<UserPreferences>) =>
-    mutation.mutateAsync(patch)
+  const { settings, saveSettings, ready, isLoading, isSaving } =
+    useUserSettingsMutation()
 
   return {
-    preferences: data ?? DEFAULT_USER_PREFERENCES,
-    updatePreferences,
-    ready: isSuccess,
+    preferences: settings ?? DEFAULT_USER_PREFERENCES,
+    updatePreferences: saveSettings,
+    ready,
     isLoading,
-    isUpdating: mutation.isPending,
+    isUpdating: isSaving,
   }
 }
