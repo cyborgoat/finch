@@ -43,6 +43,7 @@ class RecordingSummary(CamelModel):
     duration_seconds: float | None = None
     error_message: str | None = None
     processing_note: str | None = None
+    transcription_job_id: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -62,6 +63,7 @@ class RecordingResponse(CamelModel):
     speaker_segments: list[SpeakerSegmentSchema] | None = None
     error_message: str | None = None
     processing_note: str | None = None
+    transcription_job_id: str | None = None
     created_at: datetime
     updated_at: datetime
 

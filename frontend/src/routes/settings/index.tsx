@@ -1,19 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { ChevronDown, Plus } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
+import { SettingsAiNotesSection } from "@/components/settings/SettingsAiNotesSection"
 import { SettingsRow, SettingsSection } from "@/components/settings/SettingsSection"
+import {
+  SettingsVoiceprintSection,
+  type VoiceprintConsentPurpose,
+} from "@/components/settings/SettingsVoiceprintSection"
 import { UserProfileSettings } from "@/components/settings/UserProfileSettings"
 import { LlmSettingsPanel } from "@/components/settings/LlmSettingsPanel"
 import { TranscriptionSettingsPanel } from "@/components/settings/TranscriptionSettingsPanel"
 import { VoiceprintConsentDialog } from "@/components/voiceprints/VoiceprintConsentDialog"
-import { VoiceprintEnrollmentDialog } from "@/components/voiceprints/VoiceprintEnrollmentDialog"
-import { VoiceprintProfileManager } from "@/components/voiceprints/VoiceprintProfileManager"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
 import {
   Select,
   SelectContent,
@@ -21,12 +21,10 @@ import {
   SelectTrigger,
 } from "@/components/ui/select"
 import {
-  useDeleteVoiceprintProfile,
   useRecordVoiceprintConsent,
-  useVoiceprintProfilesStatus,
-  useVoiceprintProfiles,
   useToggleVoiceprintProfiles,
-  useUpdateVoiceprintProfile,
+  useVoiceprintProfiles,
+  useVoiceprintProfilesStatus,
 } from "@/hooks/useVoiceprintProfiles"
 import { useUserPreferences } from "@/hooks/useUserPreferences"
 import { useTranscriptionSettings } from "@/hooks/useTranscriptionSettings"
@@ -39,9 +37,6 @@ import {
 import { transcriptionSettingsQuery } from "@/lib/queries/transcriptionSettings"
 import { llmSettingsQuery } from "@/lib/queries/llmSettings"
 import { userSettingsQuery } from "@/lib/queries/userSettings"
-import { cn } from "@/lib/utils"
-
-type ConsentPurpose = "auto-label" | "enrollment" | null
 
 export const Route = createFileRoute("/settings/")({
   loader: ({ context }) =>
@@ -60,17 +55,12 @@ function SettingsPage() {
   const { data: profilesData } = useVoiceprintProfiles()
   const { data: voiceprintProfilesStatus } = useVoiceprintProfilesStatus()
   const { settings: transcriptionSettings } = useTranscriptionSettings()
-  const deleteProfile = useDeleteVoiceprintProfile()
-  const updateProfile = useUpdateVoiceprintProfile()
   const toggleMemory = useToggleVoiceprintProfiles()
   const consentMutation = useRecordVoiceprintConsent()
   const { preferences, updatePreferences, ready, isUpdating } = useUserPreferences()
   const [consentOpen, setConsentOpen] = useState(false)
-  const [consentPurpose, setConsentPurpose] = useState<ConsentPurpose>(null)
-  const [addProfileOpen, setAddProfileOpen] = useState(false)
-  const [savedProfilesExpanded, setSavedProfilesExpanded] = useState(false)
+  const [consentPurpose, setConsentPurpose] = useState<VoiceprintConsentPurpose | null>(null)
 
-  const autoLabelEnabled = voiceprintProfilesStatus?.enabled ?? false
   const autoLabelReady =
     (transcriptionSettings?.voiceprintProfilesEnabled ?? false) &&
     (transcriptionSettings?.voiceprintProfilesReady ?? false)
@@ -78,7 +68,6 @@ function SettingsPage() {
     voiceprintProfilesStatus?.reason ?? transcriptionSettings?.voiceprintProfilesReason ?? null
   const togglePending = toggleMemory.isPending || consentMutation.isPending
   const settingsBusy = !ready || isUpdating
-
   const profiles = profilesData?.items ?? []
 
   const savePreference = async (
@@ -95,33 +84,9 @@ function SettingsPage() {
     }
   }
 
-  const requestConsent = (purpose: ConsentPurpose) => {
+  const requestConsent = (purpose: VoiceprintConsentPurpose) => {
     setConsentPurpose(purpose)
     setConsentOpen(true)
-  }
-
-  const handleAutoLabelChange = async (enabled: boolean) => {
-    if (!enabled) {
-      try {
-        await toggleMemory.mutateAsync(false)
-        toast.success(t("toasts.autoLabelOff"))
-      } catch {
-        toast.error(t("toasts.speakerSettingsFailed"))
-      }
-      return
-    }
-
-    if (!voiceprintProfilesStatus?.consentGiven) {
-      requestConsent("auto-label")
-      return
-    }
-
-    try {
-      await toggleMemory.mutateAsync(true)
-      toast.success(t("toasts.autoLabelOn"))
-    } catch {
-      toast.error(t("toasts.speakerSettingsFailed"))
-    }
   }
 
   const handleConsent = async () => {
@@ -223,169 +188,21 @@ function SettingsPage() {
           </SettingsRow>
         </SettingsSection>
 
-        <SettingsSection
-          title={t("settings.aiNotesTitle")}
-          description={t("settings.aiNotesDescription")}
-        >
-          <SettingsRow
-            label={t("settings.summaryStyleLabel")}
-            description={t("settings.summaryStyleDescription")}
-          >
-            <Select
-              value={preferences.summaryStyle}
-              onValueChange={(value) => {
-                if (value !== "concise" && value !== "balanced" && value !== "detailed") {
-                  return
-                }
-                void savePreference({ summaryStyle: value })
-              }}
-              disabled={settingsBusy}
-            >
-              <SelectTrigger className="w-full">
-                <span>
-                  {preferences.summaryStyle === "concise"
-                    ? t("settings.summaryStyleConcise")
-                    : preferences.summaryStyle === "detailed"
-                      ? t("settings.summaryStyleDetailed")
-                      : t("settings.summaryStyleBalanced")}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="concise">{t("settings.summaryStyleConcise")}</SelectItem>
-                <SelectItem value="balanced">{t("settings.summaryStyleBalanced")}</SelectItem>
-                <SelectItem value="detailed">{t("settings.summaryStyleDetailed")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </SettingsRow>
-          <SettingsRow
-            label={t("settings.summaryFormatLabel")}
-            description={t("settings.summaryFormatDescription")}
-          >
-            <Select
-              value={preferences.summaryFormat}
-              onValueChange={(value) => {
-                if (value !== "paragraphs" && value !== "bullets") return
-                void savePreference({ summaryFormat: value })
-              }}
-              disabled={settingsBusy}
-            >
-              <SelectTrigger className="w-full">
-                <span>
-                  {preferences.summaryFormat === "bullets"
-                    ? t("settings.summaryFormatBullets")
-                    : t("settings.summaryFormatParagraphs")}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="paragraphs">{t("settings.summaryFormatParagraphs")}</SelectItem>
-                <SelectItem value="bullets">{t("settings.summaryFormatBullets")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </SettingsRow>
-          <SettingsRow
-            label={t("settings.notesAutoSaveLabel")}
-            description={t("settings.notesAutoSaveDescription")}
-          >
-            <div className="flex justify-end">
-              <Switch
-                checked={preferences.notesAutoSave}
-                onCheckedChange={(checked) => {
-                  void savePreference({ notesAutoSave: checked })
-                }}
-                disabled={settingsBusy}
-              />
-            </div>
-          </SettingsRow>
-        </SettingsSection>
+        <SettingsAiNotesSection
+          preferences={preferences}
+          disabled={settingsBusy}
+          onSave={(patch) => savePreference(patch)}
+        />
 
         <TranscriptionSettingsPanel disabled={settingsBusy} />
 
         <LlmSettingsPanel disabled={settingsBusy} />
 
-        <SettingsSection
-          title={t("settings.speakersTitle")}
-          description={t("settings.speakersDescription")}
-        >
-          <SettingsRow
-            label={t("settings.autoLabelLabel")}
-            description={
-              autoLabelReady
-                ? t("settings.autoLabelReadyDescription")
-                : (voiceprintNotReadyReason ?? t("settings.autoLabelNotReady"))
-            }
-          >
-            <div className="flex justify-end">
-              <Switch
-                checked={autoLabelEnabled}
-                onCheckedChange={(checked) => void handleAutoLabelChange(checked)}
-                disabled={!autoLabelReady || togglePending}
-                aria-label={t("settings.autoLabelAriaLabel")}
-              />
-            </div>
-          </SettingsRow>
-          <div className="border-b border-border last:border-b-0">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-              aria-expanded={savedProfilesExpanded}
-              aria-label={t("settings.savedVoiceprintsAriaLabel")}
-              onClick={() => setSavedProfilesExpanded((expanded) => !expanded)}
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">
-                  {t("settings.savedVoiceprintsLabel")}
-                  {profiles.length > 0 ? (
-                    <span className="ml-1.5 font-normal text-muted-foreground">
-                      ({profiles.length})
-                    </span>
-                  ) : null}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t("settings.savedVoiceprintsDescription")}
-                </p>
-              </div>
-              <ChevronDown
-                className={cn(
-                  "size-4 shrink-0 text-muted-foreground transition-transform",
-                  savedProfilesExpanded && "rotate-180",
-                )}
-              />
-            </button>
-            {savedProfilesExpanded ? (
-              <div className="border-t border-border">
-                <VoiceprintProfileManager
-                  embedded
-                  profiles={profiles}
-                  userVoiceprintProfileId={preferences.userVoiceprintProfileId}
-                  isDeleting={deleteProfile.isPending}
-                  isRenaming={updateProfile.isPending}
-                  onRename={(voiceprintProfileId, displayName) => {
-                    void updateProfile.mutateAsync({ voiceprintProfileId, displayName }).then(() => {
-                      toast.success(t("toasts.speakerRenamed", { name: displayName }))
-                    })
-                  }}
-                  onDelete={(voiceprintProfileId, displayName) => {
-                    void deleteProfile.mutateAsync(voiceprintProfileId).then(() => {
-                      toast.success(t("toasts.speakerRemoved", { name: displayName }))
-                    })
-                  }}
-                />
-                <div className="flex justify-center border-t border-border py-3 pl-8 pr-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={settingsBusy || togglePending || !autoLabelReady}
-                    onClick={() => setAddProfileOpen(true)}
-                  >
-                    <Plus className="size-4" />
-                    {t("settings.addVoiceprintProfile")}
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </SettingsSection>
+        <SettingsVoiceprintSection
+          preferences={preferences}
+          disabled={settingsBusy}
+          onRequestConsent={requestConsent}
+        />
 
         <VoiceprintConsentDialog
           open={consentOpen}
@@ -395,17 +212,6 @@ function SettingsPage() {
           }}
           onConfirm={() => void handleConsent()}
           isPending={togglePending}
-        />
-
-        <VoiceprintEnrollmentDialog
-          open={addProfileOpen}
-          onOpenChange={setAddProfileOpen}
-          ready={autoLabelReady}
-          notReadyReason={voiceprintNotReadyReason}
-          consentGiven={voiceprintProfilesStatus?.consentGiven ?? false}
-          disabled={settingsBusy || togglePending}
-          uiLanguage={preferences.uiLanguage}
-          onConsentRequired={() => requestConsent("enrollment")}
         />
       </BlurFade>
     </PageContainer>

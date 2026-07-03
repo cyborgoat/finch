@@ -1,28 +1,23 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
-  deleteVoiceprintProfilesData,
   deleteVoiceprintProfile,
   enrollVoiceprintProfileSample,
-  getVoiceprintProfilesStatus,
-  listVoiceprintProfiles,
   recordVoiceprintProfilesConsent,
   toggleVoiceprintProfiles,
   updateVoiceprintProfile,
 } from "@/lib/api"
+import {
+  voiceprintProfilesListQuery,
+  voiceprintProfilesStatusQuery,
+} from "@/lib/queries/voiceprints"
 
 export function useVoiceprintProfiles() {
-  return useQuery({
-    queryKey: ["voiceprint-profiles"],
-    queryFn: listVoiceprintProfiles,
-  })
+  return useQuery(voiceprintProfilesListQuery())
 }
 
 export function useVoiceprintProfilesStatus() {
-  return useQuery({
-    queryKey: ["voiceprint-profiles-status"],
-    queryFn: getVoiceprintProfilesStatus,
-  })
+  return useQuery(voiceprintProfilesStatusQuery())
 }
 
 export function useRecordVoiceprintConsent() {
@@ -30,7 +25,7 @@ export function useRecordVoiceprintConsent() {
   return useMutation({
     mutationFn: recordVoiceprintProfilesConsent,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles-status"] })
+      void queryClient.invalidateQueries({ queryKey: voiceprintProfilesStatusQuery().queryKey })
       void queryClient.invalidateQueries({ queryKey: ["transcription-settings"] })
       void queryClient.invalidateQueries({ queryKey: ["health"] })
     },
@@ -42,7 +37,7 @@ export function useToggleVoiceprintProfiles() {
   return useMutation({
     mutationFn: toggleVoiceprintProfiles,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles-status"] })
+      void queryClient.invalidateQueries({ queryKey: voiceprintProfilesStatusQuery().queryKey })
       void queryClient.invalidateQueries({ queryKey: ["transcription-settings"] })
       void queryClient.invalidateQueries({ queryKey: ["health"] })
     },
@@ -60,7 +55,7 @@ export function useUpdateVoiceprintProfile() {
       displayName: string
     }) => updateVoiceprintProfile(voiceprintProfileId, { displayName }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles"] })
+      void queryClient.invalidateQueries({ queryKey: voiceprintProfilesListQuery().queryKey })
     },
   })
 }
@@ -70,8 +65,8 @@ export function useDeleteVoiceprintProfile() {
   return useMutation({
     mutationFn: deleteVoiceprintProfile,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles"] })
-      void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles-status"] })
+      void queryClient.invalidateQueries({ queryKey: voiceprintProfilesListQuery().queryKey })
+      void queryClient.invalidateQueries({ queryKey: voiceprintProfilesStatusQuery().queryKey })
       void queryClient.invalidateQueries({ queryKey: ["user-settings"] })
     },
   })
@@ -82,21 +77,9 @@ export function useEnrollVoiceprintProfileSample() {
   return useMutation({
     mutationFn: enrollVoiceprintProfileSample,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles"] })
-      void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles-status"] })
+      void queryClient.invalidateQueries({ queryKey: voiceprintProfilesListQuery().queryKey })
+      void queryClient.invalidateQueries({ queryKey: voiceprintProfilesStatusQuery().queryKey })
       void queryClient.invalidateQueries({ queryKey: ["user-settings"] })
-      void queryClient.invalidateQueries({ queryKey: ["health"] })
-    },
-  })
-}
-
-export function useDeleteVoiceprintProfilesData() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: deleteVoiceprintProfilesData,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles"] })
-      void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles-status"] })
       void queryClient.invalidateQueries({ queryKey: ["health"] })
     },
   })

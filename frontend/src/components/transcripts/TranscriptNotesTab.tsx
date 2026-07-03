@@ -2,48 +2,16 @@ import { Link } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { BlurFade } from "@/components/motion-primitives/blur-fade";
 import { EmptyState } from "@/components/effects/EmptyState";
 import { MdxNoteEditor } from "@/components/documents/MdxNoteEditor";
 import { CreateNoteDialog } from "@/components/notes/CreateNoteDialog";
+import { NoteDialogs } from "@/components/notes/NoteDialogs";
+import { NoteSelectToolbar } from "@/components/notes/NoteSelectToolbar";
 import { NoteGeneratingPlaceholder } from "@/components/notes/NoteGeneratingPlaceholder";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDeleteNote, useUpdateNote } from "@/hooks/useNotes";
 import { useJobPolling } from "@/hooks/useJobPolling";
@@ -264,7 +232,7 @@ export function RecordingNotesTab({
   return (
     <BlurFade className="section-stack">
       {!llmReady ? (
-        <div className="surface-card text-sm text-muted-foreground">
+        <div className="rounded-lg bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
           <Trans
             i18nKey="notes.llmRequiredBanner"
             components={{
@@ -279,79 +247,25 @@ export function RecordingNotesTab({
       ) : null}
 
       {notes.length > 0 || activeNoteId ? (
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <Select
-              value={activeNoteId ?? undefined}
-              onValueChange={handleNoteSelect}
-              items={noteItems}
-            >
-              <SelectTrigger className="h-9 w-full">
-                <SelectValue placeholder={t("notes.selectNote")} />
-              </SelectTrigger>
-              <SelectContent
-                align="start"
-                alignItemWithTrigger={false}
-                className="max-h-80 min-w-64"
-              >
-                {noteItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value} label={item.label}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="size-9 shrink-0"
-                  aria-label={t("notes.actionsAriaLabel")}
-                  disabled={!activeNoteId || noteActionsBusy || showGeneratingPlaceholder}
-                >
-                  <MoreHorizontal className="size-4" />
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={openRename} disabled={noteActionsBusy}>
-                <Pencil />
-                {t("notes.renameNote")}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => setDeleteOpen(true)}
-                disabled={noteActionsBusy}
-              >
-                <Trash2 />
-                {t("notes.deleteNote")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="size-9 shrink-0"
-            aria-label={t("notes.newNoteAriaLabel")}
-            onClick={() => setCreateOpen(true)}
-          >
-            <Plus className="size-4" />
-          </Button>
-        </div>
+        <NoteSelectToolbar
+          activeNoteId={activeNoteId}
+          noteItems={noteItems}
+          actionsDisabled={noteActionsBusy || showGeneratingPlaceholder}
+          onNoteSelect={handleNoteSelect}
+          onRename={openRename}
+          onDelete={() => setDeleteOpen(true)}
+          onCreate={() => setCreateOpen(true)}
+        />
       ) : null}
 
       {showGeneratingPlaceholder ? (
-        <NoteGeneratingPlaceholder
-          templateTitle={activeNote?.title ?? t("common.note")}
-          job={generationJob}
-          error={generationError}
-        />
+        <div className="surface-card overflow-hidden p-0">
+          <NoteGeneratingPlaceholder
+            templateTitle={activeNote?.title ?? t("common.note")}
+            job={generationJob}
+            error={generationError}
+          />
+        </div>
       ) : showFailedPlaceholder ? (
         <EmptyState
           title={t("notes.failedTitle")}
@@ -363,14 +277,17 @@ export function RecordingNotesTab({
           }
         />
       ) : noteLoading ? (
-        <Skeleton className="min-h-[520px] w-full rounded-lg" />
+        <Skeleton className="min-h-[520px] w-full rounded-xl" />
       ) : activeNote ? (
-        <MdxNoteEditor
-          key={activeNote.id}
-          note={activeNote}
-          hideTitle
-          onDirtyChange={setEditorDirty}
-        />
+        <div className="surface-card overflow-hidden p-0">
+          <MdxNoteEditor
+            key={activeNote.id}
+            note={activeNote}
+            hideTitle
+            embedded
+            onDirtyChange={setEditorDirty}
+          />
+        </div>
       ) : (
         <EmptyState
           title={t("notes.emptyTitle")}
@@ -394,85 +311,28 @@ export function RecordingNotesTab({
         onSelectBlank={() => void handleSelectBlank()}
       />
 
-      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("notes.renameTitle")}</DialogTitle>
-            <DialogDescription>{t("notes.renameDescription")}</DialogDescription>
-          </DialogHeader>
-          <div className="field-stack py-2">
-            <Label htmlFor="note-rename-title">{t("common.title")}</Label>
-            <Input
-              id="note-rename-title"
-              value={renameTitle}
-              onChange={(event) => setRenameTitle(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") void handleRename();
-              }}
-              disabled={updateMutation.isPending}
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setRenameOpen(false)}
-              disabled={updateMutation.isPending}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onClick={() => void handleRename()}
-              disabled={updateMutation.isPending || !renameTitle.trim()}
-            >
-              {updateMutation.isPending ? t("common.saving") : t("common.save")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("notes.deleteTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("notes.deleteDescription")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={deleteMutation.isPending}
-              onClick={() => void handleDelete()}
-            >
-              {deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={switchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("notes.discardTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("notes.discardDescription")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("notes.discardKeepEditing")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (pendingNoteId) {
-                  onNoteIdChange?.(pendingNoteId);
-                  setEditorDirty(false);
-                }
-                setPendingNoteId(null);
-                setSwitchConfirmOpen(false);
-              }}
-            >
-              {t("notes.discardConfirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <NoteDialogs
+        renameOpen={renameOpen}
+        onRenameOpenChange={setRenameOpen}
+        renameTitle={renameTitle}
+        onRenameTitleChange={setRenameTitle}
+        renamePending={updateMutation.isPending}
+        onRename={() => void handleRename()}
+        deleteOpen={deleteOpen}
+        onDeleteOpenChange={setDeleteOpen}
+        deletePending={deleteMutation.isPending}
+        onDelete={() => void handleDelete()}
+        switchConfirmOpen={switchConfirmOpen}
+        onSwitchConfirmOpenChange={setSwitchConfirmOpen}
+        onSwitchConfirm={() => {
+          if (pendingNoteId) {
+            onNoteIdChange?.(pendingNoteId);
+            setEditorDirty(false);
+          }
+          setPendingNoteId(null);
+          setSwitchConfirmOpen(false);
+        }}
+      />
     </BlurFade>
   );
 }

@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { AudioPreview } from "@/components/audio/AudioPreview"
-import { AudioDialogFooter } from "@/components/audio/AudioDialogControls"
 import { AudioRecordControlsSection } from "@/components/audio/AudioRecordControlsSection"
-import { AudioSoundCheckSection } from "@/components/audio/AudioSoundCheckSection"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  VoiceprintEnrollmentStepper,
-  type VoiceprintEnrollmentStep,
-} from "@/components/voiceprints/VoiceprintEnrollmentStepper"
+import { StepIndicator } from "@/components/layout/StepIndicator"
+import { EnrollmentHowItWorksStep } from "@/components/voiceprints/EnrollmentHowItWorksStep"
+import { EnrollmentRecordStep } from "@/components/voiceprints/EnrollmentRecordStep"
+import { EnrollmentReviewStep } from "@/components/voiceprints/EnrollmentReviewStep"
+import { EnrollmentSoundCheckStep } from "@/components/voiceprints/EnrollmentSoundCheckStep"
+import { VoiceprintSpeakerNameField } from "@/components/voiceprints/VoiceprintSpeakerNameField"
 import { useAudioRecorder } from "@/hooks/useAudioRecorder"
 import { useAudioUpload } from "@/hooks/useAudioUpload"
 import { useEnrollVoiceprintProfileSample } from "@/hooks/useVoiceprintProfiles"
@@ -19,8 +16,10 @@ import { FinchApiError } from "@/lib/api"
 
 const MIN_ENROLL_SECONDS = 2
 
+const ENROLLMENT_STEPS = ["howItWorks", "soundCheck", "record", "review"] as const
+type VoiceprintEnrollmentStep = (typeof ENROLLMENT_STEPS)[number]
+
 type VoiceprintEnrollmentPanelProps = {
-  open?: boolean
   ready: boolean
   notReadyReason?: string | null
   consentGiven: boolean
@@ -35,50 +34,7 @@ type VoiceprintEnrollmentPanelProps = {
   onCancel?: () => void
 }
 
-function VoiceprintSpeakerNameField({
-  forUserProfile,
-  profileDisplayName,
-  speakerDisplayName,
-  onSpeakerDisplayNameChange,
-  disabled,
-}: {
-  forUserProfile: boolean
-  profileDisplayName: string
-  speakerDisplayName: string
-  onSpeakerDisplayNameChange: (value: string) => void
-  disabled?: boolean
-}) {
-  const { t } = useTranslation()
-
-  return (
-    <div className="space-y-2">
-      <Label htmlFor="voiceprint-speaker-name">
-        {forUserProfile
-          ? t("voiceprints.enrollmentYourNameLabel")
-          : t("voiceprints.enrollmentSpeakerNameLabel")}
-      </Label>
-      <Input
-        id="voiceprint-speaker-name"
-        value={forUserProfile ? profileDisplayName : speakerDisplayName}
-        onChange={(event) => onSpeakerDisplayNameChange(event.target.value)}
-        disabled={forUserProfile || disabled}
-        placeholder={t("recording.namePlaceholder")}
-      />
-      {forUserProfile ? (
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          {t("voiceprints.enrollmentYourNameHint")}
-        </p>
-      ) : (
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          {t("voiceprints.enrollmentSpeakerNameHint")}
-        </p>
-      )}
-    </div>
-  )
-}
-
 export function VoiceprintEnrollmentPanel({
-  open = true,
   ready,
   notReadyReason,
   consentGiven,
@@ -114,25 +70,14 @@ export function VoiceprintEnrollmentPanel({
     ? profileDisplayName.trim()
     : speakerDisplayName.trim()
 
-  useEffect(() => {
-    if (!inDialog) return
-    if (open) {
+  useEffect(
+    () => () => {
       recorder.reset()
       soundCheckRecorder.reset()
-      setStep("howItWorks")
-      setSoundCheckAttempted(false)
-      setSpeakerDisplayName("")
-      advancedForBlobRef.current = null
-      return
-    }
-    recorder.reset()
-    soundCheckRecorder.reset()
-    setStep("howItWorks")
-    setSoundCheckAttempted(false)
-    setSpeakerDisplayName("")
-    advancedForBlobRef.current = null
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when dialog closes
-  }, [inDialog, open])
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset recorders on unmount
+    [],
+  )
 
   const exampleKey =
     uiLanguage === "zh" ? "voiceprints.enrollmentExampleZh" : "voiceprints.enrollmentExampleEn"
@@ -150,13 +95,8 @@ export function VoiceprintEnrollmentPanel({
     recordingLongEnough &&
     !busy
 
-  useEffect(() => {
-    if (!inDialog || step !== "record" || !hasRecording || !recorder.audioBlob) return
-    const blobKey = `${recorder.audioBlob.size}:${recorder.durationSeconds}`
-    if (advancedForBlobRef.current === blobKey) return
-    advancedForBlobRef.current = blobKey
-    setStep("review")
-  }, [hasRecording, inDialog, recorder.audioBlob, recorder.durationSeconds, step])
+  const displayStep =
+    inDialog && step === "record" && hasRecording ? "review" : step
 
   const doSave = async () => {
     if (!recorder.audioBlob || !resolvedDisplayName) return
@@ -188,10 +128,16 @@ export function VoiceprintEnrollmentPanel({
     }
   }
 
+  const doSaveRef = useRef(doSave)
+
+  useEffect(() => {
+    doSaveRef.current = doSave
+  })
+
   useEffect(() => {
     if (!consentGiven || !pendingSaveRef.current) return
     pendingSaveRef.current = false
-    void doSave()
+    void doSaveRef.current()
   }, [consentGiven])
 
   const handleSave = async () => {
@@ -233,7 +179,7 @@ export function VoiceprintEnrollmentPanel({
 
   if (!ready) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
+      <div className="surface-inset px-4 py-5 text-sm text-muted-foreground">
         {notReadyReason ?? t("settings.autoLabelNotReady")}
       </div>
     )
@@ -241,7 +187,7 @@ export function VoiceprintEnrollmentPanel({
 
   if (forUserProfile && !hasProfileName) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
+      <div className="surface-inset px-4 py-5 text-sm text-muted-foreground">
         {t("voiceprints.enrollmentNameRequired")}
       </div>
     )
@@ -250,186 +196,90 @@ export function VoiceprintEnrollmentPanel({
   if (inDialog) {
     return (
       <div className="space-y-5">
-        <VoiceprintEnrollmentStepper current={step} />
+        <StepIndicator
+          steps={ENROLLMENT_STEPS}
+          current={displayStep}
+          label={(stepKey) => t(`voiceprints.enrollmentStep.${stepKey}`)}
+        />
 
-        {step === "howItWorks" ? (
-          <>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">
-                  {t("voiceprints.enrollmentHowItWorksTitle")}
-                </p>
-                <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-muted-foreground">
-                  <li>{t("voiceprints.enrollmentHowItWorks1")}</li>
-                  <li>{t("voiceprints.enrollmentHowItWorks2")}</li>
-                  <li>{t("voiceprints.enrollmentHowItWorks3")}</li>
-                  <li>{t("voiceprints.enrollmentHowItWorks4")}</li>
-                </ul>
-              </div>
-            </div>
-            <AudioDialogFooter className="justify-end">
-              <Button type="button" variant="outline" onClick={handleDiscard}>
-                {t("voiceprints.enrollmentExit")}
-              </Button>
-              <Button type="button" onClick={() => setStep("soundCheck")}>
-                {t("voiceprints.enrollmentNext")}
-              </Button>
-            </AudioDialogFooter>
-          </>
+        {displayStep === "howItWorks" ? (
+          <EnrollmentHowItWorksStep
+            onDiscard={handleDiscard}
+            onNext={() => setStep("soundCheck")}
+          />
         ) : null}
 
-        {step === "soundCheck" ? (
-          <>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {t("voiceprints.enrollmentSoundCheckHint")}
-              </p>
-
-              <AudioSoundCheckSection
-                state={soundCheckRecorder.state}
-                mediaStream={soundCheckRecorder.mediaStream}
-                audioBlob={soundCheckRecorder.audioBlob}
-                error={soundCheckRecorder.error}
-                busy={busy}
-                onTestStart={() => setSoundCheckAttempted(true)}
-                onStart={() => void soundCheckRecorder.start()}
-                onStop={soundCheckRecorder.stop}
-                labels={{
-                  start: t("voiceprints.enrollmentSoundCheckStart"),
-                  active: t("voiceprints.enrollmentSoundCheckActive"),
-                  stop: t("common.stop"),
-                }}
-              />
-            </div>
-
-            <AudioDialogFooter className="justify-between">
-              <Button type="button" variant="outline" onClick={handleDiscard}>
-                {t("voiceprints.enrollmentExit")}
-              </Button>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    handleLeaveSoundCheck()
-                    setStep("howItWorks")
-                  }}
-                >
-                  {t("common.back")}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleSoundCheckContinue}
-                  disabled={!soundCheckReady || busy}
-                >
-                  {t("voiceprints.enrollmentSoundCheckContinue")}
-                </Button>
-              </div>
-            </AudioDialogFooter>
-          </>
+        {displayStep === "soundCheck" ? (
+          <EnrollmentSoundCheckStep
+            state={soundCheckRecorder.state}
+            mediaStream={soundCheckRecorder.mediaStream}
+            audioBlob={soundCheckRecorder.audioBlob}
+            error={soundCheckRecorder.error}
+            busy={busy}
+            soundCheckReady={soundCheckReady}
+            onTestStart={() => setSoundCheckAttempted(true)}
+            onStart={() => void soundCheckRecorder.start()}
+            onStop={soundCheckRecorder.stop}
+            onDiscard={handleDiscard}
+            onBack={() => {
+              handleLeaveSoundCheck()
+              setStep("howItWorks")
+            }}
+            onContinue={handleSoundCheckContinue}
+          />
         ) : null}
 
-        {step === "record" ? (
-          <>
-            <div className="space-y-4">
-              <VoiceprintSpeakerNameField
-                forUserProfile={forUserProfile}
-                profileDisplayName={profileDisplayName}
-                speakerDisplayName={speakerDisplayName}
-                onSpeakerDisplayNameChange={setSpeakerDisplayName}
-                disabled={busy}
-              />
-
-              <p className="text-sm text-muted-foreground">
-                {t("voiceprints.enrollmentRecordHint")}
-              </p>
-
-              <blockquote className="rounded-md border border-border bg-muted/20 px-4 py-3 text-sm leading-relaxed text-foreground">
-                {exampleText}
-              </blockquote>
-
-              <AudioRecordControlsSection
-                state={recorder.state}
-                durationSeconds={recorder.durationSeconds}
-                mediaStream={recorder.mediaStream}
-                audioBlob={recorder.audioBlob}
-                audioUrl={recorder.audioUrl}
-                error={recorder.error}
-                busy={busy || !canStartRecording}
-                onStart={() => void recorder.start()}
-                onPause={recorder.pause}
-                onResume={recorder.resume}
-                onStop={recorder.stop}
-                startLabel={t("voiceprints.enrollmentStartRecording")}
-              />
-            </div>
-
-            <AudioDialogFooter className="justify-between">
-              <Button type="button" variant="outline" onClick={handleDiscard}>
-                {t("voiceprints.enrollmentExit")}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  recorder.reset()
-                  advancedForBlobRef.current = null
-                  setStep("soundCheck")
-                }}
-              >
-                {t("common.back")}
-              </Button>
-            </AudioDialogFooter>
-          </>
+        {displayStep === "record" ? (
+          <EnrollmentRecordStep
+            forUserProfile={forUserProfile}
+            profileDisplayName={profileDisplayName}
+            speakerDisplayName={speakerDisplayName}
+            onSpeakerDisplayNameChange={setSpeakerDisplayName}
+            exampleText={exampleText}
+            state={recorder.state}
+            durationSeconds={recorder.durationSeconds}
+            mediaStream={recorder.mediaStream}
+            audioBlob={recorder.audioBlob}
+            audioUrl={recorder.audioUrl}
+            error={recorder.error}
+            busy={busy}
+            canStartRecording={canStartRecording}
+            onStart={() => void recorder.start()}
+            onPause={recorder.pause}
+            onResume={recorder.resume}
+            onStop={recorder.stop}
+            onDiscard={handleDiscard}
+            onBack={() => {
+              recorder.reset()
+              advancedForBlobRef.current = null
+              setStep("soundCheck")
+            }}
+          />
         ) : null}
 
-        {step === "review" ? (
-          <>
-            <div className="space-y-4">
-              <VoiceprintSpeakerNameField
-                forUserProfile={forUserProfile}
-                profileDisplayName={profileDisplayName}
-                speakerDisplayName={speakerDisplayName}
-                onSpeakerDisplayNameChange={setSpeakerDisplayName}
-                disabled={busy}
-              />
-
-              <p className="text-sm text-muted-foreground">
-                {t("voiceprints.enrollmentReviewHint")}
-              </p>
-
-              <AudioPreview audioUrl={recorder.audioUrl} />
-
-              {!recordingLongEnough ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("voiceprints.enrollmentMinDuration", { seconds: MIN_ENROLL_SECONDS })}
-                </p>
-              ) : null}
-            </div>
-
-            <AudioDialogFooter className="justify-between">
-              <Button type="button" variant="outline" onClick={handleDiscard}>
-                {t("voiceprints.enrollmentDiscardAndQuit")}
-              </Button>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="ghost" onClick={handleBackToRecord}>
-                  {t("voiceprints.enrollmentRecordAgain")}
-                </Button>
-                <Button type="button" onClick={() => void handleSave()} disabled={!canSave}>
-                  {enrollMutation.isPending || isUploading
-                    ? t("voiceprints.enrollmentSaving")
-                    : t("voiceprints.enrollmentSave")}
-                </Button>
-              </div>
-            </AudioDialogFooter>
-          </>
+        {displayStep === "review" ? (
+          <EnrollmentReviewStep
+            forUserProfile={forUserProfile}
+            profileDisplayName={profileDisplayName}
+            speakerDisplayName={speakerDisplayName}
+            onSpeakerDisplayNameChange={setSpeakerDisplayName}
+            audioUrl={recorder.audioUrl}
+            recordingLongEnough={recordingLongEnough}
+            minEnrollSeconds={MIN_ENROLL_SECONDS}
+            busy={busy}
+            saving={enrollMutation.isPending || isUploading}
+            canSave={canSave}
+            onDiscard={handleDiscard}
+            onRecordAgain={handleBackToRecord}
+            onSave={() => void handleSave()}
+          />
         ) : null}
       </div>
     )
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-border bg-muted/10 px-4 py-4">
+    <div className="surface-inset space-y-4 px-4 py-4">
       <div>
         <p className="text-sm font-medium text-foreground">
           {t("voiceprints.enrollmentTitle")}
@@ -439,7 +289,7 @@ export function VoiceprintEnrollmentPanel({
         </p>
       </div>
 
-      <blockquote className="rounded-md border border-border bg-muted/20 px-4 py-3 text-sm leading-relaxed text-foreground">
+      <blockquote className="surface-inset px-4 py-3 text-sm leading-relaxed text-foreground">
         {exampleText}
       </blockquote>
 

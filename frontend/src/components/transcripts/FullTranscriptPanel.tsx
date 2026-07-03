@@ -25,6 +25,7 @@ type FullTranscriptPanelProps = {
   ) => Promise<void>
   speakerSavePending?: boolean
   disabled?: boolean
+  variant?: "card" | "embedded"
 }
 
 function formatTime(seconds: number) {
@@ -118,6 +119,7 @@ export function FullTranscriptPanel({
   onSegmentSpeakerSave,
   speakerSavePending,
   disabled,
+  variant = "card",
 }: FullTranscriptPanelProps) {
   const { t } = useTranslation()
   const [editingSegment, setEditingSegment] = useState<SpeakerSegment | null>(null)
@@ -130,6 +132,8 @@ export function FullTranscriptPanel({
   const currentSegmentIndex = getCurrentSegmentIndex(segments, currentPlaybackTime)
   const useVirtualList = segments.length >= VIRTUALIZE_SEGMENT_THRESHOLD
 
+  // TanStack Virtual returns unstable function references by design.
+  // eslint-disable-next-line react-hooks/incompatible-library -- virtualizer is scoped to this list
   const virtualizer = useVirtualizer({
     count: segments.length,
     getScrollElement: () => scrollParentRef.current,
@@ -181,50 +185,65 @@ export function FullTranscriptPanel({
     )
   }
 
+  const transcriptBody = (
+    <>
+      {segments.length > 0 ? (
+        useVirtualList ? (
+          <div
+            className="relative w-full p-3"
+            style={{ height: `${virtualizer.getTotalSize()}px` }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const segment = segments[virtualRow.index]
+              return (
+                <div
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  className="absolute top-0 left-0 w-full"
+                  style={{ transform: `translateY(${virtualRow.start}px)` }}
+                >
+                  {renderSegment(segment, virtualRow.index)}
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="space-y-1 p-3">
+            {segments.map((segment, index) =>
+              renderSegment(segment, index, (element) => {
+                turnRefs.current[index] = element
+              }),
+            )}
+          </div>
+        )
+      ) : (
+        <pre className="whitespace-pre-wrap p-3 text-xs leading-snug text-foreground/90">
+          {text}
+        </pre>
+      )}
+    </>
+  )
+
   return (
     <>
-      <Section title={t("recording.sectionTitle")}>
+      {variant === "embedded" ? (
         <div
           ref={scrollParentRef}
-          className="surface-card h-96 overflow-y-auto rounded-xl border border-border"
+          className="h-96 overflow-y-auto px-4 py-3 sm:px-6"
         >
-          {segments.length > 0 ? (
-            useVirtualList ? (
-              <div
-                className="relative w-full p-3"
-                style={{ height: `${virtualizer.getTotalSize()}px` }}
-              >
-                {virtualizer.getVirtualItems().map((virtualRow) => {
-                  const segment = segments[virtualRow.index]
-                  return (
-                    <div
-                      key={virtualRow.key}
-                      data-index={virtualRow.index}
-                      ref={virtualizer.measureElement}
-                      className="absolute top-0 left-0 w-full"
-                      style={{ transform: `translateY(${virtualRow.start}px)` }}
-                    >
-                      {renderSegment(segment, virtualRow.index)}
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="space-y-1 p-3">
-                {segments.map((segment, index) =>
-                  renderSegment(segment, index, (element) => {
-                    turnRefs.current[index] = element
-                  }),
-                )}
-              </div>
-            )
-          ) : (
-            <pre className="whitespace-pre-wrap p-3 text-xs leading-snug text-foreground/90">
-              {text}
-            </pre>
-          )}
+          {transcriptBody}
         </div>
-      </Section>
+      ) : (
+        <Section title={t("recording.sectionTitle")}>
+          <div
+            ref={scrollParentRef}
+            className="surface-card h-96 overflow-y-auto"
+          >
+            {transcriptBody}
+          </div>
+        </Section>
+      )}
 
       {editingSegment && onSegmentSpeakerSave ? (
         <SpeakerTurnDialog

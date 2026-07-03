@@ -1,20 +1,8 @@
 import { useTranslation } from "react-i18next"
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table"
+import { getCoreRowModel, useReactTable } from "@tanstack/react-table"
+import { RecordingFileTable } from "@/components/files/RecordingFileTable"
 import { useRecordingFileColumns } from "@/components/files/transcriptFileTableColumns"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import type { RecordingListItem } from "@/lib/recordings"
-import { cn } from "@/lib/utils"
 
 type RecentRecordingListProps = {
   items: RecordingListItem[]
@@ -45,6 +33,8 @@ export function RecentRecordingList({
     isTranscribing,
   })
 
+  // TanStack Table returns unstable function references by design.
+  // eslint-disable-next-line react-hooks/incompatible-library -- table instance is scoped to this component
   const table = useReactTable({
     data: items,
     columns,
@@ -59,43 +49,5 @@ export function RecentRecordingList({
     )
   }
 
-  return (
-    <div className="overflow-x-auto rounded-xl bg-card/50">
-      <Table className="text-base font-light">
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  className="h-12 px-4 text-base font-normal text-muted-foreground"
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} className="h-16">
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className={cn(
-                      "px-4 py-4",
-                      cell.column.id === "title" && "whitespace-normal",
-                    )}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  )
+  return <RecordingFileTable table={table} />
 }

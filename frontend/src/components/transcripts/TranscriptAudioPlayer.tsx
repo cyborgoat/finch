@@ -44,6 +44,7 @@ type RecordingAudioPlayerProps = {
   onPause: () => void
   onEnded: () => void
   className?: string
+  variant?: "card" | "embedded"
 }
 
 export function RecordingAudioPlayer({
@@ -68,13 +69,19 @@ export function RecordingAudioPlayer({
   onPause,
   onEnded,
   className,
+  variant = "card",
 }: RecordingAudioPlayerProps) {
   const { t } = useTranslation()
   const max = duration > 0 ? duration : 0
   const canControl = Boolean(src) && (isReady || max > 0)
 
   return (
-    <div className={cn("surface-card space-y-4 p-4", className)}>
+    <div
+      className={cn(
+        variant === "card" ? "surface-card space-y-4 p-4" : "space-y-4",
+        className,
+      )}
+    >
       <audio
         ref={audioRef}
         src={src}
@@ -100,6 +107,7 @@ export function RecordingAudioPlayer({
           isPlaying={isPlaying}
           currentTime={currentTime}
           duration={max}
+          embedded={variant === "embedded"}
           disabled={!canControl || max <= 0}
           onSeek={onSeekInput}
           aria-label={t("common.seekAriaLabel")}

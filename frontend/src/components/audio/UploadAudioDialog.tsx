@@ -1,11 +1,8 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import {
-  AudioUploader,
-  formatBytes,
-  formatDuration,
-} from "@/components/audio/AudioUploader"
+import { AudioUploader } from "@/components/audio/AudioUploader"
+import { formatBytes, formatDuration } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -85,7 +82,7 @@ export function UploadAudioDialog({ open, onOpenChange }: UploadAudioDialogProps
         />
 
         {asset ? (
-          <div className="rounded-lg border border-border/60 bg-muted/20 p-3 text-sm space-y-1">
+          <div className="surface-inset space-y-1 p-3 text-sm">
             <p>
               <span className="text-muted-foreground">{t("upload.nameLabel")}</span>{" "}
               {asset.filename}

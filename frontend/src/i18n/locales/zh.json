@@ -160,8 +160,17 @@
       "savingRecording": "保存录音",
       "loadingModel": "加载模型",
       "loadingRecording": "加载录音",
+      "purifyingAudio": "准备音频",
       "completed": "已完成",
       "queued": "排队中"
+    },
+    "compact": {
+      "prepare": "准备中",
+      "diarize": "识别说话人",
+      "transcribe": "转录音频",
+      "saveRecording": "保存录音",
+      "generateNote": "生成笔记",
+      "saveNote": "保存笔记"
     },
     "failedDefault": "任务失败，请重试。"
   },

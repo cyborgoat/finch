@@ -160,8 +160,17 @@
       "savingRecording": "Saving recording",
       "loadingModel": "Loading model",
       "loadingRecording": "Loading recording",
+      "purifyingAudio": "Preparing audio",
       "completed": "Completed",
       "queued": "Queued"
+    },
+    "compact": {
+      "prepare": "Preparing",
+      "diarize": "Identifying speakers",
+      "transcribe": "Transcribing audio",
+      "saveRecording": "Saving recording",
+      "generateNote": "Generating note",
+      "saveNote": "Saving note"
     },
     "failedDefault": "Job failed. Please try again."
   },

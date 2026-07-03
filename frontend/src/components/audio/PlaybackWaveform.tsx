@@ -5,6 +5,7 @@ import {
   getPrimaryColor,
   peaksFromAudioBuffer,
 } from "@/components/audio/waveform-utils"
+import { waveformContainerClass } from "@/lib/surfaces"
 import { cn } from "@/lib/utils"
 
 type PlaybackWaveformProps = {
@@ -14,6 +15,7 @@ type PlaybackWaveformProps = {
   currentTime: number
   duration: number
   disabled?: boolean
+  embedded?: boolean
   onSeek: (time: number) => void
   className?: string
   "aria-label"?: string
@@ -39,6 +41,7 @@ export function PlaybackWaveform({
   currentTime,
   duration,
   disabled = false,
+  embedded = false,
   onSeek,
   className,
   "aria-label": ariaLabel,
@@ -247,7 +250,8 @@ export function PlaybackWaveform({
       onPointerCancel={handlePointerUp}
       onKeyDown={handleKeyDown}
       className={cn(
-        "relative h-20 w-full overflow-hidden rounded-lg border border-border bg-muted/30",
+        "relative h-20 w-full overflow-hidden rounded-lg",
+        embedded ? waveformContainerClass("embedded") : waveformContainerClass("card"),
         disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer touch-none",
         className,
       )}

@@ -6,7 +6,6 @@ import type {
   NoteSummary,
   Job,
   VoiceprintProfilesStatus,
-  VoiceprintProfileDetail,
   VoiceprintProfileSummary,
   Recording,
   RecordingSummary,
@@ -102,15 +101,6 @@ export async function startTranscription(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input ?? {}),
   })
-}
-
-/** @deprecated Use createRecording + startTranscription */
-export async function createRecordingJob(input: {
-  audioAssetId: string
-  language?: string
-}): Promise<{ jobId: string; recordingId: string; status: string }> {
-  const created = await createRecording({ audioAssetId: input.audioAssetId })
-  return startTranscription(created.recordingId, { language: input.language })
 }
 
 export async function getJob(jobId: string): Promise<Job> {
@@ -230,10 +220,6 @@ export async function listVoiceprintProfiles(): Promise<{
   return request("/api/voiceprint-profiles")
 }
 
-export async function getVoiceprintProfile(id: string): Promise<VoiceprintProfileDetail> {
-  return request(`/api/voiceprint-profiles/${id}`)
-}
-
 export async function updateVoiceprintProfile(
   id: string,
   payload: { displayName?: string; notes?: string | null },
@@ -281,10 +267,6 @@ export async function toggleVoiceprintProfiles(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ enabled }),
   })
-}
-
-export async function deleteVoiceprintProfilesData(): Promise<{ ok: boolean }> {
-  return request("/api/voiceprint-profiles/data", { method: "DELETE" })
 }
 
 export async function getUserSettings(): Promise<UserSettings> {

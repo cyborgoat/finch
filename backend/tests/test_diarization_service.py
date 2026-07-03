@@ -42,6 +42,7 @@ def test_merge_adjacent_turns_respects_max_segments():
             DiarizationTurn("Speaker 1", 2.0, 3.0),
             DiarizationTurn("Speaker 2", 3.0, 4.0),
         ],
+        min_segment_seconds=0.3,
         max_segments=2,
     )
     assert len(turns) == 2

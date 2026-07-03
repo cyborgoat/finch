@@ -5,7 +5,7 @@ import { RecentRecordingList } from "@/components/files/RecentFileList"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useStartTranscriptionFlow } from "@/hooks/useStartTranscriptionFlow"
-import { useRecentRecordings } from "@/hooks/useRecordingsList"
+import { useRecentRecordings } from "@/hooks/useRecordings"
 import {
   useDeleteRecording,
   useRenameRecording,

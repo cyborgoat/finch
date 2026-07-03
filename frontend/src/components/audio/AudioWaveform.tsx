@@ -10,19 +10,33 @@ import {
   peaksFromAudioBuffer,
   WAVEFORM_SAMPLE_INTERVAL_MS,
 } from "@/components/audio/waveform-utils"
+import { waveformContainerClass } from "@/lib/surfaces"
+import { cn } from "@/lib/utils"
 
 type AudioWaveformProps = {
   state: RecorderState
   stream: MediaStream | null
-  audioBlob: Blob | null
+  audioBlob?: Blob | null
+  embedded?: boolean
+  size?: "default" | "mini"
+  className?: string
 }
 
-export function AudioWaveform({ state, stream, audioBlob }: AudioWaveformProps) {
+export function AudioWaveform({
+  state,
+  stream,
+  audioBlob = null,
+  embedded = false,
+  size = "default",
+  className,
+}: AudioWaveformProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const peaksHistoryRef = useRef<number[]>([])
   const lastSampleAtRef = useRef(0)
   const rafRef = useRef(0)
+  const peakCount = size === "mini" ? 64 : 120
+  const decodeBlobOnStop = size !== "mini"
 
   useEffect(() => {
     if (state === "recording" && stream) {
@@ -94,7 +108,7 @@ export function AudioWaveform({ state, stream, audioBlob }: AudioWaveformProps) 
           }
           renderOscilloscope()
         } else if (state === "paused") {
-          renderLevels(downsamplePeaks(peaksHistoryRef.current, 120))
+          renderLevels(downsamplePeaks(peaksHistoryRef.current, peakCount))
         }
 
         rafRef.current = requestAnimationFrame(tick)
@@ -103,49 +117,51 @@ export function AudioWaveform({ state, stream, audioBlob }: AudioWaveformProps) 
       rafRef.current = requestAnimationFrame(tick)
     }
 
-    const renderPlayback = async () => {
-      if (!audioBlob) {
-        renderLevels(downsamplePeaks(peaksHistoryRef.current, 120))
+    const renderStopped = () => {
+      if (decodeBlobOnStop && audioBlob) {
+        void (async () => {
+          try {
+            const arrayBuffer = await audioBlob.arrayBuffer()
+            if (cancelled) return
+
+            const decodeContext = new AudioContext()
+            const audioBuffer = await decodeContext.decodeAudioData(arrayBuffer)
+            await decodeContext.close()
+            if (cancelled) return
+
+            const pointCount = Math.max(96, Math.min(240, Math.floor(container.clientWidth * 1.25)))
+            renderLevels(peaksFromAudioBuffer(audioBuffer, pointCount))
+          } catch {
+            if (!cancelled) {
+              renderLevels(
+                downsamplePeaks(peaksHistoryRef.current, peakCount).map((peak) =>
+                  Math.max(peak, 0.05),
+                ),
+              )
+            }
+          }
+        })()
         return
       }
 
-      try {
-        const arrayBuffer = await audioBlob.arrayBuffer()
-        if (cancelled) return
-
-        const decodeContext = new AudioContext()
-        const audioBuffer = await decodeContext.decodeAudioData(arrayBuffer)
-        await decodeContext.close()
-        if (cancelled) return
-
-        const pointCount = Math.max(96, Math.min(240, Math.floor(container.clientWidth * 1.25)))
-        renderLevels(peaksFromAudioBuffer(audioBuffer, pointCount))
-      } catch {
-        if (!cancelled) {
-          renderLevels(
-            downsamplePeaks(peaksHistoryRef.current, 120).map((peak) =>
-              Math.max(peak, 0.05),
-            ),
-          )
-        }
-      }
+      renderLevels(downsamplePeaks(peaksHistoryRef.current, peakCount))
     }
 
     if (state === "recording" || state === "paused") {
       startLiveLoop()
     } else if (state === "stopped") {
-      void renderPlayback()
+      renderStopped()
     } else {
       renderLevels([])
     }
 
     const resizeObserver = new ResizeObserver(() => {
-      if (state === "stopped" && audioBlob) {
-        void renderPlayback()
+      if (state === "stopped" && decodeBlobOnStop && audioBlob) {
+        renderStopped()
       } else if (state === "recording") {
         renderOscilloscope()
-      } else if (state === "paused") {
-        renderLevels(downsamplePeaks(peaksHistoryRef.current, 120))
+      } else if (state === "paused" || state === "stopped") {
+        renderLevels(downsamplePeaks(peaksHistoryRef.current, peakCount))
       } else {
         renderLevels([])
       }
@@ -161,12 +177,17 @@ export function AudioWaveform({ state, stream, audioBlob }: AudioWaveformProps) 
         void audioContext.close()
       }
     }
-  }, [state, stream, audioBlob])
+  }, [audioBlob, decodeBlobOnStop, peakCount, state, stream])
 
   return (
     <div
       ref={containerRef}
-      className="h-24 w-full overflow-hidden rounded-lg border border-border bg-muted/30"
+      className={cn(
+        size === "mini"
+          ? "h-7 w-28 overflow-hidden rounded-md bg-muted/40"
+          : cn("h-24 w-full overflow-hidden rounded-lg", waveformContainerClass(embedded ? "embedded" : "card")),
+        className,
+      )}
       aria-hidden
     >
       <canvas ref={canvasRef} className="block h-full w-full" />

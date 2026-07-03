@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { useUpdateNote } from "@/hooks/useNotes"
 import { useUserPreferences } from "@/hooks/useUserPreferences"
+import { cn } from "@/lib/utils"
 import type { Note } from "@/lib/types"
 
 const MdxEditorCore = lazy(() =>
@@ -22,14 +23,20 @@ type SaveStatus = "saved" | "saving" | "unsaved"
 type MdxNoteEditorProps = {
   note: Note
   hideTitle?: boolean
+  embedded?: boolean
   onDirtyChange?: (dirty: boolean) => void
   onDelete?: () => void
   deletePending?: boolean
 }
 
-export function MdxNoteEditor({
+export function MdxNoteEditor(props: MdxNoteEditorProps) {
+  return <MdxNoteEditorInner key={props.note.id} {...props} />
+}
+
+function MdxNoteEditorInner({
   note,
   hideTitle = false,
+  embedded = false,
   onDirtyChange,
   onDelete,
   deletePending = false,
@@ -43,22 +50,12 @@ export function MdxNoteEditor({
   const [savedTitle, setSavedTitle] = useState(note.title)
   const [savedMarkdown, setSavedMarkdown] = useState(note.markdown)
   const [draftMarkdown, setDraftMarkdown] = useState(note.markdown)
-  const [editorSeed, setEditorSeed] = useState(note.markdown)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved")
 
   const autoSave = preferences.notesAutoSave
   const titleDirty = title.trim() !== savedTitle.trim()
   const markdownDirty = draftMarkdown !== savedMarkdown
   const dirty = hideTitle ? markdownDirty : titleDirty || markdownDirty
-
-  useEffect(() => {
-    setTitle(note.title)
-    setSavedTitle(note.title)
-    setSavedMarkdown(note.markdown)
-    setDraftMarkdown(note.markdown)
-    setEditorSeed(note.markdown)
-    setSaveStatus("saved")
-  }, [note.id])
 
   useEffect(() => {
     onDirtyChange?.(saveStatus === "unsaved" || dirty)
@@ -149,7 +146,12 @@ export function MdxNoteEditor({
 
   return (
     <div className="field-stack">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div
+        className={cn(
+          "flex flex-wrap items-center justify-between gap-3",
+          embedded && "border-b border-border px-4 py-3 sm:px-6",
+        )}
+      >
         {!hideTitle ? (
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <Label htmlFor={`note-title-${note.id}`} className="sr-only">
@@ -203,13 +205,18 @@ export function MdxNoteEditor({
         </div>
       </div>
 
-      <div className="mdx-note-editor overflow-hidden rounded-lg border border-border bg-background">
+      <div
+        className={cn(
+          "mdx-note-editor overflow-hidden bg-background",
+          !embedded && "rounded-lg border border-border",
+        )}
+      >
         <Suspense
           fallback={<Skeleton className="min-h-[480px] w-full rounded-lg" />}
         >
           <MdxEditorCore
             key={note.id}
-            markdown={editorSeed}
+            markdown={note.markdown}
             onChange={handleMarkdownChange}
             contentEditableClassName="mdx-note-content min-h-[480px] px-4 py-3 text-sm leading-relaxed"
           />

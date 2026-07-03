@@ -1,31 +1,22 @@
-import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 
-const STEP_KEYS = ["howItWorks", "soundCheck", "record", "review"] as const
-
-export type VoiceprintEnrollmentStep = (typeof STEP_KEYS)[number]
-
-type VoiceprintEnrollmentStepperProps = {
-  current: VoiceprintEnrollmentStep
+type StepIndicatorProps<T extends string> = {
+  steps: readonly T[]
+  current: T
+  label: (step: T) => string
 }
 
-const STEP_INDEX: Record<VoiceprintEnrollmentStep, number> = {
-  howItWorks: 0,
-  soundCheck: 1,
-  record: 2,
-  review: 3,
-}
-
-export function VoiceprintEnrollmentStepper({
+export function StepIndicator<T extends string>({
+  steps,
   current,
-}: VoiceprintEnrollmentStepperProps) {
-  const { t } = useTranslation()
-  const currentIndex = STEP_INDEX[current]
+  label,
+}: StepIndicatorProps<T>) {
+  const currentIndex = steps.indexOf(current)
 
   return (
     <ol className="flex flex-wrap items-center gap-2 text-sm">
-      {STEP_KEYS.map((stepKey, index) => (
-        <li key={stepKey} className="flex items-center gap-2">
+      {steps.map((step, index) => (
+        <li key={step} className="flex items-center gap-2">
           <span
             className={cn(
               "flex size-7 items-center justify-center rounded-full border text-xs font-medium",
@@ -41,9 +32,9 @@ export function VoiceprintEnrollmentStepper({
               index <= currentIndex ? "text-foreground" : "text-muted-foreground",
             )}
           >
-            {t(`voiceprints.enrollmentStep.${stepKey}`)}
+            {label(step)}
           </span>
-          {index < STEP_KEYS.length - 1 ? (
+          {index < steps.length - 1 ? (
             <span className="mx-1 text-muted-foreground" aria-hidden>
               →
             </span>

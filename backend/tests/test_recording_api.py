@@ -122,6 +122,28 @@ def test_start_transcription_sets_transcribing_status(
 
 @patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
 @patch("app.domains.media.audio_service.subprocess.run")
+def test_transcribing_recording_includes_active_job_id(
+    mock_run,
+    mock_worker,
+    client,
+    sample_wav_bytes,
+):
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+
+    audio_id = _upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = _create_pending(client, audio_id).json()["recordingId"]
+
+    transcribe_response = _start_transcription(client, recording_id)
+    assert transcribe_response.status_code == 200
+    job_id = transcribe_response.json()["jobId"]
+
+    recording = client.get(f"/api/recordings/{recording_id}").json()
+    assert recording["status"] == "transcribing"
+    assert recording["transcriptionJobId"] == job_id
+
+
+@patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
+@patch("app.domains.media.audio_service.subprocess.run")
 def test_create_recording_uses_datetime_title_for_mic_recordings(
     mock_run,
     mock_worker,

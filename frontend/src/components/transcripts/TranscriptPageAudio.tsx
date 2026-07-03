@@ -3,26 +3,34 @@ import { RecordingAudioPlayer } from "@/components/transcripts/TranscriptAudioPl
 import { useAudioAsset } from "@/hooks/useAudioAsset"
 import { useRecordingPlayback } from "@/hooks/useRecordingPlayback"
 
+type RecordingPlayback = ReturnType<typeof useRecordingPlayback>
+
 type RecordingPageAudioProps = {
   audioAssetId: string
   title: string
   className?: string
+  variant?: "card" | "embedded"
+  playback?: RecordingPlayback
 }
 
 export function RecordingPageAudio({
   audioAssetId,
   title,
   className,
+  variant = "card",
+  playback: externalPlayback,
 }: RecordingPageAudioProps) {
   const { data: audioAsset } = useAudioAsset(audioAssetId)
-  const playback = useRecordingPlayback(
+  const internalPlayback = useRecordingPlayback(
     audioAssetId,
     audioAsset?.durationSeconds,
   )
+  const playback = externalPlayback ?? internalPlayback
 
   return (
     <RecordingAudioPlayer
       className={className}
+      variant={variant}
       filename={title}
       audioRef={playback.audioRef}
       src={playback.src}

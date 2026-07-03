@@ -6,13 +6,8 @@ import {
   AudioPrimaryIconButton,
   AudioSecondaryIconButton,
 } from "@/components/audio/AudioDialogControls"
+import { formatRecordingTimer } from "@/lib/audio"
 import type { RecorderState } from "@/hooks/useAudioRecorder"
-
-function formatTimer(seconds: number) {
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
-}
 
 type AudioRecordControlsSectionProps = {
   state: RecorderState
@@ -23,6 +18,7 @@ type AudioRecordControlsSectionProps = {
   error: string | null
   busy?: boolean
   showPreview?: boolean
+  embedded?: boolean
   onStart: () => void
   onPause: () => void
   onResume: () => void
@@ -39,6 +35,7 @@ export function AudioRecordControlsSection({
   error,
   busy,
   showPreview = false,
+  embedded = false,
   onStart,
   onPause,
   onResume,
@@ -51,13 +48,18 @@ export function AudioRecordControlsSection({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <span className="font-mono text-lg tabular-nums">
-          {formatTimer(durationSeconds)}
+          {formatRecordingTimer(durationSeconds)}
         </span>
         <span className="text-sm capitalize text-muted-foreground">
           {t(`record.state.${state}`)}
         </span>
       </div>
-      <AudioWaveform state={state} stream={mediaStream} audioBlob={audioBlob} />
+      <AudioWaveform
+        state={state}
+        stream={mediaStream}
+        audioBlob={audioBlob}
+        embedded={embedded}
+      />
       <div className="flex justify-center gap-3 py-1">
         {state === "idle" || state === "error" ? (
           <AudioPrimaryIconButton
@@ -108,7 +110,9 @@ export function AudioRecordControlsSection({
       {error ? (
         <p className="text-center text-sm text-destructive">{error}</p>
       ) : null}
-      {showPreview && audioUrl ? <AudioPreview audioUrl={audioUrl} /> : null}
+      {showPreview && audioUrl ? (
+        <AudioPreview audioUrl={audioUrl} embedded={embedded} />
+      ) : null}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
@@ -37,21 +37,24 @@ function baseUrlDescription(t: TFunction, provider: LlmProviderId): string {
   }
 }
 
-export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
-  const { t } = useTranslation()
-  const { settings, saveSettings, ready, isLoading, isSaving } = useLlmSettings()
-  const [provider, setProvider] = useState<LlmProviderId>("openrouter")
-  const [apiKey, setApiKey] = useState("")
-  const [baseUrl, setBaseUrl] = useState("")
-  const [defaultModel, setDefaultModel] = useState("")
+type LlmSettingsFormProps = {
+  settings: LlmSettings
+  disabled: boolean
+  isSaving: boolean
+  saveSettings: (patch: UpdateLlmSettings) => Promise<LlmSettings>
+}
 
-  useEffect(() => {
-    if (!settings) return
-    setProvider(settings.provider)
-    setApiKey("")
-    setBaseUrl(settings.baseUrl)
-    setDefaultModel(settings.defaultModel)
-  }, [settings])
+function LlmSettingsForm({
+  settings,
+  disabled,
+  isSaving,
+  saveSettings,
+}: LlmSettingsFormProps) {
+  const { t } = useTranslation()
+  const [provider, setProvider] = useState(settings.provider)
+  const [apiKey, setApiKey] = useState("")
+  const [baseUrl, setBaseUrl] = useState(settings.baseUrl)
+  const [defaultModel, setDefaultModel] = useState(settings.defaultModel)
 
   const persist = async (patch: UpdateLlmSettings) => {
     try {
@@ -62,17 +65,6 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
     } catch {
       toast.error(t("toasts.failedToSaveLlmSettings"))
     }
-  }
-
-  if (isLoading || !ready || !settings) {
-    return (
-      <SettingsSection
-        title={t("settings.llmTitle")}
-        description={t("settings.llmDescriptionLoading")}
-      >
-        <div className="px-4 py-3 text-sm text-muted-foreground">{t("common.loading")}</div>
-      </SettingsSection>
-    )
   }
 
   const selectedProvider =
@@ -223,5 +215,31 @@ export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
         />
       </SettingsRow>
     </SettingsSection>
+  )
+}
+
+export function LlmSettingsPanel({ disabled = false }: LlmSettingsPanelProps) {
+  const { t } = useTranslation()
+  const { settings, saveSettings, ready, isLoading, isSaving } = useLlmSettings()
+
+  if (isLoading || !ready || !settings) {
+    return (
+      <SettingsSection
+        title={t("settings.llmTitle")}
+        description={t("settings.llmDescriptionLoading")}
+      >
+        <div className="px-4 py-3 text-sm text-muted-foreground">{t("common.loading")}</div>
+      </SettingsSection>
+    )
+  }
+
+  return (
+    <LlmSettingsForm
+      key={`${settings.provider}:${settings.baseUrl}:${settings.defaultModel}:${settings.apiKeyConfigured}`}
+      settings={settings}
+      disabled={disabled}
+      isSaving={isSaving}
+      saveSettings={saveSettings}
+    />
   )
 }

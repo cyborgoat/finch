@@ -3,20 +3,41 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   createRecording,
   deleteRecording,
-  getRecording,
   startTranscription,
   updateRecording,
 } from "@/lib/api"
+import { recordingQuery } from "@/lib/queries/recordings"
+import { recordingsListQuery } from "@/lib/queries/recordingsList"
+import { recentRecordings, type RecordingListItem } from "@/lib/recordings"
 import type { Recording } from "@/lib/types"
+
+function hasTranscribing(items: RecordingListItem[]) {
+  return items.some((item) => item.status === "transcribing")
+}
 
 export function useRecording(id: string) {
   return useQuery({
-    queryKey: ["recordings", id],
-    queryFn: () => getRecording(id),
+    ...recordingQuery(id),
     enabled: !!id,
     refetchInterval: (query) =>
       query.state.data?.status === "transcribing" ? 2000 : false,
   })
+}
+
+export function useRecordingsList() {
+  return useQuery({
+    ...recordingsListQuery(),
+    refetchInterval: (query) =>
+      hasTranscribing(query.state.data?.items ?? []) ? 2000 : false,
+  })
+}
+
+export function useRecentRecordings(limit = 8) {
+  const { data, ...rest } = useRecordingsList()
+  return {
+    ...rest,
+    data: data ? recentRecordings(data.items, limit) : undefined,
+  }
 }
 
 export function useCreateRecording() {

@@ -4,9 +4,10 @@ import { useTranslation } from "react-i18next"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BlurFade } from "@/components/motion-primitives/blur-fade"
+import { RecordingSourceCard } from "@/components/transcripts/RecordingSourceCard"
 import { useRegisterTopbarActions } from "@/components/layout/TopbarActionsContext"
 import { RecordingNotesTab } from "@/components/transcripts/TranscriptNotesTab"
-import { RecordingAudioPlayer } from "@/components/transcripts/TranscriptAudioPlayer"
+import { RecordingPageAudio } from "@/components/transcripts/TranscriptPageAudio"
 import { FullTranscriptPanel } from "@/components/transcripts/FullTranscriptPanel"
 import { useAudioAsset } from "@/hooks/useAudioAsset"
 import { useNote } from "@/hooks/useNotes"
@@ -211,40 +212,30 @@ export function RecordingDetailLayout({
         </TabsList>
 
         <TabsContent value="source" className="mt-0 pt-6">
-          <BlurFade className="section-stack">
-            <RecordingAudioPlayer
-              filename={title}
-              audioRef={playback.audioRef}
-              src={playback.src}
-              isPlaying={playback.isPlaying}
-              currentTime={playback.currentTime}
-              duration={playback.duration || audioAsset?.durationSeconds || 0}
-              isReady={playback.isReady}
-              playbackRate={playback.playbackRate}
-              onPlaybackRateChange={playback.setPlaybackRate}
-              onTogglePlay={playback.togglePlay}
-              onSkipBackward={playback.skipBackward}
-              onSkipForward={playback.skipForward}
-              onSeekInput={playback.handleSeekInput}
-              onTimeUpdate={playback.handleTimeUpdate}
-              onLoadedMetadata={playback.handleLoadedMetadata}
-              onCanPlay={playback.handleCanPlay}
-              onDurationChange={playback.handleDurationChange}
-              onPlay={playback.handlePlay}
-              onPause={playback.handlePause}
-              onEnded={playback.handleEnded}
-            />
-            <FullTranscriptPanel
-              text={text}
-              segments={segments}
-              profiles={profiles}
-              voiceprintProfilesStatus={voiceprintProfilesStatus}
-              currentPlaybackTime={playback.currentTime}
-              onSeekToTime={playback.seekAndPlay}
-              onSegmentSpeakerSave={onSegmentSpeakerSave}
-              speakerSavePending={speakerSavePending}
-              disabled={speakerSavePending || renamePending || deletePending}
-            />
+          <BlurFade>
+            <RecordingSourceCard
+              audio={
+                <RecordingPageAudio
+                  audioAssetId={recording.audioAssetId}
+                  title={title}
+                  variant="embedded"
+                  playback={playback}
+                />
+              }
+            >
+              <FullTranscriptPanel
+                variant="embedded"
+                text={text}
+                segments={segments}
+                profiles={profiles}
+                voiceprintProfilesStatus={voiceprintProfilesStatus}
+                currentPlaybackTime={playback.currentTime}
+                onSeekToTime={playback.seekAndPlay}
+                onSegmentSpeakerSave={onSegmentSpeakerSave}
+                speakerSavePending={speakerSavePending}
+                disabled={speakerSavePending || renamePending || deletePending}
+              />
+            </RecordingSourceCard>
           </BlurFade>
         </TabsContent>
 

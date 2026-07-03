@@ -9,6 +9,12 @@ type UseJobPollingOptions = {
   onFailed?: (job: Job) => void
 }
 
+type PollState = {
+  jobId: string | null
+  job: Job | null
+  error: string | null
+}
+
 function isTerminalJobStatus(status: Job["status"]) {
   return status === "completed" || status === "failed"
 }
@@ -18,8 +24,11 @@ export function useJobPolling(
   options?: UseJobPollingOptions,
 ) {
   const { enabled = true, onCompleted, onFailed } = options ?? {}
-  const [job, setJob] = useState<Job | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [pollState, setPollState] = useState<PollState>({
+    jobId,
+    job: null,
+    error: null,
+  })
   const callbacksRef = useRef({ onCompleted, onFailed })
   const notifiedRef = useRef<string | null>(null)
 
@@ -27,9 +36,11 @@ export function useJobPolling(
     callbacksRef.current = { onCompleted, onFailed }
   }, [onCompleted, onFailed])
 
+  if (jobId !== pollState.jobId) {
+    setPollState({ jobId, job: null, error: null })
+  }
+
   useEffect(() => {
-    setJob(null)
-    setError(null)
     notifiedRef.current = null
   }, [jobId])
 
@@ -44,8 +55,7 @@ export function useJobPolling(
       try {
         const next = await getJob(jobId)
         if (cancelled) return
-        setJob(next)
-        setError(null)
+        setPollState({ jobId, job: next, error: null })
 
         if (next.status === "completed" && notifiedRef.current !== jobId) {
           notifiedRef.current = jobId
@@ -62,7 +72,11 @@ export function useJobPolling(
         }
       } catch (err) {
         if (cancelled) return
-        setError(err instanceof Error ? err.message : "Failed to poll job")
+        setPollState({
+          jobId,
+          job: null,
+          error: err instanceof Error ? err.message : "Failed to poll job",
+        })
       }
     }
 
@@ -79,6 +93,8 @@ export function useJobPolling(
     }
   }, [jobId, enabled])
 
+  const job = pollState.jobId === jobId ? pollState.job : null
+  const error = pollState.jobId === jobId ? pollState.error : null
   const isPolling =
     !!jobId &&
     enabled &&

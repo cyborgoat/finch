@@ -13,6 +13,7 @@ type AudioSoundCheckSectionProps = {
   audioBlob: Blob | null
   error: string | null
   busy?: boolean
+  embedded?: boolean
   onTestStart: () => void
   onStart: () => void
   onStop: () => void
@@ -29,6 +30,7 @@ export function AudioSoundCheckSection({
   audioBlob,
   error,
   busy,
+  embedded = false,
   onTestStart,
   onStart,
   onStop,
@@ -39,7 +41,12 @@ export function AudioSoundCheckSection({
 
   return (
     <div className="space-y-4">
-      <AudioWaveform state={state} stream={mediaStream} audioBlob={audioBlob} />
+      <AudioWaveform
+        state={state}
+        stream={mediaStream}
+        audioBlob={audioBlob}
+        embedded={embedded}
+      />
       <div className="flex justify-center py-1">
         {state === "recording" ? (
           <AudioSecondaryIconButton

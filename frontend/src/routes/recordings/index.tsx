@@ -7,7 +7,7 @@ import { PageContainer } from "@/components/layout/PageContainer"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useStartTranscriptionFlow } from "@/hooks/useStartTranscriptionFlow"
-import { useRecordingsList } from "@/hooks/useRecordingsList"
+import { useRecordingsList } from "@/hooks/useRecordings"
 import {
   useDeleteRecording,
   useRenameRecording,

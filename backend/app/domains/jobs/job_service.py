@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.core.enums import JobStatus
 from app.core.errors import AppError
@@ -30,6 +30,16 @@ class JobService:
         if job is None:
             raise AppError("JOB_NOT_FOUND", "Job not found.", 404)
         return job
+
+    def get_active_job_for_result(self, result_id: str, job_type: str) -> Job | None:
+        statement = (
+            select(Job)
+            .where(Job.result_id == result_id)
+            .where(Job.type == job_type)
+            .where(Job.status.in_([JobStatus.QUEUED, JobStatus.PROCESSING]))
+            .order_by(Job.created_at.desc())
+        )
+        return self.session.exec(statement).first()
 
     def update_job(
         self,

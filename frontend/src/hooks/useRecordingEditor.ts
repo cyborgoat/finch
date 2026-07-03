@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
@@ -16,7 +16,6 @@ import {
   profileNameById,
   resolveSpeakerSegments,
   transcriptDisplayText,
-  formatSpeakerTranscript,
 } from "@/lib/transcriptFormat"
 import type { SpeakerSegment, Recording } from "@/lib/types"
 
@@ -38,32 +37,19 @@ export function useRecordingEditor(recording: Recording) {
 
   const [title, setTitle] = useState(recording.title)
   const [segments, setSegments] = useState(initialSegments)
-  const [text, setText] = useState(() =>
-    transcriptDisplayText(
+  const text = useMemo(() => {
+    if (recording.editedText?.trim()) return recording.editedText
+    return transcriptDisplayText(
       recording.rawText,
       recording.editedText,
-      initialSegments,
+      segments,
       profileNames,
-    ),
-  )
-  const [speakerSavePending, setSpeakerSavePending] = useState(false)
-
-  useEffect(() => {
-    if (recording.editedText?.trim()) return
-    setText(
-      transcriptDisplayText(
-        recording.rawText,
-        recording.editedText,
-        segments,
-        profileNames,
-      ),
     )
   }, [recording.rawText, recording.editedText, segments, profileNames])
+  const [speakerSavePending, setSpeakerSavePending] = useState(false)
 
-  const applySpeakerUpdate = (updatedSegments: SpeakerSegment[], rawText: string) => {
+  const applySpeakerUpdate = (updatedSegments: SpeakerSegment[]) => {
     setSegments(updatedSegments)
-    const formatted = formatSpeakerTranscript(updatedSegments, profileNames) || rawText
-    setText(formatted)
     void queryClient.invalidateQueries({ queryKey: ["recordings", recording.id] })
     void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles"] })
     void queryClient.invalidateQueries({ queryKey: ["voiceprint-profiles-status"] })
@@ -86,7 +72,7 @@ export function useRecordingEditor(recording: Recording) {
           enrollEndSec: segment.endSec,
         },
       ])
-      applySpeakerUpdate(result.speakerSegments ?? [], result.rawText)
+      applySpeakerUpdate(result.speakerSegments ?? [])
       toast.success(
         payload.enroll
           ? t("toasts.speakerSavedWithVoiceprint")

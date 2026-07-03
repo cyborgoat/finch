@@ -1,17 +1,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import {
-  deleteNote,
-  getNote,
-  listNotes,
-  updateNote,
-} from "@/lib/api"
+import { deleteNote, updateNote } from "@/lib/api"
+import { noteQuery, notesQuery } from "@/lib/queries/notes"
 import type { Note } from "@/lib/types"
 
 export function useNotes(recordingId?: string) {
   return useQuery({
-    queryKey: ["notes", "list", recordingId ?? "all"],
-    queryFn: () => listNotes(recordingId),
+    ...notesQuery(recordingId),
     refetchInterval: (query) => {
       const items = query.state.data?.items ?? []
       return items.some((item) => item.status === "generating") ? 2000 : false
@@ -21,8 +16,7 @@ export function useNotes(recordingId?: string) {
 
 export function useNote(id: string) {
   return useQuery({
-    queryKey: ["notes", "detail", id],
-    queryFn: () => getNote(id),
+    ...noteQuery(id),
     enabled: !!id,
     refetchInterval: (query) =>
       query.state.data?.status === "generating" ? 2000 : false,

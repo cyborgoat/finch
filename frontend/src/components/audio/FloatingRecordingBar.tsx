@@ -1,7 +1,8 @@
 import { Pause, Play, Square } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { useTranslation } from "react-i18next"
-import { MiniAudioWaveform } from "@/components/audio/MiniAudioWaveform"
+import { formatRecordingTimer } from "@/lib/audio"
+import { AudioWaveform } from "@/components/audio/AudioWaveform"
 import { useRecordingSession } from "@/components/audio/RecordingSessionProvider"
 import { useNewRecordingDialogs } from "@/components/layout/NewRecordingDialogs"
 import { Button } from "@/components/ui/button"
@@ -11,12 +12,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-
-function formatTimer(seconds: number) {
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
-}
 
 export function FloatingRecordingBar() {
   const { t } = useTranslation()
@@ -74,9 +69,10 @@ export function FloatingRecordingBar() {
                 aria-hidden
               />
               <span className="shrink-0 font-mono text-sm tabular-nums text-foreground">
-                {formatTimer(session.durationSeconds)}
+                {formatRecordingTimer(session.durationSeconds)}
               </span>
-              <MiniAudioWaveform
+              <AudioWaveform
+                size="mini"
                 state={session.state}
                 stream={session.mediaStream}
                 className="h-8 min-w-28 flex-1 overflow-hidden rounded-lg bg-muted/40 sm:min-w-36"

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
@@ -40,16 +40,25 @@ type SpeakerTurnDialogProps = {
   onSave: (payload: SpeakerSavePayload) => Promise<void>
 }
 
-export function SpeakerTurnDialog({
-  open,
-  onOpenChange,
+type SpeakerTurnFormProps = {
+  segment: SpeakerSegment
+  clusterId: string
+  profiles: VoiceprintProfileSummary[]
+  voiceprintProfilesStatus?: VoiceprintProfilesStatus
+  isPending?: boolean
+  onOpenChange: (open: boolean) => void
+  onSave: (payload: SpeakerSavePayload) => Promise<void>
+}
+
+function SpeakerTurnForm({
   segment,
   clusterId,
   profiles,
   voiceprintProfilesStatus,
   isPending,
+  onOpenChange,
   onSave,
-}: SpeakerTurnDialogProps) {
+}: SpeakerTurnFormProps) {
   const { t } = useTranslation()
   const consentMutation = useRecordVoiceprintConsent()
   const initialName = resolveSpeakerDisplayName(clusterId, {
@@ -60,26 +69,11 @@ export function SpeakerTurnDialog({
         ? t("recording.unknownSpeaker")
         : segment.speaker,
   })
-  const initialProfileId = segment.voiceprintProfileId ?? ""
 
-  const [profileId, setProfileId] = useState(initialProfileId || "__new__")
+  const [profileId, setProfileId] = useState(segment.voiceprintProfileId || "__new__")
   const [displayName, setDisplayName] = useState(initialName)
   const [consentOpen, setConsentOpen] = useState(false)
   const [pendingSave, setPendingSave] = useState<SpeakerSavePayload | null>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const name = resolveSpeakerDisplayName(clusterId, {
-      segment,
-      profiles,
-      fallback:
-        segment.matchStatus === "unknown"
-          ? t("recording.unknownSpeaker")
-          : segment.speaker,
-    })
-    setProfileId(segment.voiceprintProfileId || "__new__")
-    setDisplayName(name)
-  }, [open, clusterId, segment, profiles, t])
 
   const selectedProfile = profiles.find((item) => item.id === profileId)
   const useExisting = profileId !== "__new__" && Boolean(selectedProfile)
@@ -143,78 +137,74 @@ export function SpeakerTurnDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("recording.speakerTurnTitle")}</DialogTitle>
-            <DialogDescription>{t("recording.speakerTurnDescription")}</DialogDescription>
-          </DialogHeader>
+      <DialogHeader>
+        <DialogTitle>{t("recording.speakerTurnTitle")}</DialogTitle>
+        <DialogDescription>{t("recording.speakerTurnDescription")}</DialogDescription>
+      </DialogHeader>
 
-          <div className="field-stack py-2">
-            <div className="field-stack">
-              <Label className="text-xs text-muted-foreground">
-                {t("recording.savedProfile")}
-              </Label>
-              <Select value={profileId} onValueChange={handleProfileChange} disabled={isPending}>
-                <SelectTrigger className="w-full">
-                  <span className="truncate">
-                    {selectedProfile
-                      ? selectedProfile.displayName
-                      : t("recording.newName")}
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__new__">{t("recording.newName")}</SelectItem>
-                  {profiles.map((profile) => (
-                    <SelectItem key={profile.id} value={profile.id}>
-                      {profile.displayName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <div className="field-stack py-2">
+        <div className="field-stack">
+          <Label className="text-xs text-muted-foreground">
+            {t("recording.savedProfile")}
+          </Label>
+          <Select value={profileId} onValueChange={handleProfileChange} disabled={isPending}>
+            <SelectTrigger className="w-full">
+              <span className="truncate">
+                {selectedProfile
+                  ? selectedProfile.displayName
+                  : t("recording.newName")}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__new__">{t("recording.newName")}</SelectItem>
+              {profiles.map((profile) => (
+                <SelectItem key={profile.id} value={profile.id}>
+                  {profile.displayName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-            <div className="field-stack">
-              <Label htmlFor="turn-speaker-name" className="text-xs text-muted-foreground">
-                {t("common.displayName")}
-              </Label>
-              <Input
-                id="turn-speaker-name"
-                value={displayName}
-                disabled={isPending || useExisting}
-                onChange={(event) => {
-                  setDisplayName(event.target.value)
-                  setProfileId("__new__")
-                }}
-                placeholder={t("recording.namePlaceholder")}
-              />
-            </div>
+        <div className="field-stack">
+          <Label htmlFor="turn-speaker-name" className="text-xs text-muted-foreground">
+            {t("common.displayName")}
+          </Label>
+          <Input
+            id="turn-speaker-name"
+            value={displayName}
+            disabled={isPending || useExisting}
+            onChange={(event) => {
+              setDisplayName(event.target.value)
+              setProfileId("__new__")
+            }}
+            placeholder={t("recording.namePlaceholder")}
+          />
+        </div>
 
-            {canEnroll ? (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                {t("recording.voiceprintProfilesReadyHint")}
-              </p>
-            ) : voiceprintProfilesReady ? (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                {t("recording.voiceprintProfilesConsentHint")}
-              </p>
-            ) : (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                {t("recording.voiceprintProfilesDisabledHint")}
-              </p>
-            )}
-          </div>
+        {canEnroll ? (
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {t("recording.voiceprintProfilesReadyHint")}
+          </p>
+        ) : voiceprintProfilesReady ? (
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {t("recording.voiceprintProfilesConsentHint")}
+          </p>
+        ) : (
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {t("recording.voiceprintProfilesDisabledHint")}
+          </p>
+        )}
+      </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
-              {t("common.cancel")}
-            </Button>
-            <Button onClick={handleSubmit} disabled={isPending || !displayName.trim()}>
-              {isPending ? t("common.saving") : t("recording.saveSpeaker")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DialogFooter>
+        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+          {t("common.cancel")}
+        </Button>
+        <Button onClick={handleSubmit} disabled={isPending || !displayName.trim()}>
+          {isPending ? t("common.saving") : t("recording.saveSpeaker")}
+        </Button>
+      </DialogFooter>
 
       <VoiceprintConsentDialog
         open={consentOpen}
@@ -228,5 +218,35 @@ export function SpeakerTurnDialog({
         isPending={consentBusy}
       />
     </>
+  )
+}
+
+export function SpeakerTurnDialog({
+  open,
+  onOpenChange,
+  segment,
+  clusterId,
+  profiles,
+  voiceprintProfilesStatus,
+  isPending,
+  onSave,
+}: SpeakerTurnDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        {open ? (
+          <SpeakerTurnForm
+            key={`${clusterId}-${segment.startSec}-${segment.voiceprintProfileId ?? "new"}`}
+            segment={segment}
+            clusterId={clusterId}
+            profiles={profiles}
+            voiceprintProfilesStatus={voiceprintProfilesStatus}
+            isPending={isPending}
+            onOpenChange={onOpenChange}
+            onSave={onSave}
+          />
+        ) : null}
+      </DialogContent>
+    </Dialog>
   )
 }

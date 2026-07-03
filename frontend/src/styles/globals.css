@@ -153,8 +153,15 @@
   .field-stack {
     @apply space-y-3;
   }
+  /* Surface system: at most one bordered box per visual stack; use dividers/insets inside. */
   .surface-card {
     @apply rounded-xl border border-border bg-card/50 p-6;
+  }
+  .surface-divider {
+    @apply border-t border-border/50;
+  }
+  .surface-inset {
+    @apply rounded-lg bg-muted/20;
   }
 
   .mdx-note-editor .mdx-note-mdxeditor {

@@ -147,6 +147,7 @@ export type Recording = {
   speakerSegments?: SpeakerSegment[] | null
   errorMessage?: string | null
   processingNote?: string | null
+  transcriptionJobId?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -159,6 +160,8 @@ export type RecordingSummary = {
   status: "pending" | "draft" | "transcribing" | "failed"
   durationSeconds?: number | null
   errorMessage?: string | null
+  processingNote?: string | null
+  transcriptionJobId?: string | null
   createdAt: string
   updatedAt: string
 }

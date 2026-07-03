@@ -207,6 +207,7 @@ export function VoiceprintProfileManager({
       <EmptyState
         title={t("voiceprints.emptyTitle")}
         description={t("voiceprints.emptyDescription")}
+        bordered={embedded ? false : true}
         className={embedded ? "py-8 pl-8 pr-4" : "py-8"}
       />
     )

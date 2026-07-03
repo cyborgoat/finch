@@ -38,10 +38,12 @@ export function UserProfileSettings({
   const { t } = useTranslation()
   const [nameDraft, setNameDraft] = useState(preferences.userName)
   const [enrollOpen, setEnrollOpen] = useState(false)
+  const [syncedUserName, setSyncedUserName] = useState(preferences.userName)
 
-  useEffect(() => {
+  if (preferences.userName !== syncedUserName) {
+    setSyncedUserName(preferences.userName)
     setNameDraft(preferences.userName)
-  }, [preferences.userName])
+  }
 
   useEffect(() => {
     if (!preferences.userVoiceprintProfileId) return

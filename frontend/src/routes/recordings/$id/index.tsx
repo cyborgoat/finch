@@ -1,13 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { Suspense } from "react"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { Suspense, useEffect } from "react"
 import { useTranslation } from "react-i18next"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { FileText } from "lucide-react"
 import { JobProgress } from "@/components/jobs/JobProgress"
 import { PageContainer } from "@/components/layout/PageContainer"
-import { TextShimmer } from "@/components/motion-primitives/text-shimmer"
 import { RecordingDetailLayout } from "@/components/transcripts/TranscriptDetailLayout"
 import { RecordingPageAudio } from "@/components/transcripts/TranscriptPageAudio"
+import { RecordingSourceCard } from "@/components/transcripts/RecordingSourceCard"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useNotes } from "@/hooks/useNotes"
@@ -119,13 +119,52 @@ function RecordingDetailPage() {
   return <RecordingFileDetail id={id} />
 }
 
+function RecordingPageAudioEmbedded({
+  audioAssetId,
+  title,
+}: {
+  audioAssetId: string
+  title: string
+}) {
+  return (
+    <RecordingPageAudio
+      variant="embedded"
+      audioAssetId={audioAssetId}
+      title={title}
+    />
+  )
+}
+
 function RecordingFileDetail({ id }: { id: string }) {
   const { t } = useTranslation()
-  const { jobId } = Route.useSearch()
+  const { jobId: searchJobId } = Route.useSearch()
+  const navigate = useNavigate({ from: "/recordings/$id/" })
+  const queryClient = useQueryClient()
   const { data: recording, isLoading } = useRecording(id)
   const { startTranscriptionFlow, isStarting } = useStartTranscriptionFlow()
-  const { job, error: jobError } = useJobPolling(jobId ?? null, {
-    enabled: !!jobId,
+
+  const resolvedJobId =
+    searchJobId ?? recording?.transcriptionJobId ?? null
+
+  useEffect(() => {
+    if (
+      recording?.status === "transcribing" &&
+      recording.transcriptionJobId &&
+      !searchJobId
+    ) {
+      void navigate({
+        search: (prev) => ({ ...prev, jobId: recording.transcriptionJobId! }),
+        replace: true,
+      })
+    }
+  }, [navigate, recording?.status, recording?.transcriptionJobId, searchJobId])
+
+  const { job, error: jobError } = useJobPolling(resolvedJobId, {
+    enabled: recording?.status === "transcribing" && !!resolvedJobId,
+    onCompleted: () => {
+      void queryClient.invalidateQueries({ queryKey: ["recordings", id] })
+      void queryClient.invalidateQueries({ queryKey: ["recordings"] })
+    },
   })
 
   if (isLoading) {
@@ -146,11 +185,20 @@ function RecordingFileDetail({ id }: { id: string }) {
     )
   }
 
+  const audio = (
+    <RecordingPageAudioEmbedded
+      audioAssetId={recording.audioAssetId}
+      title={recording.title}
+    />
+  )
+
   if (recording.status === "pending") {
     return (
       <PageContainer size="wide">
-        <RecordingPageAudio audioAssetId={recording.audioAssetId} title={recording.title} />
-        <div className="surface-card flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center">
+        <RecordingSourceCard
+          audio={audio}
+          bodyClassName="flex flex-col items-start gap-4 p-4 sm:flex-row sm:items-center sm:p-6"
+        >
           <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted">
             <FileText className="size-5 text-muted-foreground" />
           </div>
@@ -166,7 +214,7 @@ function RecordingFileDetail({ id }: { id: string }) {
           >
             {isStarting ? t("common.starting") : t("recording.startTranscription")}
           </Button>
-        </div>
+        </RecordingSourceCard>
       </PageContainer>
     )
   }
@@ -174,20 +222,13 @@ function RecordingFileDetail({ id }: { id: string }) {
   if (recording.status === "transcribing") {
     return (
       <PageContainer size="wide">
-        <RecordingPageAudio audioAssetId={recording.audioAssetId} title={recording.title} />
-        <div className="surface-card space-y-6">
-          <div>
-            <p className="text-sm font-medium">
-              <TextShimmer>{t("recording.transcribing")}</TextShimmer>
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {t("recording.transcribingHint")}
-            </p>
-          </div>
-          {jobId ? (
-            <JobProgress job={job} error={jobError} />
-          ) : null}
-        </div>
+        <RecordingSourceCard audio={audio} bodyClassName="space-y-3 p-4 sm:p-6">
+          <p className="text-sm font-medium">{t("recording.transcribing")}</p>
+          <JobProgress job={job} error={jobError} jobType="transcription" />
+          <p className="text-xs text-muted-foreground">
+            {t("recording.transcribingHint")}
+          </p>
+        </RecordingSourceCard>
       </PageContainer>
     )
   }
@@ -195,20 +236,20 @@ function RecordingFileDetail({ id }: { id: string }) {
   if (recording.status === "failed") {
     return (
       <PageContainer size="wide">
-        <RecordingPageAudio audioAssetId={recording.audioAssetId} title={recording.title} />
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
-          <p className="text-sm font-medium text-destructive">{t("common.error")}</p>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            {recording.errorMessage ?? t("recording.failedDefault")}
-          </p>
-          <Button
-            className="mt-4"
-            onClick={() => void startTranscriptionFlow(recording.id)}
-            disabled={isStarting}
-          >
-            {isStarting ? t("common.starting") : t("recording.retryTranscription")}
-          </Button>
-        </div>
+        <RecordingSourceCard audio={audio} bodyClassName="p-4 sm:p-6">
+          <div className="surface-inset space-y-3 bg-destructive/5 p-4">
+            <p className="text-sm font-medium text-destructive">{t("common.error")}</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {recording.errorMessage ?? t("recording.failedDefault")}
+            </p>
+            <Button
+              onClick={() => void startTranscriptionFlow(recording.id)}
+              disabled={isStarting}
+            >
+              {isStarting ? t("common.starting") : t("recording.retryTranscription")}
+            </Button>
+          </div>
+        </RecordingSourceCard>
       </PageContainer>
     )
   }

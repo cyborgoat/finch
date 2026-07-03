@@ -1,14 +1,20 @@
 from fastapi import APIRouter, Depends
 
 from app.api.deps import (
+    get_job_service,
     get_note_service,
     get_recording_service,
     get_recording_speaker_service,
     get_transcription_job_service,
 )
+from app.domains.jobs.job_service import JobService
 from app.domains.jobs.transcription_jobs import TranscriptionJobService
 from app.domains.recordings.note_service import NoteService
-from app.domains.recordings.presenter import to_recording_response, to_recording_summary
+from app.domains.recordings.presenter import (
+    normalize_recording_status,
+    to_recording_response,
+    to_recording_summary,
+)
 from app.domains.recordings.recording_service import RecordingService
 from app.domains.recordings.speaker_service import RecordingSpeakerService
 from app.schemas.audio import OkResponse
@@ -28,6 +34,17 @@ from app.schemas.recording_speakers import (
 )
 
 router = APIRouter(prefix="/recordings", tags=["recordings"])
+
+
+def _lookup_transcription_job_id(
+    job_service: JobService,
+    recording_id: str,
+    status: str,
+) -> str | None:
+    if status != "transcribing":
+        return None
+    active_job = job_service.get_active_job_for_result(recording_id, "transcription")
+    return active_job.id if active_job else None
 
 
 @router.post("", response_model=CreateRecordingResponse)
@@ -63,11 +80,22 @@ def start_transcription(
 @router.get("", response_model=RecordingListResponse)
 def list_recordings(
     service: RecordingService = Depends(get_recording_service),
+    job_service: JobService = Depends(get_job_service),
 ) -> RecordingListResponse:
-    items = [
-        to_recording_summary(item.recording, item.duration_seconds)
-        for item in service.list_with_durations()
-    ]
+    items = []
+    for item in service.list_with_durations():
+        status = normalize_recording_status(item.recording.status)
+        items.append(
+            to_recording_summary(
+                item.recording,
+                item.duration_seconds,
+                transcription_job_id=_lookup_transcription_job_id(
+                    job_service,
+                    item.recording.id,
+                    status,
+                ),
+            )
+        )
     return RecordingListResponse(items=items)
 
 
@@ -75,8 +103,18 @@ def list_recordings(
 def get_recording(
     recording_id: str,
     service: RecordingService = Depends(get_recording_service),
+    job_service: JobService = Depends(get_job_service),
 ) -> RecordingResponse:
-    return to_recording_response(service.get_recording(recording_id))
+    recording = service.get_recording(recording_id)
+    status = normalize_recording_status(recording.status)
+    return to_recording_response(
+        recording,
+        transcription_job_id=_lookup_transcription_job_id(
+            job_service,
+            recording_id,
+            status,
+        ),
+    )
 
 
 @router.patch("/{recording_id}", response_model=UpdateRecordingResponse)

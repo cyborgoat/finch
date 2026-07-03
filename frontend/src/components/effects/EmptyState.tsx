@@ -9,16 +9,26 @@ type EmptyStateProps = {
   description?: string
   action?: ReactNode
   className?: string
+  bordered?: boolean
 }
 
-export function EmptyState({ title, description, action, className }: EmptyStateProps) {
+export function EmptyState({
+  title,
+  description,
+  action,
+  className,
+  bordered = true,
+}: EmptyStateProps) {
   return (
     <motion.div
       initial={fadeUp.initial}
       animate={fadeUp.animate}
       transition={{ duration: MOTION_DURATION, ease: MOTION_EASE }}
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-10 text-center",
+        "flex flex-col items-center justify-center px-6 py-10 text-center",
+        bordered
+          ? "rounded-xl border border-dashed border-border bg-muted/20"
+          : "bg-transparent",
         className,
       )}
     >

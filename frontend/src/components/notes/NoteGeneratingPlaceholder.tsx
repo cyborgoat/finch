@@ -1,5 +1,4 @@
 import { JobProgress } from "@/components/jobs/JobProgress"
-import { TextShimmer } from "@/components/motion-primitives/text-shimmer"
 import { useTranslation } from "react-i18next"
 import type { Job } from "@/lib/types"
 
@@ -17,18 +16,12 @@ export function NoteGeneratingPlaceholder({
   const { t } = useTranslation()
 
   return (
-    <div className="mdx-note-editor flex min-h-[520px] flex-col justify-center gap-6 rounded-lg border border-border bg-background p-8">
-      <div className="mx-auto max-w-md space-y-2 text-center">
-        <p className="text-sm font-medium">
-          <TextShimmer>
-            {t("notes.generatingTitle", { title: templateTitle })}
-          </TextShimmer>
-        </p>
-        <p className="text-sm text-muted-foreground">{t("notes.generatingHint")}</p>
-      </div>
-      <div className="mx-auto w-full max-w-md">
-        <JobProgress job={job} error={error} />
-      </div>
+    <div className="flex min-h-[320px] flex-col justify-center gap-4 p-6 sm:p-8">
+      <p className="text-center text-sm text-muted-foreground">
+        {t("notes.generatingTitle", { title: templateTitle })}
+      </p>
+      <JobProgress job={job} error={error} jobType="ai_action" />
+      <p className="text-center text-xs text-muted-foreground">{t("notes.generatingHint")}</p>
     </div>
   )
 }

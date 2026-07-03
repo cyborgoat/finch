@@ -6,38 +6,48 @@ function finiteDuration(value: number | undefined | null): number {
   return value
 }
 
+type PlaybackState = {
+  src: string
+  isPlaying: boolean
+  currentTime: number
+  duration: number
+  isReady: boolean
+}
+
 export function useRecordingPlayback(
   audioAssetId: string,
   knownDurationSeconds?: number | null,
 ) {
   const audioRef = useRef<HTMLAudioElement>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(() =>
-    finiteDuration(knownDurationSeconds),
-  )
-  const [isReady, setIsReady] = useState(() =>
-    finiteDuration(knownDurationSeconds) > 0,
-  )
+  const src = audioAssetId ? getAudioStreamUrl(audioAssetId) : ""
+  const knownDuration = finiteDuration(knownDurationSeconds)
+
+  const [playback, setPlayback] = useState<PlaybackState>(() => ({
+    src,
+    isPlaying: false,
+    currentTime: 0,
+    duration: knownDuration,
+    isReady: knownDuration > 0,
+  }))
   const [playbackRate, setPlaybackRateState] = useState<PlaybackRate>(1)
 
-  const src = audioAssetId ? getAudioStreamUrl(audioAssetId) : ""
+  if (src !== playback.src) {
+    setPlayback({
+      src,
+      isPlaying: false,
+      currentTime: 0,
+      duration: knownDuration,
+      isReady: knownDuration > 0,
+    })
+  } else if (knownDuration > 0 && playback.duration === 0) {
+    setPlayback((prev) => ({
+      ...prev,
+      duration: knownDuration,
+      isReady: true,
+    }))
+  }
 
-  useEffect(() => {
-    setIsPlaying(false)
-    setCurrentTime(0)
-    const fallback = finiteDuration(knownDurationSeconds)
-    setDuration(fallback)
-    setIsReady(fallback > 0)
-  }, [src, knownDurationSeconds])
-
-  useEffect(() => {
-    const fallback = finiteDuration(knownDurationSeconds)
-    if (fallback > 0) {
-      setDuration((prev) => (prev > 0 ? prev : fallback))
-      setIsReady(true)
-    }
-  }, [knownDurationSeconds])
+  const { isPlaying, currentTime, duration, isReady } = playback
 
   useEffect(() => {
     const audio = audioRef.current
@@ -50,8 +60,7 @@ export function useRecordingPlayback(
     if (!audio) return 0
     const fromElement = finiteDuration(audio.duration)
     if (fromElement > 0) {
-      setDuration(fromElement)
-      setIsReady(true)
+      setPlayback((prev) => ({ ...prev, duration: fromElement, isReady: true }))
     }
     return fromElement
   }, [])
@@ -78,7 +87,7 @@ export function useRecordingPlayback(
       const max = maxDuration()
       const clamped = Math.max(0, Math.min(time, max || time))
       audio.currentTime = clamped
-      setCurrentTime(clamped)
+      setPlayback((prev) => ({ ...prev, currentTime: clamped }))
     },
     [maxDuration],
   )
@@ -89,7 +98,7 @@ export function useRecordingPlayback(
       const audio = audioRef.current
       if (!audio) return
       void audio.play().catch(() => {
-        setIsPlaying(false)
+        setPlayback((prev) => ({ ...prev, isPlaying: false }))
       })
     },
     [seek],
@@ -100,7 +109,7 @@ export function useRecordingPlayback(
     if (!audio) return
     if (audio.paused) {
       void audio.play().catch(() => {
-        setIsPlaying(false)
+        setPlayback((prev) => ({ ...prev, isPlaying: false }))
       })
     } else {
       audio.pause()
@@ -110,12 +119,12 @@ export function useRecordingPlayback(
   const handleTimeUpdate = useCallback(() => {
     const audio = audioRef.current
     if (!audio) return
-    setCurrentTime(audio.currentTime)
+    setPlayback((prev) => ({ ...prev, currentTime: audio.currentTime }))
   }, [])
 
   const markReady = useCallback(() => {
     syncDurationFromElement()
-    setIsReady(true)
+    setPlayback((prev) => ({ ...prev, isReady: true }))
   }, [syncDurationFromElement])
 
   const handleLoadedMetadata = useCallback(() => {
@@ -131,17 +140,16 @@ export function useRecordingPlayback(
   }, [syncDurationFromElement])
 
   const handlePlay = useCallback(() => {
-    setIsPlaying(true)
+    setPlayback((prev) => ({ ...prev, isPlaying: true }))
     markReady()
   }, [markReady])
 
   const handlePause = useCallback(() => {
-    setIsPlaying(false)
+    setPlayback((prev) => ({ ...prev, isPlaying: false }))
   }, [])
 
   const handleEnded = useCallback(() => {
-    setIsPlaying(false)
-    setCurrentTime(0)
+    setPlayback((prev) => ({ ...prev, isPlaying: false, currentTime: 0 }))
   }, [])
 
   const handleSeekInput = useCallback(

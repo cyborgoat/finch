@@ -51,14 +51,15 @@ export function VoiceprintEnrollmentDialog({
               : t("voiceprints.enrollmentDialogDescription")}
           </DialogDescription>
         </DialogHeader>
-        <VoiceprintEnrollmentPanel
-          {...panelProps}
-          open={open}
-          inDialog
-          forUserProfile={forUserProfile}
-          onEnrolled={handleEnrolled}
-          onCancel={() => onOpenChange(false)}
-        />
+        {open ? (
+          <VoiceprintEnrollmentPanel
+            {...panelProps}
+            inDialog
+            forUserProfile={forUserProfile}
+            onEnrolled={handleEnrolled}
+            onCancel={() => onOpenChange(false)}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   )
