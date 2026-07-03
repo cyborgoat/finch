@@ -259,7 +259,7 @@ export function RecordingNotesTab({
       ) : null}
 
       {showGeneratingPlaceholder ? (
-        <div className="surface-card overflow-hidden p-0">
+        <div className="surface-card overflow-hidden border-0 p-0">
           <NoteGeneratingPlaceholder
             templateTitle={activeNote?.title ?? t("common.note")}
             job={generationJob}
@@ -279,7 +279,7 @@ export function RecordingNotesTab({
       ) : noteLoading ? (
         <Skeleton className="min-h-[520px] w-full rounded-xl" />
       ) : activeNote ? (
-        <div className="surface-card overflow-hidden p-0">
+        <div className="surface-card overflow-hidden border-0 p-0">
           <MdxNoteEditor
             key={activeNote.id}
             note={activeNote}

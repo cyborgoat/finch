@@ -196,7 +196,7 @@ export function RecordingDetailLayout({
 
   return (
     <div className="section-stack">
-      <Tabs value={activeTab} onValueChange={setTab} className="section-stack">
+      <Tabs value={activeTab} onValueChange={setTab} className="gap-0">
         <TabsList variant="line" className="w-full justify-start border-b border-border pb-0">
           <TabsTrigger value="source" className="px-4 pb-3">
             {t("nav.source")}
@@ -211,9 +211,11 @@ export function RecordingDetailLayout({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="source" className="mt-0 pt-6">
+        <TabsContent value="source" className="mt-0 pt-3">
           <BlurFade>
             <RecordingSourceCard
+              className="border-0"
+              audioClassName="p-3 sm:p-4"
               audio={
                 <RecordingPageAudio
                   audioAssetId={recording.audioAssetId}
@@ -239,7 +241,7 @@ export function RecordingDetailLayout({
           </BlurFade>
         </TabsContent>
 
-        <TabsContent value="notes" className="mt-0 pt-6">
+        <TabsContent value="notes" className="mt-0 pt-3">
           <RecordingNotesTab
             recordingId={recording.id}
             notes={noteSummaries}

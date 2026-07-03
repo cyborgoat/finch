@@ -80,10 +80,7 @@ function SegmentTurn({
   return (
     <div
       ref={turnRef}
-      className={cn(
-        "scroll-mt-24 scroll-mb-24 rounded-sm px-2 py-1.5 transition-colors",
-        isActive && "bg-primary/8",
-      )}
+      className="scroll-mt-24 scroll-mb-24 rounded-sm px-2 py-1.5 transition-colors"
     >
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         {speakerLabel}
@@ -104,7 +101,14 @@ function SegmentTurn({
           )
         ) : null}
       </div>
-      <p className="mt-0.5 text-xs leading-snug text-foreground/90">{segment.text}</p>
+      <p
+        className={cn(
+          "mt-0.5 text-xs leading-snug transition-colors",
+          isActive ? "text-foreground" : "text-foreground/35",
+        )}
+      >
+        {segment.text}
+      </p>
     </div>
   )
 }

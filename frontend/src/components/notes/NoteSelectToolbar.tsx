@@ -50,7 +50,7 @@ export function NoteSelectToolbar({
           onValueChange={onNoteSelect}
           items={noteItems}
         >
-          <SelectTrigger className="h-9 w-full">
+          <SelectTrigger className="h-8 w-full text-sm">
             <SelectValue placeholder={t("notes.selectNote")} />
           </SelectTrigger>
           <SelectContent
@@ -72,12 +72,12 @@ export function NoteSelectToolbar({
             <Button
               type="button"
               variant="outline"
-              size="icon"
-              className="size-9 shrink-0"
+              size="icon-sm"
+              className="shrink-0"
               aria-label={t("notes.actionsAriaLabel")}
               disabled={!activeNoteId || actionsDisabled}
             >
-              <MoreHorizontal className="size-4" />
+              <MoreHorizontal className="size-3.5" />
             </Button>
           }
         />
@@ -100,12 +100,12 @@ export function NoteSelectToolbar({
       <Button
         type="button"
         variant="outline"
-        size="icon"
-        className="size-9 shrink-0"
+        size="icon-sm"
+        className="shrink-0"
         aria-label={t("notes.newNoteAriaLabel")}
         onClick={onCreate}
       >
-        <Plus className="size-4" />
+        <Plus className="size-3.5" />
       </Button>
     </div>
   )

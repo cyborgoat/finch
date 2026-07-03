@@ -16,8 +16,8 @@ export function NoteGeneratingPlaceholder({
   const { t } = useTranslation()
 
   return (
-    <div className="flex min-h-[320px] flex-col justify-center gap-4 p-6 sm:p-8">
-      <p className="text-center text-sm text-muted-foreground">
+    <div className="flex min-h-[240px] flex-col justify-center gap-3 p-3 sm:p-4">
+      <p className="text-center text-xs text-muted-foreground">
         {t("notes.generatingTitle", { title: templateTitle })}
       </p>
       <CompactJobProgress job={job} error={error} jobType="ai_action" />

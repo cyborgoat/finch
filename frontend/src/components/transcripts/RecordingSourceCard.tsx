@@ -5,16 +5,20 @@ type RecordingSourceCardProps = {
   audio: ReactNode
   children: ReactNode
   bodyClassName?: string
+  audioClassName?: string
+  className?: string
 }
 
 export function RecordingSourceCard({
   audio,
   children,
   bodyClassName,
+  audioClassName,
+  className,
 }: RecordingSourceCardProps) {
   return (
-    <div className="surface-card overflow-hidden p-0">
-      <div className="p-4 sm:p-6">{audio}</div>
+    <div className={cn("surface-card overflow-hidden p-0", className)}>
+      <div className={cn("p-4 sm:p-6", audioClassName)}>{audio}</div>
       <div className={cn("surface-divider", bodyClassName)}>{children}</div>
     </div>
   )

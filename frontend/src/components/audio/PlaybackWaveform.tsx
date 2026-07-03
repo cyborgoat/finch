@@ -250,7 +250,8 @@ export function PlaybackWaveform({
       onPointerCancel={handlePointerUp}
       onKeyDown={handleKeyDown}
       className={cn(
-        "relative h-20 w-full overflow-hidden rounded-lg",
+        "relative w-full overflow-hidden rounded-lg",
+        embedded ? "h-12" : "h-20",
         embedded ? waveformContainerClass("embedded") : waveformContainerClass("card"),
         disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer touch-none",
         className,

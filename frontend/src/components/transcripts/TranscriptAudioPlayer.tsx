@@ -74,11 +74,12 @@ export function RecordingAudioPlayer({
   const { t } = useTranslation()
   const max = duration > 0 ? duration : 0
   const canControl = Boolean(src) && (isReady || max > 0)
+  const isEmbedded = variant === "embedded"
 
   return (
     <div
       className={cn(
-        variant === "card" ? "surface-card space-y-4 p-4" : "space-y-4",
+        isEmbedded ? "space-y-2" : "surface-card space-y-4 p-4",
         className,
       )}
     >
@@ -97,28 +98,45 @@ export function RecordingAudioPlayer({
       />
 
       {filename ? (
-        <p className="truncate text-center text-xs text-muted-foreground">{filename}</p>
+        <p
+          className={cn(
+            "truncate text-center text-muted-foreground",
+            isEmbedded ? "text-[10px]" : "text-xs",
+          )}
+        >
+          {filename}
+        </p>
       ) : null}
 
-      <div className="space-y-2">
+      <div className={isEmbedded ? "space-y-1" : "space-y-2"}>
         <PlaybackWaveform
           src={src}
           audioRef={audioRef}
           isPlaying={isPlaying}
           currentTime={currentTime}
           duration={max}
-          embedded={variant === "embedded"}
+          embedded={isEmbedded}
           disabled={!canControl || max <= 0}
           onSeek={onSeekInput}
           aria-label={t("common.seekAriaLabel")}
         />
-        <div className="flex items-center justify-between font-mono text-xs tabular-nums text-muted-foreground">
+        <div
+          className={cn(
+            "flex items-center justify-between font-mono tabular-nums text-muted-foreground",
+            isEmbedded ? "text-[10px]" : "text-xs",
+          )}
+        >
           <span>{formatPlaybackTime(currentTime)}</span>
           <span>{max > 0 ? formatPlaybackTime(max) : "0:00"}</span>
         </div>
       </div>
 
-      <div className="relative flex items-center justify-center gap-2 sm:gap-3">
+      <div
+        className={cn(
+          "relative flex items-center justify-center",
+          isEmbedded ? "gap-1.5" : "gap-2 sm:gap-3",
+        )}
+      >
         <Tooltip>
           <TooltipTrigger
             render={
@@ -126,12 +144,12 @@ export function RecordingAudioPlayer({
                 <Button
                   type="button"
                   variant="outline"
-                  size="icon"
+                  size={isEmbedded ? "icon-sm" : "icon"}
                   onClick={onSkipBackward}
                   disabled={!canControl}
                   aria-label={t("common.backSeconds", { seconds: PLAYBACK_SKIP_SECONDS })}
                 >
-                  <RotateCcw className="size-4" />
+                  <RotateCcw className={isEmbedded ? "size-3.5" : "size-4"} />
                 </Button>
               </span>
             }
@@ -148,13 +166,17 @@ export function RecordingAudioPlayer({
                 <Button
                   type="button"
                   variant="secondary"
-                  size="icon-lg"
+                  size={isEmbedded ? "icon" : "icon-lg"}
                   onClick={onTogglePlay}
                   aria-label={isPlaying ? t("common.pause") : t("common.play")}
                   disabled={!src}
-                  className="size-11 rounded-full"
+                  className={cn("rounded-full", isEmbedded ? "size-8" : "size-11")}
                 >
-                  {isPlaying ? <Pause className="size-5" /> : <Play className="size-5" />}
+                  {isPlaying ? (
+                    <Pause className={isEmbedded ? "size-3.5" : "size-5"} />
+                  ) : (
+                    <Play className={isEmbedded ? "size-3.5" : "size-5"} />
+                  )}
                 </Button>
               </span>
             }
@@ -171,12 +193,12 @@ export function RecordingAudioPlayer({
                 <Button
                   type="button"
                   variant="outline"
-                  size="icon"
+                  size={isEmbedded ? "icon-sm" : "icon"}
                   onClick={onSkipForward}
                   disabled={!canControl}
                   aria-label={t("common.forwardSeconds", { seconds: PLAYBACK_SKIP_SECONDS })}
                 >
-                  <RotateCw className="size-4" />
+                  <RotateCw className={isEmbedded ? "size-3.5" : "size-4"} />
                 </Button>
               </span>
             }
@@ -186,8 +208,13 @@ export function RecordingAudioPlayer({
           </TooltipContent>
         </Tooltip>
 
-        <div className="absolute right-0 flex items-center gap-2">
-          <span className="hidden text-xs text-muted-foreground sm:inline">
+        <div className={cn("absolute right-0 flex items-center", isEmbedded ? "gap-1" : "gap-2")}>
+          <span
+            className={cn(
+              "hidden text-muted-foreground sm:inline",
+              isEmbedded ? "text-[10px]" : "text-xs",
+            )}
+          >
             {t("common.speed")}
           </span>
           <DropdownMenu>
@@ -196,18 +223,23 @@ export function RecordingAudioPlayer({
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
+                  size={isEmbedded ? "xs" : "sm"}
                   className="gap-1"
                   disabled={!canControl}
                   aria-label={t("common.playbackSpeedAria", {
                     rate: formatPlaybackRate(playbackRate),
                   })}
                 >
-                  <span className="text-xs text-muted-foreground sm:hidden">
+                  <span
+                    className={cn(
+                      "text-muted-foreground sm:hidden",
+                      isEmbedded ? "text-[10px]" : "text-xs",
+                    )}
+                  >
                     {t("common.speed")}
                   </span>
                   {formatPlaybackRate(playbackRate)}
-                  <ChevronDown className="size-3.5 opacity-60" />
+                  <ChevronDown className={cn("opacity-60", isEmbedded ? "size-3" : "size-3.5")} />
                 </Button>
               }
             />

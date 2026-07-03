@@ -149,7 +149,7 @@ function MdxNoteEditorInner({
       <div
         className={cn(
           "flex flex-wrap items-center justify-between gap-3",
-          embedded && "border-b border-border px-4 py-3 sm:px-6",
+          embedded && "px-3 py-2 sm:px-4",
         )}
       >
         {!hideTitle ? (
@@ -168,14 +168,20 @@ function MdxNoteEditorInner({
         ) : (
           <div className="min-w-0 flex-1" />
         )}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Switch
               id={`auto-save-${note.id}`}
               checked={autoSave}
               onCheckedChange={handleAutoSaveToggle}
             />
-            <Label htmlFor={`auto-save-${note.id}`} className="text-sm text-muted-foreground">
+            <Label
+              htmlFor={`auto-save-${note.id}`}
+              className={cn(
+                "text-muted-foreground",
+                embedded ? "text-xs" : "text-sm",
+              )}
+            >
               {t("notes.editorAutoSave")}
             </Label>
           </div>
@@ -194,23 +200,20 @@ function MdxNoteEditorInner({
           {!autoSave ? (
             <Button
               type="button"
-              size="sm"
+              size={embedded ? "xs" : "sm"}
               onClick={handleManualSave}
               disabled={updateMutation.isPending || (!dirty && saveStatus !== "unsaved")}
             >
               {t("common.save")}
             </Button>
           ) : null}
-          <span className="text-xs text-muted-foreground">{statusLabel}</span>
+          <span className={cn("text-muted-foreground", embedded ? "text-[10px]" : "text-xs")}>
+            {statusLabel}
+          </span>
         </div>
       </div>
 
-      <div
-        className={cn(
-          "mdx-note-editor overflow-hidden bg-background",
-          !embedded && "rounded-lg border border-border",
-        )}
-      >
+      <div className="mdx-note-editor overflow-hidden rounded-lg border border-border bg-background">
         <Suspense
           fallback={<Skeleton className="min-h-[480px] w-full rounded-lg" />}
         >
@@ -218,7 +221,10 @@ function MdxNoteEditorInner({
             key={note.id}
             markdown={note.markdown}
             onChange={handleMarkdownChange}
-            contentEditableClassName="mdx-note-content min-h-[480px] px-4 py-3 text-sm leading-relaxed"
+            contentEditableClassName={cn(
+              "mdx-note-content min-h-[480px] text-sm leading-relaxed",
+              embedded ? "px-3 py-2 sm:px-4" : "px-4 py-3",
+            )}
           />
         </Suspense>
       </div>
