@@ -259,7 +259,16 @@
     "editorDeleteAriaLabel": "Delete note",
     "editorStatusSaved": "Saved",
     "editorStatusUnsaved": "Unsaved changes",
-    "untitledNote": "Untitled note"
+    "untitledNote": "Untitled note",
+    "backToNotes": "Back to notes",
+    "discardBackTitle": "Discard unsaved changes?",
+    "discardBackDescription": "You have unsaved edits. Leave this note without saving?",
+    "updatedAt": "Updated {{date}}",
+    "cardActionsAriaLabel": "Note card actions",
+    "noteCount_one": "{{count}} note",
+    "noteCount_other": "{{count}} notes",
+    "statusGenerating": "Generating",
+    "statusFailed": "Failed"
   },
   "templates": {
     "meeting_summary": {

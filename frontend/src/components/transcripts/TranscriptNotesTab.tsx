@@ -2,14 +2,14 @@ import { Link } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { ChevronLeft, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { BlurFade } from "@/components/motion-primitives/blur-fade";
 import { EmptyState } from "@/components/effects/EmptyState";
 import { MdxNoteEditor } from "@/components/documents/MdxNoteEditor";
 import { CreateNoteDialog } from "@/components/notes/CreateNoteDialog";
+import { NoteCardGrid } from "@/components/notes/NoteCardGrid";
 import { NoteDialogs } from "@/components/notes/NoteDialogs";
-import { NoteSelectToolbar } from "@/components/notes/NoteSelectToolbar";
 import { NoteGeneratingPlaceholder } from "@/components/notes/NoteGeneratingPlaceholder";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,6 +30,8 @@ type RecordingNotesTabProps = {
   onNoteIdChange?: (noteId: string | null) => void;
 };
 
+type DiscardMode = "switch" | "back";
+
 export function RecordingNotesTab({
   recordingId,
   notes: noteSummaries = [],
@@ -43,16 +45,20 @@ export function RecordingNotesTab({
   const queryClient = useQueryClient();
   const { preferences } = useUserPreferences();
   const deleteMutation = useDeleteNote();
-  const updateMutation = useUpdateNote(activeNoteId ?? "");
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameTitle, setRenameTitle] = useState("");
   const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
+  const [discardMode, setDiscardMode] = useState<DiscardMode>("switch");
   const [pendingNoteId, setPendingNoteId] = useState<string | null>(null);
+  const [targetNoteId, setTargetNoteId] = useState<string | null>(null);
   const [editorDirty, setEditorDirty] = useState(false);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [creatingBlank, setCreatingBlank] = useState(false);
+
+  const editNoteId = targetNoteId ?? activeNoteId ?? "";
+  const updateMutation = useUpdateNote(editNoteId);
 
   const generatingJobId =
     activeNote?.status === "generating" ? activeNote.generationJobId ?? null : null;
@@ -60,20 +66,20 @@ export function RecordingNotesTab({
   const handleGenerationCompleted = useCallback(async () => {
     if (activeNoteId) {
       try {
-        const note = await getNote(activeNoteId)
-        seedNoteInCache(queryClient, recordingId, note)
+        const note = await getNote(activeNoteId);
+        seedNoteInCache(queryClient, recordingId, note);
       } catch {
-        void queryClient.invalidateQueries({ queryKey: ["notes"] })
+        void queryClient.invalidateQueries({ queryKey: ["notes"] });
       }
     } else {
-      void queryClient.invalidateQueries({ queryKey: ["notes"] })
+      void queryClient.invalidateQueries({ queryKey: ["notes"] });
     }
-    void queryClient.invalidateQueries({ queryKey: ["recordings"] })
-    setEditorDirty(false)
+    void queryClient.invalidateQueries({ queryKey: ["recordings"] });
+    setEditorDirty(false);
     toast.success(
       t("toasts.noteReady", { title: activeNote?.title ?? t("common.note") }),
-    )
-  }, [activeNote?.title, activeNoteId, queryClient, recordingId, t])
+    );
+  }, [activeNote?.title, activeNoteId, queryClient, recordingId, t]);
 
   const handleGenerationFailed = useCallback(
     (failedJob: { error?: string | null }) => {
@@ -95,7 +101,7 @@ export function RecordingNotesTab({
   const showGeneratingPlaceholder =
     activeNote?.status === "generating" &&
     (!generationJob ||
-      (generationJob.status !== "completed" && generationJob.status !== "failed"))
+      (generationJob.status !== "completed" && generationJob.status !== "failed"));
   const showFailedPlaceholder = activeNote?.status === "failed";
 
   const notes = useMemo(
@@ -106,28 +112,23 @@ export function RecordingNotesTab({
     [noteSummaries],
   );
 
-  const noteItems = useMemo(
-    () =>
-      notes.map((note) => ({
-        value: note.id,
-        label:
-          note.status === "generating"
-            ? t("notes.generatingLabel", { title: note.title })
-            : note.status === "failed"
-              ? t("notes.failedLabel", { title: note.title })
-              : note.title,
-      })),
+  const noteActionsBusy =
+    deleteMutation.isPending || updateMutation.isPending;
+
+  const getNoteTitle = useCallback(
+    (noteId: string) => {
+      const summary = notes.find((note) => note.id === noteId);
+      return summary?.title ?? t("notes.untitledNote");
+    },
     [notes, t],
   );
 
-  const activeNoteSummary = notes.find((note) => note.id === activeNoteId);
-  const noteActionsBusy =
-    deleteMutation.isPending || updateMutation.isPending;
 
   const selectNote = useCallback(
     (noteId: string) => {
       if (noteId === activeNoteId) return;
       if (!preferences.notesAutoSave && editorDirty) {
+        setDiscardMode("switch");
         setPendingNoteId(noteId);
         setSwitchConfirmOpen(true);
         return;
@@ -135,22 +136,30 @@ export function RecordingNotesTab({
       onNoteIdChange?.(noteId);
       setEditorDirty(false);
     },
-    [
-      activeNoteId,
-      editorDirty,
-      onNoteIdChange,
-      preferences.notesAutoSave,
-    ],
+    [activeNoteId, editorDirty, onNoteIdChange, preferences.notesAutoSave],
   );
 
+  const handleBack = () => {
+    if (!preferences.notesAutoSave && editorDirty) {
+      setDiscardMode("back");
+      setSwitchConfirmOpen(true);
+      return;
+    }
+    onNoteIdChange?.(null);
+    setEditorDirty(false);
+  };
+
   const handleDelete = async () => {
-    if (!activeNoteId) return;
+    const noteIdToDelete = targetNoteId ?? activeNoteId;
+    if (!noteIdToDelete) return;
     try {
-      await deleteMutation.mutateAsync(activeNoteId);
+      await deleteMutation.mutateAsync(noteIdToDelete);
       toast.success(t("toasts.noteDeleted"));
-      const remaining = notes.filter((note) => note.id !== activeNoteId);
-      onNoteIdChange?.(remaining[0]?.id ?? null);
-      setEditorDirty(false);
+      if (noteIdToDelete === activeNoteId) {
+        onNoteIdChange?.(null);
+        setEditorDirty(false);
+      }
+      setTargetNoteId(null);
       setDeleteOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("toasts.deleteNoteFailed"));
@@ -197,26 +206,25 @@ export function RecordingNotesTab({
     }
   };
 
-  const handleNoteSelect = (noteId: string | null) => {
-    if (!noteId || noteId === activeNoteId) return;
-    selectNote(noteId);
+  const openRename = (noteId: string) => {
+    setTargetNoteId(noteId);
+    setRenameTitle(getNoteTitle(noteId));
+    setRenameOpen(true);
   };
 
-  const openRename = () => {
-    const title =
-      activeNote?.title ?? activeNoteSummary?.title ?? t("notes.untitledNote");
-    setRenameTitle(title);
-    setRenameOpen(true);
+  const openDelete = (noteId: string) => {
+    setTargetNoteId(noteId);
+    setDeleteOpen(true);
   };
 
   const handleRename = async () => {
     const trimmed = renameTitle.trim();
-    if (!activeNoteId || !trimmed) return;
+    if (!editNoteId || !trimmed) return;
 
-    const currentTitle =
-      activeNote?.title ?? activeNoteSummary?.title ?? t("notes.untitledNote");
+    const currentTitle = getNoteTitle(editNoteId);
     if (trimmed === currentTitle) {
       setRenameOpen(false);
+      setTargetNoteId(null);
       return;
     }
 
@@ -224,10 +232,32 @@ export function RecordingNotesTab({
       await updateMutation.mutateAsync({ title: trimmed });
       toast.success(t("toasts.noteRenamed"));
       setRenameOpen(false);
+      setTargetNoteId(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("toasts.renameNoteFailed"));
     }
   };
+
+  const handleDiscardConfirm = () => {
+    if (discardMode === "back") {
+      onNoteIdChange?.(null);
+      setEditorDirty(false);
+    } else if (pendingNoteId) {
+      onNoteIdChange?.(pendingNoteId);
+      setEditorDirty(false);
+    }
+    setPendingNoteId(null);
+    setSwitchConfirmOpen(false);
+  };
+
+  const discardTitle =
+    discardMode === "back" ? t("notes.discardBackTitle") : t("notes.discardTitle");
+  const discardDescription =
+    discardMode === "back"
+      ? t("notes.discardBackDescription")
+      : t("notes.discardDescription");
+
+  const isDetailView = !!activeNoteId;
 
   return (
     <BlurFade className="section-stack">
@@ -246,59 +276,81 @@ export function RecordingNotesTab({
         </div>
       ) : null}
 
-      {notes.length > 0 || activeNoteId ? (
-        <NoteSelectToolbar
-          activeNoteId={activeNoteId}
-          noteItems={noteItems}
-          actionsDisabled={noteActionsBusy || showGeneratingPlaceholder}
-          onNoteSelect={handleNoteSelect}
-          onRename={openRename}
-          onDelete={() => setDeleteOpen(true)}
-          onCreate={() => setCreateOpen(true)}
-        />
-      ) : null}
-
-      {showGeneratingPlaceholder ? (
-        <div className="surface-card overflow-hidden border-0 p-0">
-          <NoteGeneratingPlaceholder
-            templateTitle={activeNote?.title ?? t("common.note")}
-            job={generationJob}
-            error={generationError}
+      {!isDetailView ? (
+        notes.length > 0 ? (
+          <NoteCardGrid
+            notes={notes}
+            actionsDisabled={noteActionsBusy}
+            onSelect={selectNote}
+            onCreate={() => setCreateOpen(true)}
+            onRename={openRename}
+            onDelete={openDelete}
           />
-        </div>
-      ) : showFailedPlaceholder ? (
-        <EmptyState
-          title={t("notes.failedTitle")}
-          description={t("notes.failedDescription")}
-          action={
-            <Button type="button" variant="outline" onClick={() => setDeleteOpen(true)}>
-              {t("notes.deleteNote")}
-            </Button>
-          }
-        />
-      ) : noteLoading ? (
-        <Skeleton className="min-h-[520px] w-full rounded-xl" />
-      ) : activeNote ? (
-        <div className="surface-card overflow-hidden border-0 p-0">
-          <MdxNoteEditor
-            key={activeNote.id}
-            note={activeNote}
-            hideTitle
-            embedded
-            onDirtyChange={setEditorDirty}
+        ) : (
+          <EmptyState
+            title={t("notes.emptyTitle")}
+            description={t("notes.emptyDescription")}
+            action={
+              <Button type="button" onClick={() => setCreateOpen(true)}>
+                <Plus className="size-4" />
+                {t("notes.createNote")}
+              </Button>
+            }
           />
-        </div>
+        )
       ) : (
-        <EmptyState
-          title={t("notes.emptyTitle")}
-          description={t("notes.emptyDescription")}
-          action={
-            <Button type="button" onClick={() => setCreateOpen(true)}>
-              <Plus className="size-4" />
-              {t("notes.createNote")}
+        <>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="-ml-2"
+              onClick={handleBack}
+            >
+              <ChevronLeft className="size-4" />
+              {t("notes.backToNotes")}
             </Button>
-          }
-        />
+          </div>
+
+          {showGeneratingPlaceholder ? (
+            <div className="surface-card overflow-hidden border-0 p-0">
+              <NoteGeneratingPlaceholder
+                templateTitle={activeNote?.title ?? t("common.note")}
+                job={generationJob}
+                error={generationError}
+              />
+            </div>
+          ) : showFailedPlaceholder ? (
+            <EmptyState
+              title={t("notes.failedTitle")}
+              description={t("notes.failedDescription")}
+              action={
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => openDelete(activeNoteId)}
+                >
+                  {t("notes.deleteNote")}
+                </Button>
+              }
+            />
+          ) : noteLoading ? (
+            <Skeleton className="min-h-[520px] w-full rounded-xl" />
+          ) : activeNote ? (
+            <div className="surface-card overflow-hidden border-0 p-0">
+              <MdxNoteEditor
+                key={activeNote.id}
+                note={activeNote}
+                hideTitle
+                embedded
+                onDirtyChange={setEditorDirty}
+                onDelete={() => openDelete(activeNote.id)}
+                deletePending={deleteMutation.isPending}
+              />
+            </div>
+          ) : null}
+        </>
       )}
 
       <CreateNoteDialog
@@ -313,25 +365,26 @@ export function RecordingNotesTab({
 
       <NoteDialogs
         renameOpen={renameOpen}
-        onRenameOpenChange={setRenameOpen}
+        onRenameOpenChange={(open) => {
+          setRenameOpen(open);
+          if (!open) setTargetNoteId(null);
+        }}
         renameTitle={renameTitle}
         onRenameTitleChange={setRenameTitle}
         renamePending={updateMutation.isPending}
         onRename={() => void handleRename()}
         deleteOpen={deleteOpen}
-        onDeleteOpenChange={setDeleteOpen}
+        onDeleteOpenChange={(open) => {
+          setDeleteOpen(open);
+          if (!open) setTargetNoteId(null);
+        }}
         deletePending={deleteMutation.isPending}
         onDelete={() => void handleDelete()}
         switchConfirmOpen={switchConfirmOpen}
         onSwitchConfirmOpenChange={setSwitchConfirmOpen}
-        onSwitchConfirm={() => {
-          if (pendingNoteId) {
-            onNoteIdChange?.(pendingNoteId);
-            setEditorDirty(false);
-          }
-          setPendingNoteId(null);
-          setSwitchConfirmOpen(false);
-        }}
+        onSwitchConfirm={handleDiscardConfirm}
+        discardTitle={discardTitle}
+        discardDescription={discardDescription}
       />
     </BlurFade>
   );

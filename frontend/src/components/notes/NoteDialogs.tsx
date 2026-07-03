@@ -35,6 +35,8 @@ type NoteDialogsProps = {
   switchConfirmOpen: boolean
   onSwitchConfirmOpenChange: (open: boolean) => void
   onSwitchConfirm: () => void
+  discardTitle?: string
+  discardDescription?: string
 }
 
 export function NoteDialogs({
@@ -51,6 +53,8 @@ export function NoteDialogs({
   switchConfirmOpen,
   onSwitchConfirmOpenChange,
   onSwitchConfirm,
+  discardTitle,
+  discardDescription,
 }: NoteDialogsProps) {
   const { t } = useTranslation()
 
@@ -115,8 +119,12 @@ export function NoteDialogs({
       <AlertDialog open={switchConfirmOpen} onOpenChange={onSwitchConfirmOpenChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("notes.discardTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("notes.discardDescription")}</AlertDialogDescription>
+            <AlertDialogTitle>
+              {discardTitle ?? t("notes.discardTitle")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {discardDescription ?? t("notes.discardDescription")}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("notes.discardKeepEditing")}</AlertDialogCancel>

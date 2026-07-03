@@ -259,7 +259,16 @@
     "editorDeleteAriaLabel": "删除笔记",
     "editorStatusSaved": "已保存",
     "editorStatusUnsaved": "未保存的更改",
-    "untitledNote": "未命名笔记"
+    "untitledNote": "未命名笔记",
+    "backToNotes": "返回笔记列表",
+    "discardBackTitle": "放弃未保存的更改？",
+    "discardBackDescription": "您有未保存的编辑。是否不保存就离开此笔记？",
+    "updatedAt": "更新于 {{date}}",
+    "cardActionsAriaLabel": "笔记卡片操作",
+    "noteCount_one": "{{count}} 篇笔记",
+    "noteCount_other": "{{count}} 篇笔记",
+    "statusGenerating": "生成中",
+    "statusFailed": "失败"
   },
   "templates": {
     "meeting_summary": {

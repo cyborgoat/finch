@@ -6,12 +6,14 @@ import type { TFunction } from "i18next"
 import { cn } from "@/lib/utils"
 import { parseRecordingDetailTab } from "@/lib/recordingDetailTabs"
 import { resolveRecordingKind } from "@/lib/recordings"
+import { notesQuery } from "@/lib/queries/notes"
 import { recordingQuery } from "@/lib/queries/recordings"
 
 type Crumb = {
   label: string
   to?: string
   params?: { id: string }
+  search?: Record<string, unknown>
 }
 
 function useRecordingTitle(id: string | undefined) {
@@ -24,19 +26,36 @@ function useRecordingTitle(id: string | undefined) {
   return recording.data?.title?.trim() || undefined
 }
 
-function useRecordingDetailTab() {
+function useRecordingDetailSearch() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const search = useRouterState({ select: (state) => state.location.search })
 
   if (!pathname.startsWith("/recordings/")) {
-    return "source" as const
+    return { tab: "source" as const, noteId: undefined as string | undefined }
   }
 
-  if (typeof search === "object" && search !== null && "tab" in search) {
-    return parseRecordingDetailTab((search as { tab?: unknown }).tab)
+  if (typeof search === "object" && search !== null) {
+    const typed = search as { tab?: unknown; noteId?: unknown }
+    return {
+      tab: parseRecordingDetailTab(typed.tab),
+      noteId:
+        typeof typed.noteId === "string" && typed.noteId.trim()
+          ? typed.noteId.trim()
+          : undefined,
+    }
   }
 
-  return "source" as const
+  return { tab: "source" as const, noteId: undefined as string | undefined }
+}
+
+function useNoteSummaryTitle(recordingId: string | undefined, noteId: string | undefined) {
+  const notes = useQuery({
+    ...notesQuery(recordingId),
+    enabled: Boolean(recordingId && noteId),
+  })
+
+  if (!noteId) return undefined
+  return notes.data?.items.find((note) => note.id === noteId)?.title
 }
 
 function buildCrumbs(
@@ -44,7 +63,9 @@ function buildCrumbs(
   pathname: string,
   id: string | undefined,
   recordTitle: string | undefined,
-  tab: ReturnType<typeof useRecordingDetailTab>,
+  tab: ReturnType<typeof parseRecordingDetailTab>,
+  noteId: string | undefined,
+  noteTitle: string | undefined,
 ): Crumb[] {
   if (pathname === "/") {
     return [{ label: t("nav.home") }]
@@ -62,7 +83,19 @@ function buildCrumbs(
       },
     ]
     if (tab === "notes") {
-      crumbs.push({ label: t("nav.notes") })
+      if (noteId) {
+        crumbs.push({
+          label: t("nav.notes"),
+          to: "/recordings/$id",
+          params: { id },
+          search: { tab: "notes" },
+        })
+        crumbs.push({
+          label: noteTitle?.trim() || t("notes.untitledNote"),
+        })
+      } else {
+        crumbs.push({ label: t("nav.notes") })
+      }
     }
     return crumbs
   }
@@ -78,8 +111,9 @@ export function NavBreadcrumb() {
   const params = useParams({ strict: false })
   const id = typeof params.id === "string" ? params.id : undefined
   const recordTitle = useRecordingTitle(id)
-  const tab = useRecordingDetailTab()
-  const crumbs = buildCrumbs(t, pathname, id, recordTitle, tab)
+  const { tab, noteId } = useRecordingDetailSearch()
+  const noteTitle = useNoteSummaryTitle(id, noteId)
+  const crumbs = buildCrumbs(t, pathname, id, recordTitle, tab, noteId, noteTitle)
 
   return (
     <nav aria-label={t("nav.breadcrumbAriaLabel")} className="flex min-w-0 items-center gap-1.5 text-sm">
@@ -98,6 +132,7 @@ export function NavBreadcrumb() {
               <Link
                 to={crumb.to}
                 params={crumb.params}
+                search={crumb.search}
                 className="truncate text-muted-foreground transition-colors hover:text-foreground"
               >
                 {crumb.label}

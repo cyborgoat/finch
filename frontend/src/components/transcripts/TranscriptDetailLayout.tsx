@@ -89,8 +89,8 @@ export function RecordingDetailLayout({
     if (noteId) {
       return noteId
     }
-    return notes[0]?.id ?? null
-  }, [noteId, notes, pendingNoteId])
+    return null
+  }, [noteId, pendingNoteId])
 
   useEffect(() => {
     if (noteId && pendingSelectionRef.current === noteId) {
@@ -99,36 +99,15 @@ export function RecordingDetailLayout({
     }
   }, [noteId])
 
-  useEffect(() => {
-    if (
-      activeTab === "notes" &&
-      activeNoteId &&
-      !noteId &&
-      !pendingNoteId
-    ) {
-      void navigate({
-        search: recordingDetailTabSearch("notes", activeNoteId),
-        replace: true,
-      })
-    }
-  }, [activeNoteId, activeTab, navigate, noteId, pendingNoteId])
-
   const setTab = useCallback(
     (value: string) => {
       const nextTab = value as RecordingDetailTab
-      if (nextTab === "notes" && activeNoteId) {
-        void navigate({
-          search: recordingDetailTabSearch("notes", activeNoteId),
-          replace: true,
-        })
-        return
-      }
       void navigate({
         search: recordingDetailTabSearch(nextTab),
         replace: true,
       })
     },
-    [activeNoteId, navigate],
+    [navigate],
   )
 
   const setSelectedNoteId = useCallback(
