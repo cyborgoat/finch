@@ -203,12 +203,14 @@ export function FullTranscriptPanel({
     )
   }
 
+  const contentPadding = variant === "embedded" ? "p-0" : "p-3"
+
   const transcriptBody = (
     <>
       {segments.length > 0 ? (
         useVirtualList ? (
           <div
-            className="relative w-full p-3"
+            className={cn("relative w-full", contentPadding)}
             style={{ height: `${virtualizer.getTotalSize()}px` }}
           >
             {virtualizer.getVirtualItems().map((virtualRow) => {
@@ -227,7 +229,7 @@ export function FullTranscriptPanel({
             })}
           </div>
         ) : (
-          <div className="space-y-1 p-3">
+          <div className={cn(variant === "embedded" ? "space-y-1" : "space-y-1 p-3")}>
             {segments.map((segment, index) =>
               renderSegment(segment, index, (element) => {
                 turnRefs.current[index] = element
@@ -236,7 +238,7 @@ export function FullTranscriptPanel({
           </div>
         )
       ) : (
-        <pre className="whitespace-pre-wrap p-3 text-xs leading-snug text-foreground/90">
+        <pre className={cn("whitespace-pre-wrap text-xs leading-snug text-foreground/90", contentPadding)}>
           {text}
         </pre>
       )}
@@ -248,7 +250,7 @@ export function FullTranscriptPanel({
       {variant === "embedded" ? (
         <div
           ref={scrollParentRef}
-          className="h-96 overflow-y-auto px-4 py-3 sm:px-6"
+          className="h-96 overflow-y-auto p-1.5"
         >
           {transcriptBody}
         </div>

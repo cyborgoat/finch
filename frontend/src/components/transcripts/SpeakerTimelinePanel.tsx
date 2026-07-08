@@ -1,7 +1,5 @@
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { Button } from "@/components/ui/button"
 import { formatPlaybackTime } from "@/lib/audio"
 import { groupSegmentsByCluster } from "@/lib/transcriptFormat"
 import {
@@ -36,7 +34,6 @@ export function SpeakerTimelinePanel({
   disabled,
 }: SpeakerTimelinePanelProps) {
   const { t } = useTranslation()
-  const [collapsed, setCollapsed] = useState(false)
 
   const totalDuration = useMemo(
     () => resolveTimelineDuration(segments, playbackDuration, assetDuration),
@@ -66,132 +63,94 @@ export function SpeakerTimelinePanel({
   if (speakerGroups.length === 0) return null
 
   return (
-    <div
-      className={cn(
-        "relative shrink-0 border-b border-border transition-[width] duration-200 md:border-b-0 md:border-r",
-        collapsed ? "w-11" : "w-full md:w-64 lg:w-72",
-      )}
-    >
+    <div className="surface-card flex h-full min-h-96 w-full flex-col overflow-hidden">
+      <div className="p-1.5">
+        <p className="truncate text-sm font-medium text-foreground">
+          {t("recording.speakersPanelTitle")}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {t("recording.speakersTimelineDescription")}
+        </p>
+      </div>
+
       <div
-        className={cn(
-          "flex h-full flex-col",
-          collapsed ? "items-center py-3" : "min-h-96",
-        )}
+        className="relative flex-1 overflow-y-auto"
+        aria-label={t("recording.speakerChunksAriaLabel")}
       >
-        <div
-          className={cn(
-            "flex items-center gap-2 border-b border-border",
-            collapsed ? "justify-center px-1 pb-3" : "justify-between px-3 py-2.5 sm:px-4",
-          )}
-        >
-          {!collapsed ? (
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-foreground">
-                {t("recording.speakersPanelTitle")}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {t("recording.speakersTimelineDescription")}
-              </p>
+        <div className="relative p-1.5 pt-0">
+          {playbackPercent !== null ? (
+            <div
+              className="pointer-events-none absolute inset-y-0 left-1.5 right-1.5 z-10"
+              aria-hidden
+            >
+              <div
+                className="absolute top-0 bottom-0 w-px bg-foreground/35"
+                style={{ left: `${playbackPercent}%` }}
+              />
             </div>
           ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="shrink-0"
-            aria-expanded={!collapsed}
-            aria-label={
-              collapsed
-                ? t("recording.expandSpeakersPanel")
-                : t("recording.collapseSpeakersPanel")
-            }
-            onClick={() => setCollapsed((value) => !value)}
-          >
-            {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
-          </Button>
-        </div>
 
-        {!collapsed ? (
-          <div
-            className="relative flex-1 overflow-y-auto"
-            aria-label={t("recording.speakerChunksAriaLabel")}
-          >
-            <div className="relative px-3 py-3 sm:px-4">
-              {playbackPercent !== null ? (
-                <div
-                  className="pointer-events-none absolute inset-y-3 left-3 right-3 z-10 sm:left-4 sm:right-4"
-                  aria-hidden
-                >
-                  <div
-                    className="absolute top-0 bottom-0 w-px bg-foreground/35"
-                    style={{ left: `${playbackPercent}%` }}
-                  />
-                </div>
-              ) : null}
+          <div className="relative space-y-3">
+            {speakerGroups.map((group, groupIndex) => {
+              const colorClass = speakerBarColor(groupIndex)
 
-              <div className="relative space-y-3">
-              {speakerGroups.map((group, groupIndex) => {
-                const colorClass = speakerBarColor(groupIndex)
-
-                return (
-                  <div key={group.clusterId} className="space-y-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-xs font-medium text-foreground">
-                        {group.displayName}
-                      </p>
-                      <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
-                        {t("recording.speakerChunkCount", { count: group.chunks.length })}
-                      </span>
-                    </div>
-
-                    <div
-                      className="relative h-3 rounded-full bg-muted/80"
-                      role="group"
-                      aria-label={group.displayName}
-                    >
-                      {group.chunks.map(({ segmentIndex, segment }) => {
-                        const position = segmentFragmentPosition(
-                          segment.startSec,
-                          segment.endSec,
-                          totalDuration,
-                        )
-                        const isActive = segmentIndex === currentSegmentIndex
-
-                        return (
-                          <button
-                            key={`${group.clusterId}-${segmentIndex}`}
-                            type="button"
-                            disabled={disabled || position.widthPercent <= 0}
-                            aria-current={isActive ? "true" : undefined}
-                            aria-label={t("recording.speakerFragmentAriaLabel", {
-                              speaker: group.displayName,
-                              start: formatPlaybackTime(segment.startSec),
-                              end: formatPlaybackTime(segment.endSec),
-                            })}
-                            title={segment.text.trim()}
-                            onClick={() => onChunkSelect(segmentIndex)}
-                            className={cn(
-                              "absolute top-0 h-full min-w-[3px] rounded-full transition-all",
-                              colorClass,
-                              "hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                              isActive && "z-[1] ring-2 ring-foreground/80 brightness-125",
-                              disabled && "pointer-events-none opacity-50",
-                            )}
-                            style={{
-                              left: `${position.leftPercent}%`,
-                              width: `${position.widthPercent}%`,
-                            }}
-                          />
-                        )
-                      })}
-                    </div>
+              return (
+                <div key={group.clusterId} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-xs font-medium text-foreground">
+                      {group.displayName}
+                    </p>
+                    <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                      {t("recording.speakerChunkCount", { count: group.chunks.length })}
+                    </span>
                   </div>
-                )
-              })}
-              </div>
-            </div>
+
+                  <div
+                    className="relative h-3 rounded-full bg-muted/80"
+                    role="group"
+                    aria-label={group.displayName}
+                  >
+                    {group.chunks.map(({ segmentIndex, segment }) => {
+                      const position = segmentFragmentPosition(
+                        segment.startSec,
+                        segment.endSec,
+                        totalDuration,
+                      )
+                      const isActive = segmentIndex === currentSegmentIndex
+
+                      return (
+                        <button
+                          key={`${group.clusterId}-${segmentIndex}`}
+                          type="button"
+                          disabled={disabled || position.widthPercent <= 0}
+                          aria-current={isActive ? "true" : undefined}
+                          aria-label={t("recording.speakerFragmentAriaLabel", {
+                            speaker: group.displayName,
+                            start: formatPlaybackTime(segment.startSec),
+                            end: formatPlaybackTime(segment.endSec),
+                          })}
+                          title={segment.text.trim()}
+                          onClick={() => onChunkSelect(segmentIndex)}
+                          className={cn(
+                            "absolute top-0 h-full min-w-[3px] rounded-full transition-all",
+                            colorClass,
+                            "hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                            isActive && "z-[1] ring-2 ring-foreground/80 brightness-125",
+                            disabled && "pointer-events-none opacity-50",
+                          )}
+                          style={{
+                            left: `${position.leftPercent}%`,
+                            width: `${position.widthPercent}%`,
+                          }}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
-        ) : null}
+        </div>
       </div>
     </div>
   )

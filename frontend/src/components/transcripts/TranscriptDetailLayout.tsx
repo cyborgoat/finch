@@ -9,7 +9,7 @@ import { useRegisterTopbarActions } from "@/components/layout/TopbarActionsConte
 import { RecordingNotesTab } from "@/components/transcripts/TranscriptNotesTab"
 import { RecordingPageAudio } from "@/components/transcripts/TranscriptPageAudio"
 import { FullTranscriptPanel } from "@/components/transcripts/FullTranscriptPanel"
-import { SpeakerTimelinePanel } from "@/components/transcripts/SpeakerTimelinePanel"
+import { RecordingTranscriptSplit } from "@/components/transcripts/RecordingTranscriptSplit"
 import { useAudioAsset } from "@/hooks/useAudioAsset"
 import { useNote } from "@/hooks/useNotes"
 import { useRecordingPlayback } from "@/hooks/useRecordingPlayback"
@@ -210,32 +210,38 @@ export function RecordingDetailLayout({
 
         <TabsContent value="source" className="mt-0 pt-3">
           <BlurFade>
-            <RecordingSourceCard
-              className="border-0"
-              audioClassName="p-3 sm:p-4"
-              audio={
-                <RecordingPageAudio
-                  audioAssetId={recording.audioAssetId}
-                  title={title}
-                  variant="embedded"
-                  playback={playback}
-                />
-              }
-            >
-              <div className="flex min-h-0 flex-col md:flex-row">
-                {hasTimedSegments ? (
-                  <SpeakerTimelinePanel
-                    segments={segments}
-                    profiles={profiles}
-                    currentSegmentIndex={currentSegmentIndex}
-                    currentPlaybackTime={playback.currentTime}
-                    playbackDuration={playback.duration}
-                    assetDuration={audioAsset?.durationSeconds}
-                    onChunkSelect={handleChunkSelect}
-                    disabled={speakerSavePending || renamePending || deletePending}
+            <div className="section-stack gap-3">
+              <RecordingSourceCard
+                className="border-0"
+                audioClassName="p-3 sm:p-4"
+                audio={
+                  <RecordingPageAudio
+                    audioAssetId={recording.audioAssetId}
+                    title={title}
+                    variant="embedded"
+                    playback={playback}
                   />
-                ) : null}
-                <div className="min-w-0 flex-1">
+                }
+              />
+              {hasTimedSegments ? (
+                <RecordingTranscriptSplit
+                  segments={segments}
+                  profiles={profiles}
+                  voiceprintProfilesStatus={voiceprintProfilesStatus}
+                  text={text}
+                  currentSegmentIndex={currentSegmentIndex}
+                  selectedSegmentIndex={selectedSegmentIndex}
+                  currentPlaybackTime={playback.currentTime}
+                  playbackDuration={playback.duration}
+                  assetDuration={audioAsset?.durationSeconds}
+                  onChunkSelect={handleChunkSelect}
+                  onSeekToTime={playback.seekAndPlay}
+                  onSegmentSpeakerSave={onSegmentSpeakerSave}
+                  speakerSavePending={speakerSavePending}
+                  disabled={speakerSavePending || renamePending || deletePending}
+                />
+              ) : (
+                <div className="surface-card min-w-0 overflow-hidden">
                   <FullTranscriptPanel
                     variant="embedded"
                     text={text}
@@ -250,8 +256,8 @@ export function RecordingDetailLayout({
                     disabled={speakerSavePending || renamePending || deletePending}
                   />
                 </div>
-              </div>
-            </RecordingSourceCard>
+              )}
+            </div>
           </BlurFade>
         </TabsContent>
 
