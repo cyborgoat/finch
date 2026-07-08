@@ -58,8 +58,6 @@ class RecordingSpeakerService:
                     cluster_id=mapping["cluster_id"],
                     display_name=mapping["display_name"],
                     profile_id=mapping.get("profile_id"),
-                    start_sec=mapping.get("enroll_start_sec"),
-                    end_sec=mapping.get("enroll_end_sec"),
                 )
                 mapping["profile_id"] = profile.id
 

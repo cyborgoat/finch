@@ -12,6 +12,7 @@ from app.domains.voiceprint.embedding_service import VoiceprintEmbeddingService
 from app.domains.voiceprint.matching_service import (
     VoiceprintMatchingService,
     VoiceprintMatchResult,
+    format_voiceprint_match_log,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ def apply_voiceprint_labels(
     job,
     diarization_path: str,
     merged_turns: list[DiarizationTurn],
-) -> tuple[list[DiarizationTurn], dict[str, VoiceprintMatchResult], str | None]:
+) -> tuple[list[DiarizationTurn], dict[str, VoiceprintMatchResult]]:
     preference_service = AppPreferenceService(session)
     voiceprint_profiles_enabled = transcription_settings.is_voiceprint_profiles_enabled()
     voiceprint_auto_label_enabled = transcription_settings.is_voiceprint_auto_label_enabled()
@@ -46,9 +47,8 @@ def apply_voiceprint_labels(
     )
 
     cluster_resolutions: dict[str, VoiceprintMatchResult] = {}
-    voiceprint_note: str | None = None
     if not voiceprint_profiles_active:
-        return merged_turns, cluster_resolutions, voiceprint_note
+        return merged_turns, cluster_resolutions
 
     job_service.update_job(job, progress=0.27, stage="running_voiceprint_matching")
     try:
@@ -69,16 +69,12 @@ def apply_voiceprint_labels(
             merged_turns,
             cluster_resolutions,
         )
-        matched_count = sum(
-            1
-            for resolution in cluster_resolutions.values()
-            if resolution.match_status == "matched"
+        match_log = format_voiceprint_match_log(
+            cluster_resolutions,
+            settings.speaker_match_threshold,
         )
-        if cluster_resolutions and matched_count == 0:
-            voiceprint_note = (
-                "Voiceprint auto-label ran but no speaker matched the saved threshold. "
-                "Try re-recording your voiceprint or assign a speaker manually on a turn."
-            )
+        if match_log:
+            logger.info("Voiceprint matching: %s", match_log)
         embedding_service.unload_model()
     except AppError as exc:
         logger.warning(
@@ -86,4 +82,4 @@ def apply_voiceprint_labels(
             exc.message,
         )
 
-    return merged_turns, cluster_resolutions, voiceprint_note
+    return merged_turns, cluster_resolutions

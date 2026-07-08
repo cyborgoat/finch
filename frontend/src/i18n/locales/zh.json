@@ -292,6 +292,7 @@
   "voiceprints": {
     "emptyTitle": "暂无声纹档案",
     "emptyDescription": "可在「关于您」中创建，或在下方添加其他档案。",
+    "nameTaken": "该说话人名称已被使用，请选择已有档案。",
     "enrollmentTitle": "创建声纹档案",
     "enrollmentDialogDescription": "按步骤录制并保存声纹样本。",
     "enrollmentDescription": "朗读下方示例段落，然后保存本地声纹样本，供今后录音识别使用。",
@@ -395,7 +396,6 @@
     "yourSpeakerLabel": "您的声纹档案",
     "yourSpeakerDescriptionLinked": "已关联到您的声纹。可录制新样本进行替换。",
     "yourSpeakerDescriptionUnlinked": "录制简短样本后，请在新录音上启用自动标注并重新转录。已有转录不会自动更新。",
-    "yourSpeakerUnknownHint": "「未知说话人」表示已尝试匹配但置信度不足。请重新录制声纹，或在转录中手动指定说话人。",
     "yourSpeakerNotLinked": "未关联",
     "voiceprintRecorded": "已录制",
     "voiceprintNotRecorded": "未录制",

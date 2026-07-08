@@ -38,3 +38,21 @@ export function resolveSpeakerDisplayName(
 
   return fallback
 }
+
+export function normalizeVoiceprintDisplayName(name: string): string {
+  return name.trim()
+}
+
+export function isVoiceprintNameTaken(
+  name: string,
+  profiles: VoiceprintProfileSummary[],
+  excludeProfileId?: string | null,
+): boolean {
+  const target = normalizeVoiceprintDisplayName(name).toLowerCase()
+  if (!target) return false
+  return profiles.some(
+    (profile) =>
+      profile.id !== excludeProfileId &&
+      normalizeVoiceprintDisplayName(profile.displayName).toLowerCase() === target,
+  )
+}

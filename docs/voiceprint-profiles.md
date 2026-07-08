@@ -58,17 +58,17 @@ cd backend && uv add pyannote-audio omegaconf speechbrain
 
 ### Settings → Voiceprint profiles
 
-1. **Record your voiceprint** — under **Settings → About you**, click **Record** and read the example passage (at least 2 seconds)
+1. **Record your voiceprint** — under **Settings → About you**, click **Record** and read the example passage (at least 2 seconds). Re-recording **appends** to your linked profile (passes `profileId`) instead of creating a duplicate.
 2. **Auto-label speaker names** — toggle on; accept consent the first time to store voiceprints locally
-3. **Saved profiles** — rename or delete profiles; add more with **Add profile**
+3. **Saved profiles** — rename or delete profiles; add more with **Add profile**. Each display name must be **unique** (case-insensitive).
 
 ### Assigning speakers on a transcript
 
 1. Transcribe audio with diarization
 2. Recording shows `Speaker 1`, `Speaker 2`, or `Unknown Speaker` per turn
 3. **Click a speaker name** on a turn to assign or update their label
-4. Choose an existing profile or enter a new name — saves immediately for all turns in that cluster
-5. When auto-label is on and consent was given, the voiceprint is updated from **that turn’s audio**
+4. Choose an existing profile or enter a new name — saves immediately for all turns in that cluster (display names must be unique)
+5. When auto-label is on and consent was given, the voiceprint is updated from **cluster audio** (average of up to three longest segments for that speaker, same as auto-match)
 
 ### Future transcripts
 
@@ -118,7 +118,7 @@ Higher threshold → stricter matching (more `Unknown Speaker`).
 | PATCH | `/api/voiceprint-profiles/status` | Toggle auto-label (enabled) |
 | DELETE | `/api/voiceprint-profiles/data` | Wipe all voiceprint data |
 | GET/PATCH | `/api/user-settings` | User name, ui/content language, summarization prefs, linked voiceprint profile |
-| PATCH | `/api/recordings/{id}/speakers` | Rename/link speakers; `enroll: true` saves voiceprint from optional turn timestamps |
+| PATCH | `/api/recordings/{id}/speakers` | Rename/link speakers; `enroll: true` saves voiceprint from cluster audio |
 
 Primary enrollment path: `PATCH /api/recordings/{id}/speakers` with:
 
@@ -128,14 +128,14 @@ Primary enrollment path: `PATCH /api/recordings/{id}/speakers` with:
     "clusterId": "SPEAKER_00",
     "displayName": "Robert",
     "profileId": "voiceprint_…",
-    "enroll": true,
-    "enrollStartSec": 12.4,
-    "enrollEndSec": 18.9
+    "enroll": true
   }]
 }
 ```
 
-When `enrollStartSec` / `enrollEndSec` are omitted, enrollment uses the longest cluster segment.
+Enrollment extracts an embedding by averaging up to three longest segments for that cluster (same strategy as auto-match). Pass `profileId` to append to an existing profile; omit it to create a new one (name must be unique).
+
+Settings enrollment (`POST /api/voiceprint-profiles/enroll-sample`) accepts optional `profileId` to append when re-recording under **About you**.
 
 ## Privacy
 
@@ -161,8 +161,8 @@ When `enrollStartSec` / `enrollEndSec` are omitted, enrollment uses the longest 
 ## Debugging voiceprint matching
 
 1. Set `DEBUG_MODE=true` in `.env` or run `DEBUG_MODE=true uv run uvicorn app.main:app --reload` from `backend/`.
-2. Transcribe a recording and watch backend logs for per-cluster scores and the auto-label gate flags.
+2. Transcribe a recording and watch backend logs for per-cluster scores and the auto-label gate flags (`Voiceprint matching: …` at INFO).
 3. Check the recording API response for `matchConfidence` and `matchStatus` on each speaker segment.
-4. If all clusters show `Unknown Speaker`, inspect logged scores against `SPEAKER_MATCH_THRESHOLD` (default `0.65`).
+4. Match diagnostics are **not shown in the transcript UI**; `processingNote` on recordings (if present) covers diarization fallback or audio purification only.
 
 See also [diarization.md](diarization.md).

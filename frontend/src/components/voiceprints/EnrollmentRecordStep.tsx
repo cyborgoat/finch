@@ -19,6 +19,7 @@ type EnrollmentRecordStepProps = {
   error: string | null
   busy?: boolean
   canStartRecording: boolean
+  nameError?: string | null
   onStart: () => void
   onPause: () => void
   onResume: () => void
@@ -41,6 +42,7 @@ export function EnrollmentRecordStep({
   error,
   busy,
   canStartRecording,
+  nameError,
   onStart,
   onPause,
   onResume,
@@ -59,6 +61,7 @@ export function EnrollmentRecordStep({
           speakerDisplayName={speakerDisplayName}
           onSpeakerDisplayNameChange={onSpeakerDisplayNameChange}
           disabled={busy}
+          nameError={nameError}
         />
 
         <p className="text-sm text-muted-foreground">

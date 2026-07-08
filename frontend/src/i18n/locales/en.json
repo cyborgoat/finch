@@ -292,6 +292,7 @@
   "voiceprints": {
     "emptyTitle": "No voiceprint profiles yet",
     "emptyDescription": "Create one from About you, or add another profile below.",
+    "nameTaken": "This speaker name is already in use. Select the existing profile instead.",
     "enrollmentTitle": "Create a voiceprint profile",
     "enrollmentDialogDescription": "Follow the steps to record and save a voiceprint sample.",
     "enrollmentDescription": "Read the passage below aloud, then save a local voiceprint sample for future recordings.",
@@ -395,7 +396,6 @@
     "yourSpeakerLabel": "Your voiceprint profile",
     "yourSpeakerDescriptionLinked": "The voiceprint linked to you. Record a new sample to replace it.",
     "yourSpeakerDescriptionUnlinked": "Record a short sample, then transcribe new recordings with auto-label enabled. Existing transcripts are not updated.",
-    "yourSpeakerUnknownHint": "Unknown Speaker means matching ran but confidence was too low. Re-record your voiceprint or assign a speaker on a turn.",
     "yourSpeakerNotLinked": "Not linked",
     "voiceprintRecorded": "Recorded",
     "voiceprintNotRecorded": "Not recorded",

@@ -15,6 +15,7 @@ type EnrollmentReviewStepProps = {
   busy?: boolean
   saving?: boolean
   canSave: boolean
+  nameError?: string | null
   onDiscard: () => void
   onRecordAgain: () => void
   onSave: () => void
@@ -31,6 +32,7 @@ export function EnrollmentReviewStep({
   busy,
   saving,
   canSave,
+  nameError,
   onDiscard,
   onRecordAgain,
   onSave,
@@ -46,6 +48,7 @@ export function EnrollmentReviewStep({
           speakerDisplayName={speakerDisplayName}
           onSpeakerDisplayNameChange={onSpeakerDisplayNameChange}
           disabled={busy}
+          nameError={nameError}
         />
 
         <p className="text-sm text-muted-foreground">

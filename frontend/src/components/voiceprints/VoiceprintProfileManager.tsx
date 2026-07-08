@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { isVoiceprintNameTaken } from "@/lib/voiceprintLabels"
 import type { VoiceprintProfileSummary } from "@/lib/types"
 
 type VoiceprintProfileManagerProps = {
@@ -45,6 +46,7 @@ type VoiceprintProfileManagerProps = {
 
 function SpeakerRow({
   profile,
+  profiles,
   onRename,
   onDelete,
   isRenaming,
@@ -53,6 +55,7 @@ function SpeakerRow({
   isYou,
 }: {
   profile: VoiceprintProfileSummary
+  profiles: VoiceprintProfileSummary[]
   onRename: (voiceprintProfileId: string, displayName: string) => void | Promise<void>
   onDelete: (voiceprintProfileId: string, displayName: string) => void
   isRenaming?: boolean
@@ -65,6 +68,11 @@ function SpeakerRow({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [displayName, setDisplayName] = useState(profile.displayName)
   const busy = isRenaming || isDeleting
+  const trimmedDisplayName = displayName.trim()
+  const renameNameTaken =
+    trimmedDisplayName.length > 0 &&
+    trimmedDisplayName !== profile.displayName &&
+    isVoiceprintNameTaken(trimmedDisplayName, profiles, profile.id)
 
   const openRename = () => {
     setDisplayName(profile.displayName)
@@ -73,7 +81,7 @@ function SpeakerRow({
 
   const handleRename = async () => {
     const trimmed = displayName.trim()
-    if (!trimmed) return
+    if (!trimmed || renameNameTaken) return
     if (trimmed === profile.displayName) {
       setRenameOpen(false)
       return
@@ -147,6 +155,9 @@ function SpeakerRow({
               disabled={isRenaming}
               autoFocus
             />
+            {renameNameTaken ? (
+              <p className="text-xs text-destructive">{t("voiceprints.nameTaken")}</p>
+            ) : null}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenameOpen(false)} disabled={isRenaming}>
@@ -154,7 +165,7 @@ function SpeakerRow({
             </Button>
             <Button
               onClick={() => void handleRename()}
-              disabled={isRenaming || !displayName.trim()}
+              disabled={isRenaming || !trimmedDisplayName || renameNameTaken}
             >
               {isRenaming ? t("common.saving") : t("common.save")}
             </Button>
@@ -225,6 +236,7 @@ export function VoiceprintProfileManager({
         <SpeakerRow
           key={profile.id}
           profile={profile}
+          profiles={profiles}
           onRename={onRename}
           onDelete={onDelete}
           isRenaming={isRenaming}

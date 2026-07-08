@@ -91,15 +91,15 @@ class TranscriptionPipeline:
             if self.transcription_settings.is_diarization_enabled():
                 try:
                     self.diarization_service.load_pipeline()
-                    raw_text, detected_language, segments, voiceprint_note = (
+                    raw_text, detected_language, segments, purification_note = (
                         self._transcribe_with_diarization(
                             job=job,
                             audio_asset=audio_asset,
                             language=language,
                         )
                     )
-                    if voiceprint_note and not processing_note:
-                        processing_note = voiceprint_note
+                    if purification_note and not processing_note:
+                        processing_note = purification_note
                 except AppError as exc:
                     self.diarization_service.unload_pipeline()
                     if should_fallback_from_diarization(exc):
@@ -306,7 +306,7 @@ class TranscriptionPipeline:
                 ]
 
             cluster_resolutions: dict[str, VoiceprintMatchResult] = {}
-            merged_turns, cluster_resolutions, voiceprint_note = apply_voiceprint_labels(
+            merged_turns, cluster_resolutions = apply_voiceprint_labels(
                 session=self.session,
                 settings=self.settings,
                 job_service=self.job_service,
@@ -371,13 +371,6 @@ class TranscriptionPipeline:
                 temp_dir.rmdir()
 
             raw_text = build_labeled_transcript(segments)
-            combined_note = purification_note
-            if voiceprint_note:
-                combined_note = (
-                    f"{purification_note}\n{voiceprint_note}"
-                    if purification_note
-                    else voiceprint_note
-                )
-            return raw_text, detected_language, segments, combined_note
+            return raw_text, detected_language, segments, purification_note
         finally:
             cleanup_purified(purified)

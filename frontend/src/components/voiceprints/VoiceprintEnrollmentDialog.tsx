@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { VoiceprintEnrollmentPanel } from "@/components/voiceprints/VoiceprintEnrollmentPanel"
+import type { VoiceprintProfileSummary } from "@/lib/types"
 
 type VoiceprintEnrollmentDialogProps = {
   open: boolean
@@ -16,6 +17,8 @@ type VoiceprintEnrollmentDialogProps = {
   consentGiven: boolean
   disabled?: boolean
   profileDisplayName?: string
+  existingProfileId?: string | null
+  profiles?: VoiceprintProfileSummary[]
   uiLanguage: "en" | "zh"
   forUserProfile?: boolean
   onConsentRequired: () => void

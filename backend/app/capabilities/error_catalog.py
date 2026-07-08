@@ -45,6 +45,10 @@ ERROR_GUIDANCE: dict[str, list[str]] = {
         "Check the profile ID in Settings or on the transcript speaker turn",
         "Create a new voiceprint profile and enroll a sample if needed",
     ],
+    "VOICEPRINT_PROFILE_NAME_TAKEN": [
+        "Choose a different display name for this voiceprint profile",
+        "Or select the existing profile with that name from the speaker list",
+    ],
     "AI_ACTION_INVALID": [
         "Choose a supported action template from GET /api/ai-actions/templates",
         "Ensure the selected transcript source contains text",

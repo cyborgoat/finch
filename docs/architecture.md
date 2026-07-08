@@ -175,7 +175,7 @@ The recording detail page accepts only `recording_` IDs. Lists show recordings o
 | GET/POST/PATCH/DELETE | `/api/voiceprint-profiles/...` | Voiceprint profile CRUD + detail |
 | GET/POST/PATCH/DELETE | `/api/voiceprint-profiles/status`, `/consent`, `/data` | Consent, auto-label toggle, wipe voiceprint data |
 | GET/PATCH | `/api/user-settings` | User name, language, summarization prefs, linked voiceprint profile |
-| PATCH | `/api/recordings/{id}/speakers` | Rename/link speakers (`enroll: true` saves voiceprint; optional `enrollStartSec` / `enrollEndSec` for turn-scoped samples) |
+| PATCH | `/api/recordings/{id}/speakers` | Rename/link speakers (`enroll: true` saves voiceprint from cluster audio) |
 
 ## Startup diagnostics
 

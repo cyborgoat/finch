@@ -48,6 +48,8 @@ Loads settings from `backend/.env` and repo root `.env`.
 | `hf_token` | — | Hugging Face token for gated pyannote models — set `HF_TOKEN` in `.env` only (not in Settings UI) |
 | `huey_db_path` | `{data_dir}/huey.db` | SQLite-backed job queue database |
 
+**Restart required:** Changes to `.env` voiceprint/diarization settings (`SPEAKER_MATCH_THRESHOLD`, `SPEAKER_MIN_ENROLL_SECONDS`, `DIARIZATION_USE_ORIGINAL_AUDIO`, etc.) are loaded once via `@lru_cache` on `get_settings()`. Restart **both** the FastAPI server and the Huey consumer (`huey_consumer`) for new values to take effect. New voiceprint enrollments do **not** require a restart — embeddings are read from SQLite on each transcription job.
+
 LLM and transcription toggles are stored in SQLite via the frontend — not in `.env`. `HF_TOKEN` is read from `.env` only.
 
 ## `api/`

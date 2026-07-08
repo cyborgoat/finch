@@ -130,6 +130,8 @@ export function UserProfileSettings({
         consentGiven={voiceprintConsentGiven}
         disabled={controlsDisabled}
         profileDisplayName={preferences.userName}
+        existingProfileId={preferences.userVoiceprintProfileId}
+        profiles={profiles}
         uiLanguage={preferences.uiLanguage}
         forUserProfile
         onConsentRequired={onVoiceprintConsentRequired}

@@ -198,8 +198,6 @@ export async function updateRecordingSpeakers(
     displayName: string
     profileId?: string | null
     enroll?: boolean
-    enrollStartSec?: number
-    enrollEndSec?: number
   }>,
 ): Promise<{
   id: string

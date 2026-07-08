@@ -13,6 +13,8 @@ import { useAudioRecorder } from "@/hooks/useAudioRecorder"
 import { useAudioUpload } from "@/hooks/useAudioUpload"
 import { useEnrollVoiceprintProfileSample } from "@/hooks/useVoiceprintProfiles"
 import { FinchApiError } from "@/lib/api"
+import { isVoiceprintNameTaken } from "@/lib/voiceprintLabels"
+import type { VoiceprintProfileSummary } from "@/lib/types"
 
 const MIN_ENROLL_SECONDS = 2
 
@@ -26,6 +28,9 @@ type VoiceprintEnrollmentPanelProps = {
   disabled?: boolean
   /** Display name from settings — not edited in this flow. */
   profileDisplayName?: string
+  /** When set, enrollment appends to this profile instead of creating a new one. */
+  existingProfileId?: string | null
+  profiles?: VoiceprintProfileSummary[]
   uiLanguage: "en" | "zh"
   inDialog?: boolean
   forUserProfile?: boolean
@@ -40,6 +45,8 @@ export function VoiceprintEnrollmentPanel({
   consentGiven,
   disabled,
   profileDisplayName = "",
+  existingProfileId = null,
+  profiles = [],
   uiLanguage,
   inDialog = false,
   forUserProfile = false,
@@ -87,16 +94,22 @@ export function VoiceprintEnrollmentPanel({
   const hasRecording = recorder.state === "stopped" && !!recorder.audioBlob
   const recordingLongEnough = recorder.durationSeconds >= MIN_ENROLL_SECONDS
   const hasProfileName = resolvedDisplayName.length > 0
-  const canStartRecording = hasProfileName
+  const enrollmentNameTaken =
+    hasProfileName &&
+    !existingProfileId &&
+    isVoiceprintNameTaken(resolvedDisplayName, profiles)
+  const canStartRecording = hasProfileName && !enrollmentNameTaken
   const canSave =
     ready &&
     hasProfileName &&
+    !enrollmentNameTaken &&
     hasRecording &&
     recordingLongEnough &&
     !busy
 
   const displayStep =
     inDialog && step === "record" && hasRecording ? "review" : step
+  const nameTakenMessage = enrollmentNameTaken ? t("voiceprints.nameTaken") : null
 
   const doSave = async () => {
     if (!recorder.audioBlob || !resolvedDisplayName) return
@@ -111,6 +124,7 @@ export function VoiceprintEnrollmentPanel({
       const result = await enrollMutation.mutateAsync({
         audioAssetId: asset.id,
         displayName: resolvedDisplayName,
+        profileId: existingProfileId ?? undefined,
         setAsUserProfile: forUserProfile,
       })
       toast.success(t("toasts.speakerSavedWithVoiceprint"))
@@ -244,6 +258,7 @@ export function VoiceprintEnrollmentPanel({
             error={recorder.error}
             busy={busy}
             canStartRecording={canStartRecording}
+            nameError={nameTakenMessage}
             onStart={() => void recorder.start()}
             onPause={recorder.pause}
             onResume={recorder.resume}
@@ -269,6 +284,7 @@ export function VoiceprintEnrollmentPanel({
             busy={busy}
             saving={enrollMutation.isPending || isUploading}
             canSave={canSave}
+            nameError={nameTakenMessage}
             onDiscard={handleDiscard}
             onRecordAgain={handleBackToRecord}
             onSave={() => void handleSave()}
@@ -299,6 +315,7 @@ export function VoiceprintEnrollmentPanel({
         speakerDisplayName={speakerDisplayName}
         onSpeakerDisplayNameChange={setSpeakerDisplayName}
         disabled={busy}
+        nameError={nameTakenMessage}
       />
 
       <AudioRecordControlsSection

@@ -15,6 +15,7 @@ import {
   useVoiceprintProfilesStatus,
 } from "@/hooks/useVoiceprintProfiles"
 import { useTranscriptionSettings } from "@/hooks/useTranscriptionSettings"
+import { FinchApiError } from "@/lib/api"
 import type { UserPreferences } from "@/lib/userPreferences"
 import { cn } from "@/lib/utils"
 
@@ -134,9 +135,18 @@ export function SettingsVoiceprintSection({
                 isDeleting={deleteProfile.isPending}
                 isRenaming={updateProfile.isPending}
                 onRename={(voiceprintProfileId, displayName) => {
-                  void updateProfile.mutateAsync({ voiceprintProfileId, displayName }).then(() => {
-                    toast.success(t("toasts.speakerRenamed", { name: displayName }))
-                  })
+                  void updateProfile
+                    .mutateAsync({ voiceprintProfileId, displayName })
+                    .then(() => {
+                      toast.success(t("toasts.speakerRenamed", { name: displayName }))
+                    })
+                    .catch((error) => {
+                      const message =
+                        error instanceof FinchApiError
+                          ? error.message
+                          : t("toasts.speakerSettingsFailed")
+                      toast.error(message)
+                    })
                 }}
                 onDelete={(voiceprintProfileId, displayName) => {
                   void deleteProfile.mutateAsync(voiceprintProfileId).then(() => {
@@ -168,6 +178,7 @@ export function SettingsVoiceprintSection({
         notReadyReason={voiceprintNotReadyReason}
         consentGiven={voiceprintProfilesStatus?.consentGiven ?? false}
         disabled={disabled || togglePending}
+        profiles={profiles}
         uiLanguage={preferences.uiLanguage}
         onConsentRequired={() => onRequestConsent("enrollment")}
       />

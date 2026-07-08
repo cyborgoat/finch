@@ -5,7 +5,9 @@ from app.config import Settings
 from app.domains.voiceprint.embedding_service import average_embeddings
 from app.domains.voiceprint.matching_service import (
     VoiceprintMatchingService,
+    VoiceprintMatchResult,
     cosine_similarity,
+    format_voiceprint_match_log,
 )
 from app.domains.voiceprint.profile_service import VoiceprintProfileService
 
@@ -98,3 +100,35 @@ def test_voiceprint_auto_label_gate_requires_all_flags():
 
     auto_label_enabled = True
     assert voiceprint_profiles_enabled and auto_label_enabled and consent_given
+
+
+def test_format_voiceprint_match_log_matched():
+    results = {
+        "SPEAKER_00": VoiceprintMatchResult(
+            cluster_id="SPEAKER_00",
+            display_name="Alex",
+            voiceprint_profile_id="profile_1",
+            match_confidence=0.82,
+            match_status="matched",
+        )
+    }
+    message = format_voiceprint_match_log(results, 0.65)
+    assert message is not None
+    assert "Alex (0.82)" in message
+    assert "threshold 0.65" in message
+
+
+def test_format_voiceprint_match_log_below_threshold():
+    results = {
+        "SPEAKER_00": VoiceprintMatchResult(
+            cluster_id="SPEAKER_00",
+            display_name="Unknown Speaker",
+            voiceprint_profile_id=None,
+            match_confidence=0.48,
+            match_status="unknown",
+        )
+    }
+    message = format_voiceprint_match_log(results, 0.55)
+    assert message is not None
+    assert "SPEAKER_00=0.48" in message
+    assert "threshold 0.55" in message

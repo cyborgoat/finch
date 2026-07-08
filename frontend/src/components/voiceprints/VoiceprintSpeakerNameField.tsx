@@ -8,6 +8,7 @@ type VoiceprintSpeakerNameFieldProps = {
   speakerDisplayName: string
   onSpeakerDisplayNameChange: (value: string) => void
   disabled?: boolean
+  nameError?: string | null
 }
 
 export function VoiceprintSpeakerNameField({
@@ -16,6 +17,7 @@ export function VoiceprintSpeakerNameField({
   speakerDisplayName,
   onSpeakerDisplayNameChange,
   disabled,
+  nameError,
 }: VoiceprintSpeakerNameFieldProps) {
   const { t } = useTranslation()
 
@@ -42,6 +44,7 @@ export function VoiceprintSpeakerNameField({
           {t("voiceprints.enrollmentSpeakerNameHint")}
         </p>
       )}
+      {nameError ? <p className="text-xs text-destructive">{nameError}</p> : null}
     </div>
   )
 }

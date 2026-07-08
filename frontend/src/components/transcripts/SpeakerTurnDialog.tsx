@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select"
 import { VoiceprintConsentDialog } from "@/components/voiceprints/VoiceprintConsentDialog"
 import { useRecordVoiceprintConsent } from "@/hooks/useVoiceprintProfiles"
-import { resolveSpeakerDisplayName } from "@/lib/voiceprintLabels"
+import { resolveSpeakerDisplayName, isVoiceprintNameTaken } from "@/lib/voiceprintLabels"
 import { updateTranscriptionSettings } from "@/lib/api"
 import type { VoiceprintProfilesStatus, VoiceprintProfileSummary, SpeakerSegment } from "@/lib/types"
 
@@ -81,6 +81,11 @@ function SpeakerTurnForm({
   const hasConsent = voiceprintProfilesStatus?.consentGiven ?? false
   const canEnroll = voiceprintProfilesReady && hasConsent
   const consentBusy = consentMutation.isPending || isPending
+  const trimmedDisplayName = displayName.trim()
+  const nameTaken =
+    !useExisting &&
+    trimmedDisplayName.length > 0 &&
+    isVoiceprintNameTaken(trimmedDisplayName, profiles)
 
   const handleProfileChange = (value: string | null) => {
     if (!value || value === "__new__") {
@@ -180,6 +185,9 @@ function SpeakerTurnForm({
             }}
             placeholder={t("recording.namePlaceholder")}
           />
+          {nameTaken ? (
+            <p className="text-xs text-destructive">{t("voiceprints.nameTaken")}</p>
+          ) : null}
         </div>
 
         {canEnroll ? (
@@ -201,7 +209,10 @@ function SpeakerTurnForm({
         <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
           {t("common.cancel")}
         </Button>
-        <Button onClick={handleSubmit} disabled={isPending || !displayName.trim()}>
+        <Button
+          onClick={handleSubmit}
+          disabled={isPending || !trimmedDisplayName || nameTaken}
+        >
           {isPending ? t("common.saving") : t("recording.saveSpeaker")}
         </Button>
       </DialogFooter>

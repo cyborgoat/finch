@@ -27,6 +27,47 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 
 
+def format_voiceprint_match_log(
+    cluster_resolutions: dict[str, VoiceprintMatchResult],
+    threshold: float,
+) -> str | None:
+    if not cluster_resolutions:
+        return None
+
+    matched = [
+        resolution
+        for resolution in cluster_resolutions.values()
+        if resolution.match_status == "matched"
+    ]
+    if matched:
+        parts = []
+        for resolution in sorted(matched, key=lambda item: item.cluster_id):
+            confidence = resolution.match_confidence
+            score = f"{confidence:.2f}" if confidence is not None else "?"
+            parts.append(f"{resolution.display_name} ({score})")
+        return (
+            f"matched {len(matched)}/{len(cluster_resolutions)}: "
+            f"{', '.join(parts)} (threshold {threshold:.2f})"
+        )
+
+    below_threshold = [
+        resolution
+        for resolution in cluster_resolutions.values()
+        if resolution.match_status in {"unknown", "unmatched"}
+        and resolution.match_confidence is not None
+    ]
+    if below_threshold:
+        parts = []
+        for resolution in sorted(below_threshold, key=lambda item: item.cluster_id):
+            parts.append(f"{resolution.cluster_id}={resolution.match_confidence:.2f}")
+        return (
+            f"no match above threshold {threshold:.2f}; "
+            f"best scores: {'; '.join(parts)}"
+        )
+
+    return f"no match above threshold {threshold:.2f}"
+
+
 class VoiceprintMatchingService:
     def __init__(self, session: Session, settings: Settings | None = None) -> None:
         self.session = session

@@ -15,6 +15,7 @@ from app.domains.settings.app_preference_service import AppPreferenceService
 from app.domains.transcription.diarization_service import (
     speaker_segments_from_json,
 )
+from app.domains.transcription.types import DiarizationTurn
 from app.domains.voiceprint.embedding_service import (
     VoiceprintEmbeddingService,
     embedding_from_json,
@@ -25,11 +26,23 @@ from app.models.voiceprint_profile import VoiceprintEmbedding, VoiceprintProfile
 logger = logging.getLogger(__name__)
 
 
+def resolve_diarization_audio_path(
+    audio_asset,
+    settings: Settings | None = None,
+) -> str | None:
+    """Pick the same audio file used for diarization and voiceprint matching."""
+    resolved = settings or get_settings()
+    return (
+        audio_asset.original_path
+        if resolved.diarization_use_original_audio
+        else audio_asset.normalized_path
+    ) or audio_asset.normalized_path or audio_asset.original_path
+
+
 class VoiceprintProfileService:
     def __init__(self, session: Session, settings: Settings | None = None) -> None:
         self.session = session
         self.settings = settings or get_settings()
-        self.embedding_service = VoiceprintEmbeddingService(self.settings)
 
     def list_profiles(self) -> list[VoiceprintProfile]:
         statement = select(VoiceprintProfile).order_by(VoiceprintProfile.display_name)
@@ -48,13 +61,48 @@ class VoiceprintProfileService:
         statement = select(VoiceprintEmbedding).where(VoiceprintEmbedding.profile_id == profile_id)
         return len(list(self.session.exec(statement).all()))
 
+    @staticmethod
+    def _normalize_display_name(display_name: str) -> str:
+        normalized = display_name.strip()
+        if not normalized:
+            raise AppError(
+                "VOICEPRINT_PROFILE_NAME_REQUIRED",
+                "Display name is required.",
+                400,
+            )
+        return normalized
+
+    def _find_profile_by_display_name(self, display_name: str) -> VoiceprintProfile | None:
+        target = display_name.strip().casefold()
+        for profile in self.list_profiles():
+            if profile.display_name.strip().casefold() == target:
+                return profile
+        return None
+
+    def _ensure_unique_display_name(
+        self,
+        display_name: str,
+        *,
+        exclude_profile_id: str | None = None,
+    ) -> str:
+        normalized = self._normalize_display_name(display_name)
+        existing = self._find_profile_by_display_name(normalized)
+        if existing is not None and existing.id != exclude_profile_id:
+            raise AppError(
+                "VOICEPRINT_PROFILE_NAME_TAKEN",
+                f'A voiceprint profile named "{normalized}" already exists.',
+                409,
+            )
+        return normalized
+
     def create_profile(self, display_name: str, notes: str | None = None) -> VoiceprintProfile:
         from datetime import UTC, datetime
 
+        normalized_name = self._ensure_unique_display_name(display_name)
         now = datetime.now(UTC)
         profile = VoiceprintProfile(
             id=generate_voiceprint_profile_id(),
-            display_name=display_name.strip(),
+            display_name=normalized_name,
             notes=notes,
             created_at=now,
             updated_at=now,
@@ -74,7 +122,10 @@ class VoiceprintProfileService:
         from datetime import UTC, datetime
 
         if display_name is not None:
-            profile.display_name = display_name.strip()
+            profile.display_name = self._ensure_unique_display_name(
+                display_name,
+                exclude_profile_id=profile.id,
+            )
         if notes is not None:
             profile.notes = notes
         profile.updated_at = datetime.now(UTC)
@@ -117,17 +168,6 @@ class VoiceprintProfileService:
             statement = statement.where(VoiceprintEmbedding.profile_id == profile_id)
         return list(self.session.exec(statement).all())
 
-    def compute_centroid(self, profile_id: str) -> np.ndarray | None:
-        embeddings = self.list_embeddings(profile_id)
-        if not embeddings:
-            return None
-        vectors = [embedding_from_json(item.embedding) for item in embeddings]
-        centroid = np.mean(np.stack(vectors), axis=0)
-        norm = np.linalg.norm(centroid)
-        if norm == 0:
-            return centroid
-        return centroid / norm
-
     def add_embedding(
         self,
         profile_id: str,
@@ -160,11 +200,9 @@ class VoiceprintProfileService:
         cluster_id: str,
         display_name: str,
         profile_id: str | None = None,
-        *,
-        start_sec: float | None = None,
-        end_sec: float | None = None,
     ) -> VoiceprintProfile:
         from app.domains.recordings.recording_service import RecordingService
+        from app.domains.settings.transcription_settings_service import TranscriptionSettingsService
 
         preference_service = AppPreferenceService(self.session)
         require_voiceprint_profiles_consent(preference_service)
@@ -181,7 +219,7 @@ class VoiceprintProfileService:
 
         audio_service = AudioService(self.session, self.settings)
         audio_asset = audio_service.get_audio(transcript.audio_asset_id)
-        audio_path = audio_asset.normalized_path or audio_asset.original_path
+        audio_path = resolve_diarization_audio_path(audio_asset, self.settings)
         if not audio_path:
             raise AppError(
                 "SPEAKER_ENROLL_FAILED",
@@ -201,22 +239,32 @@ class VoiceprintProfileService:
                 404,
             )
 
-        if start_sec is not None and end_sec is not None and end_sec > start_sec:
-            sample_start = start_sec
-            sample_end = end_sec
-        else:
-            longest = max(
-                cluster_segments,
-                key=lambda segment: segment.end_sec - segment.start_sec,
-            )
-            sample_start = longest.start_sec
-            sample_end = longest.end_sec
+        transcription_settings = TranscriptionSettingsService(self.session, self.settings)
+        hf_token = transcription_settings.get_hf_token()
+        embedding_service = VoiceprintEmbeddingService(self.settings, hf_token=hf_token)
 
-        duration = sample_end - sample_start
-        vector = self.embedding_service.extract_embedding(
+        cluster_turns = [
+            DiarizationTurn(
+                speaker=segment.speaker,
+                start_sec=segment.start_sec,
+                end_sec=segment.end_sec,
+                cluster_id=segment.cluster_id or cluster_id,
+            )
+            for segment in cluster_segments
+        ]
+        cluster_embeddings = embedding_service.extract_cluster_embeddings(
             audio_path,
-            sample_start,
-            sample_end,
+            cluster_turns,
+        )
+        vector = cluster_embeddings.get(cluster_id)
+        if vector is None:
+            raise AppError(
+                "SPEAKER_ENROLL_FAILED",
+                f"Could not extract embedding for cluster {cluster_id}.",
+                400,
+            )
+        duration = sum(
+            segment.end_sec - segment.start_sec for segment in cluster_segments
         )
 
         if profile_id:
@@ -250,11 +298,7 @@ class VoiceprintProfileService:
 
         audio_service = AudioService(self.session, self.settings)
         audio_asset = audio_service.get_audio(audio_asset_id)
-        audio_path = (
-            audio_asset.original_path
-            if self.settings.diarization_use_original_audio
-            else audio_asset.normalized_path
-        ) or audio_asset.normalized_path or audio_asset.original_path
+        audio_path = resolve_diarization_audio_path(audio_asset, self.settings)
         if not audio_path:
             raise AppError(
                 "SPEAKER_ENROLL_FAILED",

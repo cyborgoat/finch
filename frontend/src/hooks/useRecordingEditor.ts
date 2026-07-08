@@ -57,7 +57,7 @@ export function useRecordingEditor(recording: Recording) {
 
   const applySegmentSpeaker = async (
     clusterId: string,
-    segment: SpeakerSegment,
+    _segment: SpeakerSegment,
     payload: { displayName: string; profileId: string | null; enroll: boolean },
   ) => {
     setSpeakerSavePending(true)
@@ -68,8 +68,6 @@ export function useRecordingEditor(recording: Recording) {
           displayName: payload.displayName,
           profileId: payload.profileId,
           enroll: payload.enroll,
-          enrollStartSec: segment.startSec,
-          enrollEndSec: segment.endSec,
         },
       ])
       applySpeakerUpdate(result.speakerSegments ?? [])

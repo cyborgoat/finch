@@ -86,6 +86,39 @@ def test_voiceprint_profiles_consent_and_list(client, db_session):
     assert update.json()["displayName"] == "Robert Smith"
 
 
+def test_voiceprint_profile_display_name_must_be_unique(client, db_session):
+    first = client.post(
+        "/api/voiceprint-profiles",
+        json={"displayName": "Robert"},
+    )
+    assert first.status_code == 200
+    profile_id = first.json()["id"]
+
+    duplicate = client.post(
+        "/api/voiceprint-profiles",
+        json={"displayName": "robert"},
+    )
+    assert duplicate.status_code == 409
+    assert duplicate.json()["error"]["code"] == "VOICEPRINT_PROFILE_NAME_TAKEN"
+
+    rename_conflict = client.patch(
+        f"/api/voiceprint-profiles/{profile_id}",
+        json={"displayName": "Robert"},
+    )
+    assert rename_conflict.status_code == 200
+
+    client.post("/api/voiceprint-profiles", json={"displayName": "David"})
+    david_id = client.get("/api/voiceprint-profiles").json()["items"]
+    david_id = next(item["id"] for item in david_id if item["displayName"] == "David")
+
+    rename_to_taken = client.patch(
+        f"/api/voiceprint-profiles/{david_id}",
+        json={"displayName": "Robert"},
+    )
+    assert rename_to_taken.status_code == 409
+    assert rename_to_taken.json()["error"]["code"] == "VOICEPRINT_PROFILE_NAME_TAKEN"
+
+
 def test_update_recording_speakers(client, db_session):
     _seed_transcript(db_session, client)
 
@@ -175,8 +208,6 @@ def test_update_recording_speakers_enroll_without_auto_label(
                     "clusterId": "SPEAKER_00",
                     "displayName": "Robert",
                     "enroll": True,
-                    "enrollStartSec": 0.0,
-                    "enrollEndSec": 2.0,
                 }
             ]
         },
