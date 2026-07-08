@@ -223,7 +223,16 @@
     "voiceprintProfilesReadyHint": "保存将从此轮次音频更新声纹，供未来录音识别使用。",
     "voiceprintProfilesConsentHint": "保存时将提示同意本地存储声纹，以便识别此说话人。",
     "voiceprintProfilesDisabledHint": "声纹档案不可用。显示名称仅适用于当前录音。",
-    "saveSpeaker": "保存说话人名称"
+    "saveSpeaker": "保存说话人名称",
+    "speakersPanelTitle": "说话人",
+    "speakersPanelDescription": "跳转到音频中的说话人轮次",
+    "speakersTimelineDescription": "点击高亮片段跳转到对应音频位置",
+    "expandSpeakersPanel": "展开说话人面板",
+    "collapseSpeakersPanel": "收起说话人面板",
+    "speakerFragmentAriaLabel": "{{speaker}}，{{start}} 至 {{end}}",
+    "speakerChunkCount_one": "{{count}} 轮",
+    "speakerChunkCount_other": "{{count}} 轮",
+    "speakerChunksAriaLabel": "说话人轮次"
   },
   "notes": {
     "selectNote": "选择笔记",

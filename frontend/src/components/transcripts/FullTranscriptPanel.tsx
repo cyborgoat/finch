@@ -17,6 +17,7 @@ type FullTranscriptPanelProps = {
   profiles?: VoiceprintProfileSummary[]
   voiceprintProfilesStatus?: VoiceprintProfilesStatus
   currentPlaybackTime?: number
+  selectedSegmentIndex?: number | null
   onSeekToTime?: (seconds: number) => void
   onSegmentSpeakerSave?: (
     clusterId: string,
@@ -39,6 +40,7 @@ type SegmentTurnProps = {
   displayName: string
   hasTimedSegments: boolean
   isActive: boolean
+  isSelected: boolean
   disabled?: boolean
   speakerSavePending?: boolean
   onSeekToTime?: (seconds: number) => void
@@ -52,6 +54,7 @@ function SegmentTurn({
   displayName,
   hasTimedSegments,
   isActive,
+  isSelected,
   disabled,
   speakerSavePending,
   onSeekToTime,
@@ -80,7 +83,10 @@ function SegmentTurn({
   return (
     <div
       ref={turnRef}
-      className="scroll-mt-24 scroll-mb-24 rounded-sm px-2 py-1.5 transition-colors"
+      className={cn(
+        "scroll-mt-24 scroll-mb-24 rounded-sm px-2 py-1.5 transition-colors",
+        isSelected && !isActive && "bg-muted/50 ring-1 ring-ring/30",
+      )}
     >
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         {speakerLabel}
@@ -119,6 +125,7 @@ export function FullTranscriptPanel({
   profiles = [],
   voiceprintProfilesStatus,
   currentPlaybackTime = 0,
+  selectedSegmentIndex = null,
   onSeekToTime,
   onSegmentSpeakerSave,
   speakerSavePending,
@@ -134,6 +141,12 @@ export function FullTranscriptPanel({
     (segment) => segment.endSec > segment.startSec,
   )
   const currentSegmentIndex = getCurrentSegmentIndex(segments, currentPlaybackTime)
+  const pendingSelection =
+    selectedSegmentIndex !== null && selectedSegmentIndex !== currentSegmentIndex
+      ? selectedSegmentIndex
+      : null
+  const highlightedSegmentIndex =
+    pendingSelection !== null ? pendingSelection : currentSegmentIndex
   const useVirtualList = segments.length >= VIRTUALIZE_SEGMENT_THRESHOLD
 
   // TanStack Virtual returns unstable function references by design.
@@ -151,14 +164,14 @@ export function FullTranscriptPanel({
     : ""
 
   useEffect(() => {
-    if (currentSegmentIndex < 0) return
+    if (highlightedSegmentIndex < 0) return
     if (useVirtualList) {
-      virtualizer.scrollToIndex(currentSegmentIndex, { align: "center" })
+      virtualizer.scrollToIndex(highlightedSegmentIndex, { align: "center" })
       return
     }
-    const turn = turnRefs.current[currentSegmentIndex]
+    const turn = turnRefs.current[highlightedSegmentIndex]
     turn?.scrollIntoView({ block: "center", behavior: "smooth" })
-  }, [currentSegmentIndex, useVirtualList, virtualizer])
+  }, [highlightedSegmentIndex, useVirtualList, virtualizer])
 
   const renderSegment = (segment: SpeakerSegment, index: number, turnRef?: (element: HTMLDivElement | null) => void) => {
     const clusterId = segment.clusterId || segment.speaker
@@ -179,6 +192,7 @@ export function FullTranscriptPanel({
         displayName={displayName}
         hasTimedSegments={hasTimedSegments}
         isActive={index === currentSegmentIndex}
+        isSelected={pendingSelection === index}
         disabled={disabled}
         speakerSavePending={speakerSavePending}
         onSeekToTime={onSeekToTime}

@@ -223,7 +223,16 @@
     "voiceprintProfilesReadyHint": "Saving updates the voiceprint from this turn's audio for future recordings.",
     "voiceprintProfilesConsentHint": "Accept the consent prompt when saving to store a local voiceprint for this speaker.",
     "voiceprintProfilesDisabledHint": "Voiceprint profiles are unavailable. The display name applies to this recording only.",
-    "saveSpeaker": "Save speaker name"
+    "saveSpeaker": "Save speaker name",
+    "speakersPanelTitle": "Speakers",
+    "speakersPanelDescription": "Jump to a speaker turn in the audio",
+    "speakersTimelineDescription": "Click a highlighted segment to jump in the audio",
+    "expandSpeakersPanel": "Expand speakers panel",
+    "collapseSpeakersPanel": "Collapse speakers panel",
+    "speakerFragmentAriaLabel": "{{speaker}}, {{start}} to {{end}}",
+    "speakerChunkCount_one": "{{count}} turn",
+    "speakerChunkCount_other": "{{count}} turns",
+    "speakerChunksAriaLabel": "Speaker turns"
   },
   "notes": {
     "selectNote": "Select note",

@@ -9,9 +9,11 @@ import { useRegisterTopbarActions } from "@/components/layout/TopbarActionsConte
 import { RecordingNotesTab } from "@/components/transcripts/TranscriptNotesTab"
 import { RecordingPageAudio } from "@/components/transcripts/TranscriptPageAudio"
 import { FullTranscriptPanel } from "@/components/transcripts/FullTranscriptPanel"
+import { SpeakerTimelinePanel } from "@/components/transcripts/SpeakerTimelinePanel"
 import { useAudioAsset } from "@/hooks/useAudioAsset"
 import { useNote } from "@/hooks/useNotes"
 import { useRecordingPlayback } from "@/hooks/useRecordingPlayback"
+import { getCurrentSegmentIndex } from "@/lib/audio"
 import type { NoteSummary, VoiceprintProfilesStatus, VoiceprintProfileSummary, Recording } from "@/lib/types"
 import type { SpeakerSegment } from "@/lib/types"
 import {
@@ -72,6 +74,7 @@ export function RecordingDetailLayout({
   )
 
   const [pendingNoteId, setPendingNoteId] = useState<string | null>(null)
+  const [selectedSegmentIndex, setSelectedSegmentIndex] = useState<number | null>(null)
   const pendingSelectionRef = useRef<string | null>(null)
 
   const notes = useMemo(
@@ -171,6 +174,21 @@ export function RecordingDetailLayout({
 
   useRegisterTopbarActions(topbarActions, [topbarActions])
 
+  const hasTimedSegments = segments.some(
+    (segment) => segment.endSec > segment.startSec,
+  )
+  const currentSegmentIndex = getCurrentSegmentIndex(segments, playback.currentTime)
+
+  const handleChunkSelect = useCallback(
+    (segmentIndex: number) => {
+      const segment = segments[segmentIndex]
+      if (!segment) return
+      setSelectedSegmentIndex(segmentIndex)
+      playback.seekAndPlay(segment.startSec)
+    },
+    [playback, segments],
+  )
+
   const noteCount = notes.length
 
   return (
@@ -204,18 +222,35 @@ export function RecordingDetailLayout({
                 />
               }
             >
-              <FullTranscriptPanel
-                variant="embedded"
-                text={text}
-                segments={segments}
-                profiles={profiles}
-                voiceprintProfilesStatus={voiceprintProfilesStatus}
-                currentPlaybackTime={playback.currentTime}
-                onSeekToTime={playback.seekAndPlay}
-                onSegmentSpeakerSave={onSegmentSpeakerSave}
-                speakerSavePending={speakerSavePending}
-                disabled={speakerSavePending || renamePending || deletePending}
-              />
+              <div className="flex min-h-0 flex-col md:flex-row">
+                {hasTimedSegments ? (
+                  <SpeakerTimelinePanel
+                    segments={segments}
+                    profiles={profiles}
+                    currentSegmentIndex={currentSegmentIndex}
+                    currentPlaybackTime={playback.currentTime}
+                    playbackDuration={playback.duration}
+                    assetDuration={audioAsset?.durationSeconds}
+                    onChunkSelect={handleChunkSelect}
+                    disabled={speakerSavePending || renamePending || deletePending}
+                  />
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <FullTranscriptPanel
+                    variant="embedded"
+                    text={text}
+                    segments={segments}
+                    profiles={profiles}
+                    voiceprintProfilesStatus={voiceprintProfilesStatus}
+                    currentPlaybackTime={playback.currentTime}
+                    selectedSegmentIndex={selectedSegmentIndex}
+                    onSeekToTime={playback.seekAndPlay}
+                    onSegmentSpeakerSave={onSegmentSpeakerSave}
+                    speakerSavePending={speakerSavePending}
+                    disabled={speakerSavePending || renamePending || deletePending}
+                  />
+                </div>
+              </div>
             </RecordingSourceCard>
           </BlurFade>
         </TabsContent>

@@ -41,6 +41,56 @@ export function parseSpeakerLabeledText(text: string): SpeakerSegment[] {
   return segments
 }
 
+export type SpeakerChunkGroup = {
+  clusterId: string
+  displayName: string
+  chunks: { segmentIndex: number; segment: SpeakerSegment }[]
+}
+
+export function groupSegmentsByCluster(
+  segments: SpeakerSegment[],
+  resolveName: (clusterId: string, segment: SpeakerSegment) => string,
+): SpeakerChunkGroup[] {
+  const groups = new Map<
+    string,
+    { clusterId: string; firstIndex: number; chunks: SpeakerChunkGroup["chunks"] }
+  >()
+
+  segments.forEach((segment, segmentIndex) => {
+    const clusterId = segment.clusterId || segment.speaker
+    const existing = groups.get(clusterId)
+    const chunk = { segmentIndex, segment }
+
+    if (existing) {
+      existing.chunks.push(chunk)
+      return
+    }
+
+    groups.set(clusterId, {
+      clusterId,
+      firstIndex: segmentIndex,
+      chunks: [chunk],
+    })
+  })
+
+  return [...groups.values()]
+    .sort((left, right) => left.firstIndex - right.firstIndex)
+    .map((group) => {
+      const representative = group.chunks[0]?.segment
+      const displayName = representative
+        ? resolveName(group.clusterId, representative)
+        : group.clusterId
+
+      return {
+        clusterId: group.clusterId,
+        displayName,
+        chunks: [...group.chunks].sort(
+          (left, right) => left.segment.startSec - right.segment.startSec,
+        ),
+      }
+    })
+}
+
 export function resolveSpeakerSegments(
   transcript: Pick<Recording, "speakerSegments" | "rawText" | "editedText">,
 ): SpeakerSegment[] {
