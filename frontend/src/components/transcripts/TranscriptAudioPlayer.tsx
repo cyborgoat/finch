@@ -73,7 +73,7 @@ export function RecordingAudioPlayer({
 }: RecordingAudioPlayerProps) {
   const { t } = useTranslation()
   const max = duration > 0 ? duration : 0
-  const canControl = Boolean(src) && (isReady || max > 0)
+  const canSeek = max > 0
   const isEmbedded = variant === "embedded"
 
   return (
@@ -116,7 +116,7 @@ export function RecordingAudioPlayer({
           currentTime={currentTime}
           duration={max}
           embedded={isEmbedded}
-          disabled={!canControl || max <= 0}
+          disabled={!canSeek}
           onSeek={onSeekInput}
           aria-label={t("common.seekAriaLabel")}
         />
@@ -146,7 +146,7 @@ export function RecordingAudioPlayer({
                   variant="outline"
                   size={isEmbedded ? "icon-sm" : "icon"}
                   onClick={onSkipBackward}
-                  disabled={!canControl}
+                  disabled={!canSeek}
                   aria-label={t("common.backSeconds", { seconds: PLAYBACK_SKIP_SECONDS })}
                 >
                   <RotateCcw className={isEmbedded ? "size-3.5" : "size-4"} />
@@ -195,7 +195,7 @@ export function RecordingAudioPlayer({
                   variant="outline"
                   size={isEmbedded ? "icon-sm" : "icon"}
                   onClick={onSkipForward}
-                  disabled={!canControl}
+                  disabled={!canSeek}
                   aria-label={t("common.forwardSeconds", { seconds: PLAYBACK_SKIP_SECONDS })}
                 >
                   <RotateCw className={isEmbedded ? "size-3.5" : "size-4"} />
@@ -225,7 +225,7 @@ export function RecordingAudioPlayer({
                   variant="outline"
                   size={isEmbedded ? "xs" : "sm"}
                   className="gap-1"
-                  disabled={!canControl}
+                  disabled={!canSeek}
                   aria-label={t("common.playbackSpeedAria", {
                     rate: formatPlaybackRate(playbackRate),
                   })}

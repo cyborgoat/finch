@@ -2,12 +2,13 @@
 import { useEffect, useRef } from "react"
 import type { RecorderState } from "@/hooks/useAudioRecorder"
 import {
-  drawOscilloscopeWaveform,
-  drawWaveform,
+  barCountForWidth,
+  drawBarLevels,
   downsamplePeaks,
   getPrimaryColor,
   measurePeak,
   peaksFromAudioBuffer,
+  type BarWaveformSize,
   WAVEFORM_SAMPLE_INTERVAL_MS,
 } from "@/components/audio/waveform-utils"
 import { waveformContainerClass } from "@/lib/surfaces"
@@ -18,8 +19,22 @@ type AudioWaveformProps = {
   stream: MediaStream | null
   audioBlob?: Blob | null
   embedded?: boolean
-  size?: "default" | "mini"
+  size?: BarWaveformSize
   className?: string
+}
+
+function buildRecordingLevels(
+  peaksHistory: number[],
+  barCount: number,
+  currentPeak?: number,
+): number[] {
+  if (peaksHistory.length === 0) {
+    return currentPeak !== undefined ? [currentPeak] : []
+  }
+
+  const levels = downsamplePeaks(peaksHistory, Math.max(1, barCount - 1))
+  if (currentPeak === undefined) return levels
+  return [...levels, currentPeak]
 }
 
 export function AudioWaveform({
@@ -35,7 +50,6 @@ export function AudioWaveform({
   const peaksHistoryRef = useRef<number[]>([])
   const lastSampleAtRef = useRef(0)
   const rafRef = useRef(0)
-  const peakCount = size === "mini" ? 64 : 120
   const decodeBlobOnStop = size !== "mini"
 
   useEffect(() => {
@@ -69,22 +83,12 @@ export function AudioWaveform({
       return { ctx, width, height }
     }
 
+    const getBarCount = () => barCountForWidth(container.clientWidth, size)
+
     const renderLevels = (levels: number[]) => {
       const setup = setupCanvas()
       if (!setup) return
-      drawWaveform(setup.ctx, setup.width, setup.height, levels, getPrimaryColor(container))
-    }
-
-    const renderOscilloscope = () => {
-      const setup = setupCanvas()
-      if (!setup || !timeData) return
-      drawOscilloscopeWaveform(
-        setup.ctx,
-        setup.width,
-        setup.height,
-        timeData,
-        getPrimaryColor(container),
-      )
+      drawBarLevels(setup.ctx, setup.width, setup.height, levels, getPrimaryColor(container))
     }
 
     const startLiveLoop = () => {
@@ -101,14 +105,19 @@ export function AudioWaveform({
       const tick = (now: number) => {
         if (cancelled || !analyser || !timeData) return
 
+        const barCount = getBarCount()
+        const currentPeak = measurePeak(analyser, timeData)
+
         if (state === "recording") {
           if (now - lastSampleAtRef.current >= WAVEFORM_SAMPLE_INTERVAL_MS) {
-            peaksHistoryRef.current.push(measurePeak(analyser, timeData))
+            peaksHistoryRef.current.push(currentPeak)
             lastSampleAtRef.current = now
           }
-          renderOscilloscope()
+          renderLevels(
+            buildRecordingLevels(peaksHistoryRef.current, barCount, currentPeak),
+          )
         } else if (state === "paused") {
-          renderLevels(downsamplePeaks(peaksHistoryRef.current, peakCount))
+          renderLevels(buildRecordingLevels(peaksHistoryRef.current, barCount))
         }
 
         rafRef.current = requestAnimationFrame(tick)
@@ -118,6 +127,8 @@ export function AudioWaveform({
     }
 
     const renderStopped = () => {
+      const barCount = getBarCount()
+
       if (decodeBlobOnStop && audioBlob) {
         void (async () => {
           try {
@@ -129,14 +140,14 @@ export function AudioWaveform({
             await decodeContext.close()
             if (cancelled) return
 
-            const pointCount = Math.max(96, Math.min(240, Math.floor(container.clientWidth * 1.25)))
-            renderLevels(peaksFromAudioBuffer(audioBuffer, pointCount))
+            renderLevels(peaksFromAudioBuffer(audioBuffer, barCount))
           } catch {
             if (!cancelled) {
               renderLevels(
-                downsamplePeaks(peaksHistoryRef.current, peakCount).map((peak) =>
-                  Math.max(peak, 0.05),
-                ),
+                buildRecordingLevels(
+                  peaksHistoryRef.current,
+                  barCount,
+                ).map((peak) => Math.max(peak, 0.05)),
               )
             }
           }
@@ -144,7 +155,7 @@ export function AudioWaveform({
         return
       }
 
-      renderLevels(downsamplePeaks(peaksHistoryRef.current, peakCount))
+      renderLevels(buildRecordingLevels(peaksHistoryRef.current, barCount))
     }
 
     if (state === "recording" || state === "paused") {
@@ -156,12 +167,17 @@ export function AudioWaveform({
     }
 
     const resizeObserver = new ResizeObserver(() => {
+      const barCount = getBarCount()
+
       if (state === "stopped" && decodeBlobOnStop && audioBlob) {
         renderStopped()
-      } else if (state === "recording") {
-        renderOscilloscope()
+      } else if (state === "recording" && analyser && timeData) {
+        const currentPeak = measurePeak(analyser, timeData)
+        renderLevels(
+          buildRecordingLevels(peaksHistoryRef.current, barCount, currentPeak),
+        )
       } else if (state === "paused" || state === "stopped") {
-        renderLevels(downsamplePeaks(peaksHistoryRef.current, peakCount))
+        renderLevels(buildRecordingLevels(peaksHistoryRef.current, barCount))
       } else {
         renderLevels([])
       }
@@ -177,7 +193,7 @@ export function AudioWaveform({
         void audioContext.close()
       }
     }
-  }, [audioBlob, decodeBlobOnStop, peakCount, state, stream])
+  }, [audioBlob, decodeBlobOnStop, size, state, stream])
 
   return (
     <div

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react"
+import { WaveformSkeleton } from "@/components/audio/WaveformSkeleton"
 import {
-  drawWaveformWithProgress,
+  barCountForWidth,
+  drawBarLevelsWithProgress,
   getMutedForegroundColor,
   getPrimaryColor,
   peaksFromAudioBuffer,
@@ -72,7 +74,7 @@ export function PlaybackWaveform({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
       const progress = duration > 0 ? clampTime(time, duration) / duration : 0
-      drawWaveformWithProgress(
+      drawBarLevelsWithProgress(
         ctx,
         width,
         height,
@@ -112,10 +114,7 @@ export function PlaybackWaveform({
         if (cancelled) return
 
         const container = containerRef.current
-        const pointCount = Math.max(
-          96,
-          Math.min(240, Math.floor((container?.clientWidth ?? 320) * 1.25)),
-        )
+        const pointCount = barCountForWidth(container?.clientWidth ?? 320)
         setLoadedWaveform({
           src,
           peaks: peaksFromAudioBuffer(audioBuffer, pointCount),
@@ -135,12 +134,13 @@ export function PlaybackWaveform({
   }, [src])
 
   useEffect(() => {
+    if (isLoading) return
     if (isPlaying && audioRef?.current) return
     renderWaveform()
-  }, [renderWaveform, isPlaying, audioRef])
+  }, [renderWaveform, isPlaying, audioRef, isLoading])
 
   useEffect(() => {
-    if (!isPlaying || !audioRef) return
+    if (isLoading || !isPlaying || !audioRef) return
 
     let cancelled = false
 
@@ -163,9 +163,10 @@ export function PlaybackWaveform({
       cancelled = true
       cancelAnimationFrame(rafRef.current)
     }
-  }, [isPlaying, audioRef, renderWaveform, renderWaveformAt])
+  }, [isPlaying, audioRef, renderWaveform, renderWaveformAt, isLoading])
 
   useEffect(() => {
+    if (isLoading) return
     const container = containerRef.current
     if (!container) return
 
@@ -181,7 +182,7 @@ export function PlaybackWaveform({
     return () => {
       resizeObserver.disconnect()
     }
-  }, [renderWaveform, renderWaveformAt, isPlaying, audioRef])
+  }, [renderWaveform, renderWaveformAt, isPlaying, audioRef, isLoading])
 
   const seekFromClientX = useCallback(
     (clientX: number) => {
@@ -234,6 +235,10 @@ export function PlaybackWaveform({
     }
   }
 
+  if (isLoading) {
+    return <WaveformSkeleton ref={containerRef} embedded={embedded} className={className} />
+  }
+
   return (
     <div
       ref={containerRef}
@@ -251,16 +256,13 @@ export function PlaybackWaveform({
       onKeyDown={handleKeyDown}
       className={cn(
         "relative w-full overflow-hidden rounded-lg",
-        embedded ? "h-12" : "h-20",
+        embedded ? "h-14" : "h-20",
         embedded ? waveformContainerClass("embedded") : waveformContainerClass("card"),
         disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer touch-none",
         className,
       )}
     >
       <canvas ref={canvasRef} className="block h-full w-full" />
-      {isLoading ? (
-        <div className="pointer-events-none absolute inset-0 animate-pulse bg-muted/20" />
-      ) : null}
     </div>
   )
 }

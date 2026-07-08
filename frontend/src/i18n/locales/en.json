@@ -65,6 +65,7 @@
     "stop": "Stop",
     "resume": "Resume",
     "loading": "Loading…",
+    "loadingAudio": "Loading audio…",
     "starting": "Starting…",
     "creating": "Creating…",
     "processing": "Processing…",

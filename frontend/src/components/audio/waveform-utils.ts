@@ -20,16 +20,6 @@ function clamp01(value: number) {
   return Math.min(1, Math.max(0, value))
 }
 
-/** Boost quiet mic signals so the wave uses more of the canvas height. */
-function amplifyOscilloscopeSamples(samples: number[]): number[] {
-  if (samples.length === 0) return []
-
-  const peak = Math.max(...samples.map((sample) => Math.abs(sample)), 0.03)
-  const gain = Math.min(5, 0.88 / peak)
-
-  return samples.map((sample) => Math.max(-1, Math.min(1, sample * gain)))
-}
-
 function boostLevels(levels: number[]): number[] {
   return levels.map((level) => clamp01(level * 1.6))
 }
@@ -49,10 +39,6 @@ function smoothArray(values: number[], radius = 2): number[] {
   })
 }
 
-function smoothSamples(values: number[]): number[] {
-  return smoothArray(smoothArray(values, 4), 2)
-}
-
 function resampleLevels(levels: number[], targetCount: number): number[] {
   if (levels.length === 0) return []
   if (levels.length === 1) return Array.from({ length: targetCount }, () => levels[0])
@@ -69,130 +55,141 @@ function resampleLevels(levels: number[], targetCount: number): number[] {
   return result
 }
 
-function drawSmoothCurve(
-  ctx: CanvasRenderingContext2D,
-  points: Array<{ x: number; y: number }>,
-  tension = 0.42,
-) {
-  if (points.length === 0) return
-  if (points.length === 1) {
-    ctx.lineTo(points[0].x, points[0].y)
-    return
-  }
+export type BarWaveformSize = "default" | "mini"
 
-  ctx.moveTo(points[0].x, points[0].y)
-
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[Math.max(0, i - 1)]
-    const p1 = points[i]
-    const p2 = points[i + 1]
-    const p3 = points[Math.min(points.length - 1, i + 2)]
-
-    const cp1x = p1.x + ((p2.x - p0.x) / 6) * tension
-    const cp1y = p1.y + ((p2.y - p0.y) / 6) * tension
-    const cp2x = p2.x - ((p3.x - p1.x) / 6) * tension
-    const cp2y = p2.y - ((p3.y - p1.y) / 6) * tension
-
-    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y)
-  }
+export function barCountForWidth(width: number, size: BarWaveformSize = "default"): number {
+  const slotWidth = size === "mini" ? 3.5 : 2.5
+  const min = size === "mini" ? 32 : 64
+  const max = size === "mini" ? 96 : 400
+  return Math.max(min, Math.min(max, Math.floor(width / slotWidth)))
 }
 
-function drawIdleLine(
-  ctx: CanvasRenderingContext2D,
+type BarLayout = {
+  paddingX: number
+  paddingY: number
+  barWidth: number
+  gap: number
+  drawableHeight: number
+  barCount: number
+}
+
+export function computeBarLayout(
   width: number,
   height: number,
-  color: string,
-) {
-  ctx.strokeStyle = color
-  ctx.globalAlpha = 0.25
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(0, height / 2)
-  ctx.lineTo(width, height / 2)
-  ctx.stroke()
-  ctx.globalAlpha = 1
+  barCount: number,
+): BarLayout {
+  const paddingX = 4
+  const paddingY = 6
+  const gap = barCount > 1 ? 1.5 : 0
+  const drawableWidth = Math.max(1, width - paddingX * 2)
+  const barWidth =
+    barCount > 0 ? Math.max(1.5, (drawableWidth - gap * (barCount - 1)) / barCount) : 1.5
+  const drawableHeight = Math.max(1, height - paddingY * 2)
+
+  return { paddingX, paddingY, barWidth, gap, drawableHeight, barCount }
 }
 
-type WaveformShape = {
-  topPoints: Array<{ x: number; y: number }>
-  centerY: number
+type DrawBarLevelsOptions = {
+  minBarHeight?: number
+  maxHeightRatio?: number
+  opacity?: number
+  idleBarCount?: number
 }
 
-function buildWaveformShape(
-  width: number,
-  height: number,
-  levels: number[],
-): WaveformShape | null {
-  if (levels.length === 0) return null
+const DEFAULT_BAR_OPTIONS = {
+  minBarHeight: 2,
+  maxHeightRatio: 0.88,
+  opacity: 0.9,
+  idleBarCount: 48,
+} as const
 
-  const pointCount = Math.max(40, Math.floor(width * 0.9))
-  const smoothed = boostLevels(
-    smoothArray(resampleLevels(levels, pointCount), 3),
-  )
-  const centerY = height / 2
-  const amplitude = height * 0.48
-
-  const topPoints = smoothed.map((level, index) => ({
-    x: (index / (smoothed.length - 1)) * width,
-    y: centerY - clamp01(level) * amplitude,
-  }))
-
-  return { topPoints, centerY }
+function prepareBarLevels(levels: number[], barCount: number): number[] {
+  if (levels.length === 0) return []
+  const resampled = resampleLevels(levels, barCount)
+  return boostLevels(smoothArray(resampled, 1))
 }
 
-function paintWaveformShape(
+function drawSingleBar(
   ctx: CanvasRenderingContext2D,
-  shape: WaveformShape,
+  x: number,
+  bottomY: number,
+  barWidth: number,
+  barHeight: number,
   color: string,
-  fillAlpha: number,
-  strokeAlpha: number,
+  opacity: number,
 ) {
-  const { topPoints, centerY } = shape
-
-  ctx.beginPath()
-  ctx.moveTo(0, centerY)
-  drawSmoothCurve(ctx, topPoints)
-
-  for (let index = topPoints.length - 1; index >= 0; index--) {
-    const point = topPoints[index]
-    ctx.lineTo(point.x, centerY + (centerY - point.y))
-  }
-
-  ctx.closePath()
+  const radius = Math.min(barWidth / 2, 1.5)
   ctx.fillStyle = color
-  ctx.globalAlpha = fillAlpha
-  ctx.fill()
-
+  ctx.globalAlpha = opacity
   ctx.beginPath()
-  drawSmoothCurve(ctx, topPoints)
-  ctx.strokeStyle = color
-  ctx.lineWidth = 1.5
-  ctx.lineJoin = "round"
-  ctx.lineCap = "round"
-  ctx.globalAlpha = strokeAlpha
-  ctx.stroke()
+  ctx.roundRect(x, bottomY - barHeight, barWidth, barHeight, [radius, radius, 0, 0])
+  ctx.fill()
   ctx.globalAlpha = 1
 }
 
-export function drawWaveform(
+function drawIdleBars(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  color: string,
+  idleBarCount: number,
+) {
+  const layout = computeBarLayout(width, height, idleBarCount)
+  const bottomY = layout.paddingY + layout.drawableHeight
+  const idleLevel = 0.08
+
+  for (let i = 0; i < layout.barCount; i++) {
+    const x = layout.paddingX + i * (layout.barWidth + layout.gap)
+    const barHeight = Math.max(
+      DEFAULT_BAR_OPTIONS.minBarHeight,
+      idleLevel * layout.drawableHeight * DEFAULT_BAR_OPTIONS.maxHeightRatio,
+    )
+    drawSingleBar(ctx, x, bottomY, layout.barWidth, barHeight, color, 0.2)
+  }
+}
+
+export function drawBarLevels(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
   levels: number[],
   color: string,
+  options: DrawBarLevelsOptions = {},
 ) {
+  const { minBarHeight, maxHeightRatio, opacity, idleBarCount } = {
+    ...DEFAULT_BAR_OPTIONS,
+    ...options,
+  }
+
   ctx.clearRect(0, 0, width, height)
 
-  const shape = buildWaveformShape(width, height, levels)
-  if (!shape) {
-    drawIdleLine(ctx, width, height, color)
+  const barCount = levels.length > 0 ? levels.length : idleBarCount
+  const layout = computeBarLayout(width, height, barCount)
+  const bottomY = layout.paddingY + layout.drawableHeight
+  const maxBarHeight = layout.drawableHeight * maxHeightRatio
+
+  if (levels.length === 0) {
+    drawIdleBars(ctx, width, height, color, idleBarCount)
     return
   }
 
-  paintWaveformShape(ctx, shape, color, 0.16, 0.88)
+  const smoothed = prepareBarLevels(levels, layout.barCount)
+
+  for (let i = 0; i < smoothed.length; i++) {
+    const level = clamp01(smoothed[i] ?? 0)
+    const barHeight = Math.max(minBarHeight, level * maxBarHeight)
+    const x = layout.paddingX + i * (layout.barWidth + layout.gap)
+    drawSingleBar(ctx, x, bottomY, layout.barWidth, barHeight, color, opacity)
+  }
 }
 
-export function drawWaveformWithProgress(
+type DrawBarLevelsWithProgressOptions = DrawBarLevelsOptions & {
+  showPlayhead?: boolean
+  playedOpacity?: number
+  mutedOpacity?: number
+}
+
+export function drawBarLevelsWithProgress(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
@@ -200,81 +197,62 @@ export function drawWaveformWithProgress(
   progress: number,
   color: string,
   mutedColor: string,
+  options: DrawBarLevelsWithProgressOptions = {},
 ) {
+  const {
+    minBarHeight,
+    maxHeightRatio,
+    idleBarCount,
+    showPlayhead = true,
+    playedOpacity = 0.9,
+    mutedOpacity = 0.35,
+  } = {
+    ...DEFAULT_BAR_OPTIONS,
+    ...options,
+  }
+
   ctx.clearRect(0, 0, width, height)
 
   const progressX = clamp01(progress) * width
-  const shape = buildWaveformShape(width, height, levels)
+  const barCount = levels.length > 0 ? levels.length : idleBarCount
+  const layout = computeBarLayout(width, height, barCount)
+  const bottomY = layout.paddingY + layout.drawableHeight
+  const maxBarHeight = layout.drawableHeight * maxHeightRatio
 
-  if (!shape) {
-    drawIdleLine(ctx, width, height, mutedColor)
+  if (levels.length === 0) {
+    drawIdleBars(ctx, width, height, mutedColor, idleBarCount)
     return
   }
 
-  paintWaveformShape(ctx, shape, mutedColor, 0.08, 0.32)
+  const smoothed = prepareBarLevels(levels, layout.barCount)
 
-  if (progressX > 0) {
-    ctx.save()
+  for (let i = 0; i < smoothed.length; i++) {
+    const level = clamp01(smoothed[i] ?? 0)
+    const barHeight = Math.max(minBarHeight, level * maxBarHeight)
+    const x = layout.paddingX + i * (layout.barWidth + layout.gap)
+    const barCenterX = x + layout.barWidth / 2
+    const isPlayed = barCenterX <= progressX
+    drawSingleBar(
+      ctx,
+      x,
+      bottomY,
+      layout.barWidth,
+      barHeight,
+      isPlayed ? color : mutedColor,
+      isPlayed ? playedOpacity : mutedOpacity,
+    )
+  }
+
+  if (showPlayhead && progressX > 0 && progressX < width) {
+    ctx.strokeStyle = color
+    ctx.globalAlpha = 0.55
+    ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.rect(0, 0, progressX, height)
-    ctx.clip()
-    paintWaveformShape(ctx, shape, color, 0.18, 0.92)
-    ctx.restore()
+    ctx.moveTo(progressX, layout.paddingY)
+    ctx.lineTo(progressX, bottomY)
+    ctx.stroke()
+    ctx.globalAlpha = 1
   }
-}
-
-export function drawOscilloscopeWaveform(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  timeData: Uint8Array<ArrayBuffer>,
-  color: string,
-) {
-  ctx.clearRect(0, 0, width, height)
-
-  if (timeData.length === 0) {
-    drawIdleLine(ctx, width, height, color)
-    return
-  }
-
-  const centerY = height / 2
-  const amplitude = height * 0.48
-  const pointCount = Math.max(48, Math.floor(width * 0.85))
-  const samples: number[] = []
-
-  for (let i = 0; i < pointCount; i++) {
-    const position = (i / (pointCount - 1)) * (timeData.length - 1)
-    const left = Math.floor(position)
-    const right = Math.min(timeData.length - 1, left + 1)
-    const blend = position - left
-    const value = timeData[left] * (1 - blend) + timeData[right] * blend
-    samples.push((value - 128) / 128)
-  }
-
-  const smoothed = smoothArray(amplifyOscilloscopeSamples(smoothSamples(samples)), 2)
-  const points = smoothed.map((sample, index) => ({
-    x: (index / (smoothed.length - 1)) * width,
-    y: centerY - sample * amplitude,
-  }))
-
-  ctx.beginPath()
-  drawSmoothCurve(ctx, points)
-  ctx.strokeStyle = color
-  ctx.lineWidth = 1.5
-  ctx.lineJoin = "round"
-  ctx.lineCap = "round"
-  ctx.globalAlpha = 0.9
-  ctx.stroke()
-
-  ctx.beginPath()
-  drawSmoothCurve(ctx, points)
-  ctx.lineTo(width, centerY)
-  ctx.lineTo(0, centerY)
-  ctx.closePath()
-  ctx.fillStyle = color
-  ctx.globalAlpha = 0.12
-  ctx.fill()
-  ctx.globalAlpha = 1
 }
 
 export function downsamplePeaks(peaks: number[], targetCount: number): number[] {

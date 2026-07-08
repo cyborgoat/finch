@@ -65,6 +65,7 @@
     "stop": "停止",
     "resume": "继续",
     "loading": "加载中…",
+    "loadingAudio": "正在加载音频…",
     "starting": "启动中…",
     "creating": "创建中…",
     "processing": "处理中…",
