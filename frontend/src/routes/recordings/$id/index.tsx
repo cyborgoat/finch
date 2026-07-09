@@ -120,15 +120,18 @@ function RecordingDetailPage() {
 }
 
 function RecordingPageAudioEmbedded({
+  recordingId,
   audioAssetId,
   title,
 }: {
+  recordingId: string
   audioAssetId: string
   title: string
 }) {
   return (
     <RecordingPageAudio
       variant="embedded"
+      recordingId={recordingId}
       audioAssetId={audioAssetId}
       title={title}
     />
@@ -187,6 +190,7 @@ function RecordingFileDetail({ id }: { id: string }) {
 
   const audio = (
     <RecordingPageAudioEmbedded
+      recordingId={recording.id}
       audioAssetId={recording.audioAssetId}
       title={recording.title}
     />
