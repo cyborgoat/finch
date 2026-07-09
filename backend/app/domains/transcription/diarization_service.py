@@ -1,9 +1,9 @@
 import logging
-import subprocess
 from pathlib import Path
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
+from app.domains.media.subprocess_utils import run_ffmpeg
 from app.domains.transcription.types import (
     DiarizationTurn,
     SpeakerSegment,
@@ -294,9 +294,8 @@ def extract_audio_slice(
     output_path = safe_join(output_dir, f"{segment_id}.wav")
 
     try:
-        subprocess.run(
+        run_ffmpeg(
             [
-                "ffmpeg",
                 "-y",
                 "-ss",
                 str(start_sec),
@@ -312,21 +311,11 @@ def extract_audio_slice(
                 "pcm_s16le",
                 str(output_path),
             ],
-            check=True,
-            capture_output=True,
+            error_code="DIARIZATION_FAILED",
+            error_message="Could not extract audio segment for transcription.",
         )
-    except FileNotFoundError as exc:
-        raise AppError(
-            "AUDIO_NORMALIZATION_FAILED",
-            "ffmpeg is not installed or not available on PATH.",
-            500,
-        ) from exc
-    except subprocess.CalledProcessError as exc:
-        raise AppError(
-            "DIARIZATION_FAILED",
-            "Could not extract audio segment for transcription.",
-            500,
-        ) from exc
+    except AppError:
+        raise
 
     return str(output_path)
 

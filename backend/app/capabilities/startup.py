@@ -212,19 +212,19 @@ def log_transcription_pipeline(
     if capabilities.diarization_enabled:
         if capabilities.diarization_ready:
             if settings.audio_purification_enabled:
-                logger.info(
+                logger.debug(
                     "Transcription pipeline: audio purification → diarization → "
                     "per-speaker ASR → labeled transcript"
                 )
             else:
-                logger.info(
+                logger.debug(
                     "Transcription pipeline: diarization → per-speaker ASR → labeled transcript"
                 )
         else:
-            logger.warning(
+            logger.debug(
                 "Transcription pipeline: diarization NOT READY (%s) — "
                 "will fall back to full-file ASR without speaker labels",
                 capabilities.diarization_reason or "unknown",
             )
     else:
-        logger.info("Transcription pipeline: full-file ASR (diarization disabled)")
+        logger.debug("Transcription pipeline: full-file ASR (diarization disabled)")

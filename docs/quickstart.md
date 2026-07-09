@@ -178,7 +178,7 @@ Finch supports files up to **2 hours** and **500 MB**. For meetings and podcasts
 
 - Transcription may take **tens of minutes to over an hour** depending on hardware and diarization.
 - Keep the Huey worker running; you can leave the page while jobs run.
-- With diarization on long meetings, set `DIARIZATION_MAX_SEGMENTS=50` (or similar) in `.env`.
+- With diarization on long meetings, prefer `DIARIZATION_MERGE_GAP_SECONDS`; set `DIARIZATION_MAX_SEGMENTS` only when you need to cap runtime (see [long-audio.md](long-audio.md)).
 
 Full guidance: **[long-audio.md](long-audio.md)**
 
@@ -194,5 +194,7 @@ Full guidance: **[long-audio.md](long-audio.md)**
 | No speaker labels | Run `uv run python scripts/validate_diarization.py` |
 | Speaker names not saving | Click the speaker name on a turn — labels save immediately; enable auto-label in **Settings → Voiceprint profiles** for voiceprints |
 | Slow long audio | Expected on CPU/MPS; ASR chunks ~45s segments — see [long-audio.md](long-audio.md) |
+| Partial timeline / transcript | Segment cap may have applied — check Huey worker logs for WARNING lines; see [long-audio.md](long-audio.md) |
+| Huey worker won't exit on Ctrl+C | **SIGINT** is graceful: Huey waits for the current task checkpoint. ASR may still block inside one inference pass. Stop at the next chunk/segment when possible, or send **SIGTERM** for immediate interrupt (interrupted transcription jobs are re-enqueued). macOS `MallocStackLogging` lines are harmless. For systemd/deploy: `KillSignal=SIGINT` with a reasonable `TimeoutStopSec`. |
 | Failed transcript visible | By design — check `errorMessage`, fix issue, re-transcribe |
 | Browser recording stops at 2 h | Hard cap matches backend max duration — upload for longer content |

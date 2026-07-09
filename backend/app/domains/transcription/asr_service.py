@@ -1,11 +1,12 @@
 import logging
-import math
 from collections.abc import Callable
 
 from pydantic import BaseModel
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
+from app.core.progress_log import progress_log
+from app.workers.cancellation import check_cancelled
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,21 @@ class AsrService:
 
         logger.info("ASR model loaded successfully")
 
+    def unload_model(self) -> None:
+        self._model = None
+        try:
+            import gc
+
+            import torch
+
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
+        except ImportError:
+            pass
+
     def _transcribe_chunked(
         self,
         audio_path: str,
@@ -110,65 +126,67 @@ class AsrService:
 
         sample_rate = 16000
         min_chunk_seconds = 0.5
-        total_chunks = max(1, math.ceil(duration / CHUNK_SECONDS))
-
-        texts: list[str] = []
-        detected_language: str | None = None
-        chunk_index = 0
+        chunk_ranges: list[tuple[float, float]] = []
         offset = 0.0
-
         while offset < duration:
             chunk_duration = min(CHUNK_SECONDS, duration - offset)
             if chunk_duration < min_chunk_seconds:
                 break
-
-            chunk_index += 1
-            start_sec = offset
-            end_sec = offset + chunk_duration
-
-            logger.info(
-                "Transcribing chunk %s/%s (%.1fs - %.1fs)",
-                chunk_index,
-                total_chunks,
-                start_sec,
-                end_sec,
-            )
-
-            chunk, _ = librosa.load(
-                audio_path,
-                sr=sample_rate,
-                mono=True,
-                offset=start_sec,
-                duration=chunk_duration,
-            )
-
-            results = self._model.transcribe(
-                audio=(chunk.astype(np.float32), sample_rate),
-                language=resolved_language,
-            )
-            result = results[0]
-            chunk_text = result.text.strip()
-
-            logger.info(
-                "Chunk %s/%s transcript (%s): %s",
-                chunk_index,
-                total_chunks,
-                result.language or "unknown",
-                chunk_text or "(empty)",
-            )
-
-            if on_chunk is not None:
-                on_chunk(chunk_index, total_chunks, start_sec, end_sec, chunk_text, result.language)
-
-            if chunk_text:
-                texts.append(chunk_text)
-            if result.language and not detected_language:
-                detected_language = result.language
-
+            chunk_ranges.append((offset, offset + chunk_duration))
             offset += CHUNK_SECONDS
 
+        total_chunks = max(len(chunk_ranges), 1)
+        texts: list[str] = []
+        detected_language: str | None = None
+
+        with progress_log("ASR chunks", total_chunks, unit="chunk") as progress:
+            for chunk_index, (start_sec, end_sec) in enumerate(chunk_ranges, start=1):
+                check_cancelled()
+                chunk_duration = end_sec - start_sec
+
+                chunk, _ = librosa.load(
+                    audio_path,
+                    sr=sample_rate,
+                    mono=True,
+                    offset=start_sec,
+                    duration=chunk_duration,
+                )
+
+                results = self._model.transcribe(
+                    audio=(chunk.astype(np.float32), sample_rate),
+                    language=resolved_language,
+                )
+                result = results[0]
+                chunk_text = result.text.strip()
+
+                if on_chunk is not None:
+                    on_chunk(
+                        chunk_index,
+                        total_chunks,
+                        start_sec,
+                        end_sec,
+                        chunk_text,
+                        result.language,
+                    )
+
+                if chunk_text:
+                    texts.append(chunk_text)
+                if result.language and not detected_language:
+                    detected_language = result.language
+
+                progress.step()
+
+        combined = " ".join(texts)
+        logger.info(
+            "ASR chunked transcription complete: %d chunks, %.1fs audio, language=%s",
+            total_chunks,
+            duration,
+            detected_language or "unknown",
+        )
+        logger.debug("ASR chunked output: %d characters", len(combined))
+
         return AsrResult(
-            text=" ".join(texts),
+            text=combined,
             language=detected_language,
             duration_seconds=duration,
         )
@@ -188,6 +206,7 @@ class AsrService:
             duration = float(librosa.get_duration(path=audio_path))
 
             if duration > SINGLE_PASS_MAX_SECONDS:
+                check_cancelled()
                 return self._transcribe_chunked(
                     audio_path,
                     resolved_language,
@@ -195,17 +214,18 @@ class AsrService:
                     on_chunk=on_chunk,
                 )
 
-            logger.info("Transcribing full audio (%.1fs)", duration)
+            check_cancelled()
+            logger.debug("Transcribing audio slice (%.1fs)", duration)
             results = self._model.transcribe(
                 audio=audio_path,
                 language=resolved_language,
             )
             result = results[0]
             chunk_text = result.text.strip()
-            logger.info(
-                "Single-pass transcript (%s): %s",
+            logger.debug(
+                "Single-pass complete: language=%s, %d characters",
                 result.language or "unknown",
-                chunk_text or "(empty)",
+                len(chunk_text),
             )
             if on_chunk is not None:
                 on_chunk(1, 1, 0.0, duration, chunk_text, result.language)

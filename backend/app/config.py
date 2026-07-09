@@ -57,6 +57,8 @@ class Settings(BaseSettings):
 
     max_upload_mb: int = 500
     max_audio_duration_seconds: int = 7200
+    ffmpeg_timeout_seconds: int = 600
+    audio_purification_denoise_max_duration_seconds: int = 3600
 
     huey_db_path: str | None = Field(default=None, validation_alias=AliasChoices("HUEY_DB_PATH"))
 

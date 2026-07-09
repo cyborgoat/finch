@@ -1,3 +1,4 @@
+import concurrent.futures
 import logging
 import tempfile
 from pathlib import Path
@@ -9,6 +10,7 @@ from app.capabilities.startup import log_transcription_pipeline
 from app.config import Settings, get_settings
 from app.core.enums import JobStatus, RecordingStatus
 from app.core.errors import AppError
+from app.core.progress_log import progress_log
 from app.domains.jobs.job_service import JobService
 from app.domains.media.audio_service import AudioService
 from app.domains.recordings.recording_service import RecordingService
@@ -32,6 +34,10 @@ from app.domains.transcription.pipeline_diarization import (
     should_fallback_from_diarization,
 )
 from app.domains.transcription.pipeline_voiceprint import apply_voiceprint_labels
+from app.domains.transcription.segment_limits import (
+    build_segment_cap_note,
+    resolve_effective_max_segments,
+)
 from app.domains.transcription.types import (
     DiarizationTurn,
     SpeakerSegment,
@@ -39,6 +45,7 @@ from app.domains.transcription.types import (
     speaker_segments_to_json,
 )
 from app.domains.voiceprint.matching_service import VoiceprintMatchResult
+from app.workers.cancellation import check_cancelled
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +73,7 @@ class TranscriptionPipeline:
                 audio_asset_id,
                 language,
             )
+            check_cancelled()
             log_transcription_pipeline(self.settings, session=self.session)
 
             self.job_service.update_job(
@@ -86,20 +94,15 @@ class TranscriptionPipeline:
             raw_text: str
             detected_language: str | None
             segments: list[SpeakerSegment]
-            processing_note: str | None = None
 
             if self.transcription_settings.is_diarization_enabled():
                 try:
                     self.diarization_service.load_pipeline()
-                    raw_text, detected_language, segments, purification_note = (
-                        self._transcribe_with_diarization(
-                            job=job,
-                            audio_asset=audio_asset,
-                            language=language,
-                        )
+                    raw_text, detected_language, segments = self._transcribe_with_diarization(
+                        job=job,
+                        audio_asset=audio_asset,
+                        language=language,
                     )
-                    if purification_note and not processing_note:
-                        processing_note = purification_note
                 except AppError as exc:
                     self.diarization_service.unload_pipeline()
                     if should_fallback_from_diarization(exc):
@@ -108,8 +111,8 @@ class TranscriptionPipeline:
                             "full-file ASR without speaker labels",
                             exc.message,
                         )
+                        logger.warning("%s", build_diarization_fallback_note(exc))
                         log_error_guidance(exc.code, exc.message)
-                        processing_note = build_diarization_fallback_note(exc)
                         raw_text, detected_language, segments = self._transcribe_single_pass(
                             job=job,
                             normalized_path=audio_asset.normalized_path,
@@ -140,7 +143,7 @@ class TranscriptionPipeline:
                 speaker_segments=speaker_json,
                 status=RecordingStatus.DRAFT,
                 error_message=None,
-                processing_note=processing_note,
+                processing_note=None,
             )
 
             if segments:
@@ -158,12 +161,10 @@ class TranscriptionPipeline:
                     "Transcription job %s completed: single-pass transcript, language=%s%s",
                     job_id,
                     detected_language or "unknown",
-                    " (no speaker labels — see startup logs or transcript processing note)"
+                    " (no speaker labels — see worker logs)"
                     if self.transcription_settings.is_diarization_enabled()
                     else "",
                 )
-            if processing_note:
-                logger.warning("Processing note saved on transcript: %s", processing_note)
 
             self.job_service.update_job(
                 job,
@@ -190,6 +191,37 @@ class TranscriptionPipeline:
                 stage=job.stage,
                 error=str(exc),
             )
+        finally:
+            self._release_models()
+
+    def _release_models(self) -> None:
+        self.asr_service.unload_model()
+        self.diarization_service.unload_pipeline()
+
+    def _diarize_with_progress(
+        self,
+        job,
+        audio_path: str,
+        duration_seconds: float | None,
+    ):
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(
+                self.diarization_service.diarize,
+                audio_path,
+                duration_seconds,
+            )
+            progress = 0.25
+            while True:
+                check_cancelled()
+                try:
+                    return future.result(timeout=10)
+                except concurrent.futures.TimeoutError:
+                    progress = min(progress + 0.005, 0.279)
+                    self.job_service.update_job(
+                        job,
+                        progress=progress,
+                        stage="running_diarization",
+                    )
 
     def _mark_recording_failed(self, job, error_message: str) -> None:
         if not job.result_id:
@@ -223,6 +255,7 @@ class TranscriptionPipeline:
             _text: str,
             _language: str | None,
         ) -> None:
+            check_cancelled()
             progress = 0.4 + (0.4 * chunk_index / total_chunks)
             self.job_service.update_job(
                 job,
@@ -243,7 +276,7 @@ class TranscriptionPipeline:
         job,
         audio_asset,
         language: str,
-    ) -> tuple[str, str | None, list[SpeakerSegment], str | None]:
+    ) -> tuple[str, str | None, list[SpeakerSegment]]:
         diarization_path = (
             audio_asset.original_path
             if self.settings.diarization_use_original_audio
@@ -257,7 +290,6 @@ class TranscriptionPipeline:
             )
 
         purified: PurifiedAudio | None = None
-        purification_note: str | None = None
         try:
             duration = self.audio_service.get_duration(diarization_path)
             diarize_path = diarization_path
@@ -272,9 +304,12 @@ class TranscriptionPipeline:
                     if purified is not None:
                         diarize_path = purified.path
                         diarize_duration = purified.duration_sec
-                        purification_note = format_purification_note(
-                            purified.original_duration_sec,
-                            purified.duration_sec,
+                        logger.info(
+                            "%s",
+                            format_purification_note(
+                                purified.original_duration_sec,
+                                purified.duration_sec,
+                            ),
                         )
                 except Exception as exc:
                     logger.warning(
@@ -283,16 +318,33 @@ class TranscriptionPipeline:
                     )
 
             self.job_service.update_job(job, progress=0.25, stage="running_diarization")
-            turns = self.diarization_service.diarize(diarize_path, diarize_duration)
+            turns = self._diarize_with_progress(job, diarize_path, diarize_duration)
             if purified is not None and purified.time_map:
                 turns = remap_turns_to_original(turns, purified.time_map)
 
-            merged_turns = merge_adjacent_turns(
+            effective_max_segments = resolve_effective_max_segments(
+                self.settings,
+                duration,
+            )
+            merged_all = merge_adjacent_turns(
                 turns,
                 min_segment_seconds=self.settings.diarization_min_segment_seconds,
                 merge_gap_seconds=self.settings.diarization_merge_gap_seconds,
-                max_segments=self.settings.diarization_max_segments,
+                max_segments=0,
             )
+            segment_cap_note: str | None = None
+            if effective_max_segments > 0 and len(merged_all) > effective_max_segments:
+                merged_turns = merged_all[:effective_max_segments]
+                transcribed_until = merged_turns[-1].end_sec if merged_turns else 0.0
+                segment_cap_note = build_segment_cap_note(
+                    max_segments=effective_max_segments,
+                    audio_duration_sec=duration or transcribed_until,
+                    transcribed_until_sec=transcribed_until,
+                    total_segments_before_cap=len(merged_all),
+                )
+                logger.warning("%s", segment_cap_note)
+            else:
+                merged_turns = merged_all
 
             min_segment = self.settings.diarization_min_segment_seconds
             if not merged_turns:
@@ -326,51 +378,54 @@ class TranscriptionPipeline:
             total = max(len(merged_turns), 1)
 
             try:
-                for index, turn in enumerate(merged_turns, start=1):
-                    progress = 0.3 + (0.45 * index / total)
-                    self.job_service.update_job(
-                        job,
-                        progress=progress,
-                        stage=f"running_asr_segment_{index}_of_{total}",
-                    )
-                    slice_path = extract_audio_slice(
-                        audio_asset.normalized_path or diarization_path,
-                        turn.start_sec,
-                        turn.end_sec,
-                        str(temp_dir),
-                        f"seg_{index}",
-                    )
-                    result = self.asr_service.transcribe(slice_path, language=language)
-                    if result.language and not detected_language:
-                        detected_language = result.language
-                    cluster_id = turn.cluster_id or turn.speaker
-                    resolution = cluster_resolutions.get(cluster_id)
-                    speaker_label = (
-                        resolution.display_name
-                        if resolution is not None
-                        else turn.speaker
-                    )
-                    segments.append(
-                        SpeakerSegment(
-                            speaker=speaker_label,
-                            start_sec=turn.start_sec,
-                            end_sec=turn.end_sec,
-                            text=result.text.strip(),
-                            cluster_id=turn.cluster_id,
-                            voiceprint_profile_id=(
-                                resolution.voiceprint_profile_id if resolution else None
-                            ),
-                            match_confidence=(
-                                resolution.match_confidence if resolution else None
-                            ),
-                            match_status=resolution.match_status if resolution else None,
+                with progress_log("ASR segments", total, unit="seg") as asr_progress:
+                    for index, turn in enumerate(merged_turns, start=1):
+                        check_cancelled()
+                        job_progress = 0.3 + (0.45 * index / total)
+                        self.job_service.update_job(
+                            job,
+                            progress=job_progress,
+                            stage=f"running_asr_segment_{index}_of_{total}",
                         )
-                    )
+                        slice_path = extract_audio_slice(
+                            audio_asset.normalized_path or diarization_path,
+                            turn.start_sec,
+                            turn.end_sec,
+                            str(temp_dir),
+                            f"seg_{index}",
+                        )
+                        result = self.asr_service.transcribe(slice_path, language=language)
+                        if result.language and not detected_language:
+                            detected_language = result.language
+                        cluster_id = turn.cluster_id or turn.speaker
+                        resolution = cluster_resolutions.get(cluster_id)
+                        speaker_label = (
+                            resolution.display_name
+                            if resolution is not None
+                            else turn.speaker
+                        )
+                        segments.append(
+                            SpeakerSegment(
+                                speaker=speaker_label,
+                                start_sec=turn.start_sec,
+                                end_sec=turn.end_sec,
+                                text=result.text.strip(),
+                                cluster_id=turn.cluster_id,
+                                voiceprint_profile_id=(
+                                    resolution.voiceprint_profile_id if resolution else None
+                                ),
+                                match_confidence=(
+                                    resolution.match_confidence if resolution else None
+                                ),
+                                match_status=resolution.match_status if resolution else None,
+                            )
+                        )
+                        asr_progress.step()
             finally:
                 cleanup_temp_dir(temp_dir)
                 temp_dir.rmdir()
 
             raw_text = build_labeled_transcript(segments)
-            return raw_text, detected_language, segments, purification_note
+            return raw_text, detected_language, segments
         finally:
             cleanup_purified(purified)

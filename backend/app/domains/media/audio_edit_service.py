@@ -1,6 +1,5 @@
 import logging
 import shutil
-import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,6 +8,7 @@ import librosa
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
+from app.domains.media.subprocess_utils import run_ffmpeg
 from app.domains.transcription.audio_purification_service import (
     build_compressed_wav,
     detect_speech_regions,
@@ -131,9 +131,8 @@ class AudioEditService:
     ) -> None:
         duration = end_sec - start_sec
         try:
-            subprocess.run(
+            run_ffmpeg(
                 [
-                    "ffmpeg",
                     "-y",
                     "-ss",
                     str(start_sec),
@@ -149,21 +148,12 @@ class AudioEditService:
                     "pcm_s16le",
                     output_path,
                 ],
-                check=True,
-                capture_output=True,
+                settings=self.settings,
+                error_code="AUDIO_EDIT_FAILED",
+                error_message="Could not trim audio file.",
             )
-        except FileNotFoundError as exc:
-            raise AppError(
-                "AUDIO_NORMALIZATION_FAILED",
-                "ffmpeg is not installed or not available on PATH.",
-                500,
-            ) from exc
-        except subprocess.CalledProcessError as exc:
-            raise AppError(
-                "AUDIO_EDIT_FAILED",
-                "Could not trim audio file.",
-                500,
-            ) from exc
+        except AppError:
+            raise
 
     def _remove_silence(self, source_path: str, output_path: str) -> None:
         raw_regions = detect_speech_regions(

@@ -1,15 +1,16 @@
 import logging
 import shutil
-import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+import librosa
 import numpy as np
 import soundfile as sf
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
+from app.domains.media.subprocess_utils import run_ffmpeg
 from app.domains.transcription.types import DiarizationTurn
 
 logger = logging.getLogger(__name__)
@@ -147,37 +148,35 @@ def format_purification_note(original_duration_sec: float, purified_duration_sec
     )
 
 
-def _denoise_audio(source_path: str, output_path: str) -> None:
+def _denoise_audio(source_path: str, output_path: str, *, settings: Settings) -> None:
+    run_ffmpeg(
+        [
+            "-y",
+            "-i",
+            source_path,
+            "-af",
+            "afftdn",
+            "-ar",
+            str(SAMPLE_RATE),
+            "-ac",
+            "1",
+            "-c:a",
+            "pcm_s16le",
+            output_path,
+        ],
+        settings=settings,
+        error_code="AUDIO_PURIFICATION_FAILED",
+        error_message="Could not denoise audio before diarization.",
+    )
+
+
+def _probe_duration(path: str) -> float:
     try:
-        subprocess.run(
-            [
-                "ffmpeg",
-                "-y",
-                "-i",
-                source_path,
-                "-af",
-                "afftdn",
-                "-ar",
-                str(SAMPLE_RATE),
-                "-ac",
-                "1",
-                "-c:a",
-                "pcm_s16le",
-                output_path,
-            ],
-            check=True,
-            capture_output=True,
-        )
-    except FileNotFoundError as exc:
-        raise AppError(
-            "AUDIO_NORMALIZATION_FAILED",
-            "ffmpeg is not installed or not available on PATH.",
-            500,
-        ) from exc
-    except subprocess.CalledProcessError as exc:
+        return float(librosa.get_duration(path=path))
+    except Exception as exc:
         raise AppError(
             "AUDIO_PURIFICATION_FAILED",
-            "Could not denoise audio before diarization.",
+            "Could not read audio duration.",
             500,
         ) from exc
 
@@ -251,9 +250,20 @@ class AudioPurificationService:
         purified_path = temp_dir / "purified.wav"
 
         try:
-            if self.settings.audio_purification_denoise:
-                _denoise_audio(source_path, str(denoised_path))
+            source_duration = _probe_duration(source_path)
+            if (
+                self.settings.audio_purification_denoise
+                and source_duration
+                <= self.settings.audio_purification_denoise_max_duration_seconds
+            ):
+                _denoise_audio(source_path, str(denoised_path), settings=self.settings)
                 vad_input_path = str(denoised_path)
+            elif self.settings.audio_purification_denoise:
+                logger.info(
+                    "Skipping denoise for %.1fs audio (limit %.0fs)",
+                    source_duration,
+                    self.settings.audio_purification_denoise_max_duration_seconds,
+                )
 
             raw_regions = detect_speech_regions(
                 vad_input_path,
@@ -302,7 +312,7 @@ class AudioPurificationService:
             time_map = build_time_map(merged_regions)
             duration_sec = build_compressed_wav(source_path, merged_regions, str(purified_path))
 
-            original_duration_sec = self._get_duration(source_path)
+            original_duration_sec = _probe_duration(source_path)
             logger.info(
                 "Audio purified for diarization: %.1fs → %.1fs (%d speech region(s))",
                 original_duration_sec,
@@ -329,8 +339,3 @@ class AudioPurificationService:
             )
             raise
 
-    def _get_duration(self, path: str) -> float:
-        data, sample_rate = sf.read(path, dtype="float32")
-        if data.ndim > 1:
-            data = data.mean(axis=1)
-        return len(data) / sample_rate

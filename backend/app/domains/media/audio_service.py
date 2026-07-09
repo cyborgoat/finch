@@ -1,6 +1,5 @@
 import mimetypes
 import shutil
-import subprocess
 from pathlib import Path
 
 import librosa
@@ -10,6 +9,7 @@ from sqlmodel import Session
 from app.config import Settings, get_settings
 from app.core.errors import AppError
 from app.core.ids import generate_audio_id
+from app.domains.media.subprocess_utils import run_ffmpeg
 from app.models.audio_asset import AudioAsset
 from app.storage.file_store import safe_join
 
@@ -135,9 +135,8 @@ class AudioService:
         normalized_path = safe_join(self.settings.normalized_audio_dir, normalized_filename)
 
         try:
-            subprocess.run(
+            run_ffmpeg(
                 [
-                    "ffmpeg",
                     "-y",
                     "-i",
                     audio_asset.original_path,
@@ -149,21 +148,10 @@ class AudioService:
                     "pcm_s16le",
                     str(normalized_path),
                 ],
-                check=True,
-                capture_output=True,
+                settings=self.settings,
             )
-        except FileNotFoundError as exc:
-            raise AppError(
-                "AUDIO_NORMALIZATION_FAILED",
-                "ffmpeg is not installed or not available on PATH.",
-                500,
-            ) from exc
-        except subprocess.CalledProcessError as exc:
-            raise AppError(
-                "AUDIO_NORMALIZATION_FAILED",
-                "Could not normalize audio file.",
-                500,
-            ) from exc
+        except AppError:
+            raise
 
         duration = self.get_duration(str(normalized_path))
         if duration is not None and duration > self.settings.max_audio_duration_seconds:

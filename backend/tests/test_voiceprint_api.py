@@ -246,7 +246,7 @@ def test_enroll_voiceprint_profile_from_audio_sample(client, db_session, sample_
         json={"voiceprintProfilesEnabled": True},
     )
 
-    with patch("app.domains.media.audio_service.subprocess.run") as mock_run:
+    with patch("app.domains.media.subprocess_utils.subprocess.run") as mock_run:
         from tests.support.fakes import fake_ffmpeg_run
 
         mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)

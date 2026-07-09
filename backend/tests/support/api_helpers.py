@@ -18,7 +18,7 @@ def configure_llm(client: TestClient) -> None:
 
 
 def upload_sample_audio(client: TestClient, sample_wav: bytes) -> str:
-    with patch("app.domains.media.audio_service.subprocess.run") as mock_run:
+    with patch("app.domains.media.subprocess_utils.subprocess.run") as mock_run:
         mock_run.side_effect = fake_ffmpeg_run(sample_wav)
         upload = client.post(
             "/api/audio/upload",
@@ -57,7 +57,7 @@ def start_recording_transcription(client: TestClient, recording_id: str, **paylo
 
 def create_recording(client: TestClient, sample_wav: bytes) -> str:
     audio_id = upload_sample_audio(client, sample_wav)
-    with patch("app.domains.media.audio_service.subprocess.run") as mock_run:
+    with patch("app.domains.media.subprocess_utils.subprocess.run") as mock_run:
         mock_run.side_effect = fake_ffmpeg_run(sample_wav)
         create_response = client.post(
             "/api/recordings",

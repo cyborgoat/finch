@@ -20,16 +20,13 @@ def _edit_source(client, recording_id: str, **payload):
     )
 
 
-@patch("app.domains.media.audio_edit_service.subprocess.run")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_edit_source_trim_replace(
-    mock_audio_run,
-    mock_edit_run,
+    mock_ffmpeg_run,
     client,
     sample_wav_bytes,
 ):
-    mock_audio_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
-    mock_edit_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+    mock_ffmpeg_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
     audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
     recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
@@ -69,16 +66,13 @@ def test_edit_source_trim_replace(
     assert recording_after["editedText"] == ""
 
 
-@patch("app.domains.media.audio_edit_service.subprocess.run")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_edit_source_save_as_new(
-    mock_audio_run,
-    mock_edit_run,
+    mock_ffmpeg_run,
     client,
     sample_wav_bytes,
 ):
-    mock_audio_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
-    mock_edit_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+    mock_ffmpeg_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
     audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
     recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
@@ -105,16 +99,13 @@ def test_edit_source_save_as_new(
     assert original_recording["audioAssetId"] == audio_id
 
 
-@patch("app.domains.media.audio_edit_service.subprocess.run")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_edit_source_rejects_short_trim(
-    mock_audio_run,
-    mock_edit_run,
+    mock_ffmpeg_run,
     client,
     sample_wav_bytes,
 ):
-    mock_audio_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
-    mock_edit_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+    mock_ffmpeg_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
     audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
     recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
@@ -131,17 +122,14 @@ def test_edit_source_rejects_short_trim(
 
 
 @patch("app.domains.media.audio_edit_service.detect_speech_regions", return_value=[])
-@patch("app.domains.media.audio_edit_service.subprocess.run")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_edit_source_remove_silence_no_speech(
-    mock_audio_run,
-    mock_edit_run,
+    mock_ffmpeg_run,
     _mock_detect,
     client,
     sample_wav_bytes,
 ):
-    mock_audio_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
-    mock_edit_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+    mock_ffmpeg_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
     audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
     recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
@@ -159,11 +147,9 @@ def test_edit_source_remove_silence_no_speech(
 @patch("app.domains.media.audio_edit_service.build_compressed_wav")
 @patch("app.domains.media.audio_edit_service.merge_speech_regions")
 @patch("app.domains.media.audio_edit_service.detect_speech_regions")
-@patch("app.domains.media.audio_edit_service.subprocess.run")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_edit_source_remove_silence_shortens_output(
-    mock_audio_run,
-    mock_edit_run,
+    mock_ffmpeg_run,
     mock_detect,
     mock_merge,
     mock_build,
@@ -171,8 +157,7 @@ def test_edit_source_remove_silence_shortens_output(
     sample_wav_bytes,
     tmp_path: Path,
 ):
-    mock_audio_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
-    mock_edit_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+    mock_ffmpeg_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
     mock_detect.return_value = [(0.0, 1.0), (3.0, 4.0)]
     mock_merge.return_value = [(0.0, 1.0), (3.0, 4.0)]
 

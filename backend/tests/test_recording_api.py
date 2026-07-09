@@ -16,7 +16,7 @@ RECORDING_TITLE_PATTERN = re.compile(
 )
 
 
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_transcription_flow(mock_run, client, sample_wav_bytes):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
 
@@ -62,7 +62,7 @@ def test_transcription_flow(mock_run, client, sample_wav_bytes):
 
 
 @patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_create_recording_returns_pending(
     mock_run,
     mock_worker,
@@ -85,7 +85,7 @@ def test_create_recording_returns_pending(
 
 
 @patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def teststart_recording_transcription_sets_transcribing_status(
     mock_run,
     mock_worker,
@@ -106,7 +106,7 @@ def teststart_recording_transcription_sets_transcribing_status(
 
 
 @patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_transcribing_recording_includes_active_job_id(
     mock_run,
     mock_worker,
@@ -128,7 +128,7 @@ def test_transcribing_recording_includes_active_job_id(
 
 
 @patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_create_recording_uses_datetime_title_for_mic_recordings(
     mock_run,
     mock_worker,
@@ -150,7 +150,7 @@ def test_create_recording_uses_datetime_title_for_mic_recordings(
 
 
 @patch("app.domains.jobs.transcription_jobs.enqueue_transcription")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_create_recording_uses_unique_titles_for_same_minute(
     mock_run,
     mock_worker,
@@ -175,7 +175,7 @@ def test_create_recording_uses_unique_titles_for_same_minute(
     assert all(RECORDING_TITLE_PATTERN.match(title) for title in titles)
 
 
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_regenerate_transcription_clears_existing_text(
     mock_run,
     client,
@@ -203,7 +203,7 @@ def test_regenerate_transcription_clears_existing_text(
 
 
 @patch("app.domains.transcription.pipeline.DiarizationService.load_pipeline")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_diarization_fallback_when_hf_token_missing(
     mock_run,
     mock_load_pipeline,
@@ -238,7 +238,7 @@ def test_diarization_fallback_when_hf_token_missing(
 
 @patch("app.domains.transcription.pipeline.DiarizationService.load_pipeline")
 @patch("app.domains.transcription.pipeline.DiarizationService.diarize")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_diarization_produces_speaker_labeled_transcript(
     mock_run,
     mock_diarize,
@@ -274,7 +274,7 @@ def test_diarization_produces_speaker_labeled_transcript(
 @patch("app.domains.transcription.pipeline.DiarizationService.load_pipeline")
 @patch("app.domains.transcription.pipeline.DiarizationService.diarize")
 @patch("app.domains.transcription.pipeline.extract_audio_slice")
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_diarization_with_purification_remaps_timestamps(
     mock_run,
     mock_extract_slice,
@@ -338,7 +338,69 @@ def test_diarization_with_purification_remaps_timestamps(
     assert transcript["speakerSegments"][1]["startSec"] == pytest.approx(200.0)
 
 
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.transcription.pipeline.DiarizationService.load_pipeline")
+@patch("app.domains.transcription.pipeline.DiarizationService.diarize")
+@patch("app.domains.transcription.pipeline.AudioService.get_duration")
+@patch("app.domains.transcription.pipeline.extract_audio_slice")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
+def test_diarization_segment_cap_logs_only(
+    mock_run,
+    mock_extract_slice,
+    mock_get_duration,
+    mock_diarize,
+    mock_load_pipeline,
+    client,
+    sample_wav_bytes,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    from app.config import get_settings
+    from app.domains.transcription.types import DiarizationTurn
+
+    warning_messages: list[str] = []
+
+    def _capture_warning(message, *args):
+        if args:
+            warning_messages.append(message % args)
+        else:
+            warning_messages.append(str(message))
+
+    monkeypatch.setattr(
+        "app.domains.transcription.pipeline.logger.warning",
+        _capture_warning,
+    )
+
+    mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
+    mock_get_duration.return_value = 7200.0
+    mock_extract_slice.return_value = str(tmp_path / "slice.wav")
+    mock_diarize.return_value = [
+        DiarizationTurn(
+            f"Speaker {(index % 2) + 1}",
+            float(index * 120),
+            float((index + 1) * 120),
+            cluster_id=f"SPEAKER_0{index % 2}",
+        )
+        for index in range(80)
+    ]
+
+    monkeypatch.setenv("DIARIZATION_ENABLED", "true")
+    monkeypatch.setenv("DIARIZATION_MAX_SEGMENTS", "50")
+    get_settings.cache_clear()
+
+    audio_id = upload_audio(client, sample_wav_bytes).json()["id"]
+    recording_id = create_pending_recording(client, audio_id).json()["recordingId"]
+    job_id = start_recording_transcription(client, recording_id).json()["jobId"]
+
+    job = client.get(f"/api/jobs/{job_id}").json()
+    assert job["status"] == "completed"
+
+    transcript = client.get(f"/api/recordings/{job['resultId']}").json()
+    assert transcript["processingNote"] is None
+    assert len(transcript["speakerSegments"]) == 50
+    assert any("capped at 50 segments" in message for message in warning_messages)
+
+
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_failed_transcription_keeps_recording_with_error(
     mock_run,
     client,

@@ -29,6 +29,8 @@ def _create_huey() -> SqliteHuey:
 
 
 def _register_tasks(h: SqliteHuey) -> None:
+    from huey.signals import SIGNAL_INTERRUPTED
+
     @h.task(retries=2, retry_delay=5)
     def run_transcription_task(
         job_id: str,
@@ -52,6 +54,16 @@ def _register_tasks(h: SqliteHuey) -> None:
 
         run_ai_action_job(job_id, recording_id, action, source, model, note_id)
 
+    @h.signal(SIGNAL_INTERRUPTED)
+    def on_task_interrupted(signal, task, exc=None):
+        if task.name != "app.domains.jobs.queue.run_transcription_task":
+            return
+        logger.warning(
+            "Re-enqueueing interrupted transcription task (job=%s)",
+            task.kwargs.get("job_id"),
+        )
+        h.enqueue(task)
+
     globals()["run_transcription_task"] = run_transcription_task
     globals()["run_ai_action_task"] = run_ai_action_task
 
@@ -59,6 +71,9 @@ def _register_tasks(h: SqliteHuey) -> None:
 def get_huey() -> SqliteHuey:
     global _huey
     if _huey is None:
+        from app.core.logging import setup_logging
+
+        setup_logging(debug=get_settings().debug_mode)
         _huey = _create_huey()
         _register_tasks(_huey)
     return _huey

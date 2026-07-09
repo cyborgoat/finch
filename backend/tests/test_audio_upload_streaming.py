@@ -5,7 +5,7 @@ from app.config import get_settings
 from tests.support.fakes import fake_ffmpeg_run
 
 
-@patch("app.domains.media.audio_service.subprocess.run")
+@patch("app.domains.media.subprocess_utils.subprocess.run")
 def test_upload_rejects_oversized_file_during_stream(mock_run, client, sample_wav_bytes, monkeypatch):
     mock_run.side_effect = fake_ffmpeg_run(sample_wav_bytes)
     monkeypatch.setenv("MAX_UPLOAD_MB", "1")

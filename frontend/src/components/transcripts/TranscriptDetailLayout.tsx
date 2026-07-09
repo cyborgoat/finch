@@ -255,9 +255,9 @@ export function RecordingDetailLayout({
                     segments={segments}
                     profiles={profiles}
                     voiceprintProfilesStatus={voiceprintProfilesStatus}
-                    currentPlaybackTime={playback.currentTime}
-                    selectedSegmentIndex={selectedSegmentIndex}
-                    onSeekToTime={playback.seekAndPlay}
+                  currentPlaybackTime={playback.currentTime}
+                  selectedSegmentIndex={selectedSegmentIndex}
+                  onSeekToTime={playback.seekAndPlay}
                     onSegmentSpeakerSave={onSegmentSpeakerSave}
                     speakerSavePending={speakerSavePending}
                     disabled={speakerSavePending || renamePending || deletePending}
