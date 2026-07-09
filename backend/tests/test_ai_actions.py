@@ -50,6 +50,8 @@ def test_ai_action_flow(mock_run, client, sample_wav_bytes):
     document = client.get(f"/api/notes/{note_id}").json()
     assert document["type"] == "meeting_summary"
     assert document["status"] == "ready"
+    assert document["title"] == ""
+    assert document["titleIsAuto"] is True
     assert document["generationJobId"] is None
     assert "Summary" in document["markdown"]
 

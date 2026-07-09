@@ -90,17 +90,15 @@
     "status": "Status"
   },
   "upload": {
-    "selectAudioFile": "Select audio file",
     "dropOrBrowse": "Drop audio here or click to browse",
     "supportedFormats": "WAV, MP3, M4A, WEBM, OGG, FLAC",
     "unsupportedFileType": "Unsupported file type.",
-    "chooseFile": "Choose file",
-    "filePreview": "Audio preview",
-    "nameLabel": "Name:",
-    "sizeLabel": "Size:",
-    "durationLabel": "Duration:",
+    "nameLabel": "Name",
+    "sizeLabel": "Size",
+    "durationLabel": "Duration",
     "dialogTitle": "Upload audio",
     "dialogDescription": "Add an audio file to your library. Transcription starts when you choose to from the recordings list.",
+    "uploadHint": "Choose a file or drag it into the area below. Long meetings and podcasts work best as MP3 or M4A uploads.",
     "saveToLibrary": "Save to library"
   },
   "record": {
@@ -263,6 +261,7 @@
     "createDialogDescription": "Generate a note with AI or start from a blank page.",
     "loadingTemplates": "Loading templates…",
     "blankNote": "Blank note",
+    "defaultManualTitle": "Note",
     "blankDescription": "Start with an empty note and write your own markdown.",
     "llmRequiredBanner": "AI note templates require an LLM provider. Configure <link></link>. Blank notes are always available.",
     "generatingTitle": "Generating {{title}}…",

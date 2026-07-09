@@ -6,6 +6,7 @@ export function noteToSummary(note: Note): NoteSummary {
     id: note.id,
     recordingId: note.recordingId,
     title: note.title,
+    titleIsAuto: note.titleIsAuto,
     type: note.type,
     model: note.model,
     status: note.status,

@@ -62,6 +62,19 @@ def test_create_manual_note_and_delete_one_of_many(client, sample_wav_bytes):
     assert remaining["items"][0]["id"] == note_b
 
 
+def test_create_manual_note_without_title_uses_auto_title(client, sample_wav_bytes):
+    recording_id = create_recording(client, sample_wav_bytes)
+
+    create_response = client.post(
+        "/api/notes",
+        json={"recordingId": recording_id},
+    )
+    assert create_response.status_code == 200
+    body = create_response.json()
+    assert body["title"] == ""
+    assert body["titleIsAuto"] is True
+
+
 def test_list_ai_action_templates(client):
     response = client.get("/api/ai-actions/templates")
     assert response.status_code == 200

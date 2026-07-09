@@ -322,27 +322,25 @@ class TranscriptionPipeline:
             if purified is not None and purified.time_map:
                 turns = remap_turns_to_original(turns, purified.time_map)
 
-            effective_max_segments = resolve_effective_max_segments(
-                self.settings,
-                duration,
-            )
+            effective_max_segments = resolve_effective_max_segments(self.settings)
             merged_all = merge_adjacent_turns(
                 turns,
                 min_segment_seconds=self.settings.diarization_min_segment_seconds,
                 merge_gap_seconds=self.settings.diarization_merge_gap_seconds,
                 max_segments=0,
             )
-            segment_cap_note: str | None = None
             if effective_max_segments > 0 and len(merged_all) > effective_max_segments:
                 merged_turns = merged_all[:effective_max_segments]
                 transcribed_until = merged_turns[-1].end_sec if merged_turns else 0.0
-                segment_cap_note = build_segment_cap_note(
-                    max_segments=effective_max_segments,
-                    audio_duration_sec=duration or transcribed_until,
-                    transcribed_until_sec=transcribed_until,
-                    total_segments_before_cap=len(merged_all),
+                logger.warning(
+                    "%s",
+                    build_segment_cap_note(
+                        max_segments=effective_max_segments,
+                        audio_duration_sec=duration or transcribed_until,
+                        transcribed_until_sec=transcribed_until,
+                        total_segments_before_cap=len(merged_all),
+                    ),
                 )
-                logger.warning("%s", segment_cap_note)
             else:
                 merged_turns = merged_all
 

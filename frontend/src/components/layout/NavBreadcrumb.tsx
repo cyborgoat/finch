@@ -8,6 +8,7 @@ import { parseRecordingDetailTab } from "@/lib/recordingDetailTabs"
 import { resolveRecordingKind } from "@/lib/recordings"
 import { notesQuery } from "@/lib/queries/notes"
 import { recordingQuery } from "@/lib/queries/recordings"
+import { resolveNoteTitle } from "@/lib/noteTitles"
 
 type Crumb = {
   label: string
@@ -49,13 +50,16 @@ function useRecordingDetailSearch() {
 }
 
 function useNoteSummaryTitle(recordingId: string | undefined, noteId: string | undefined) {
+  const { t, i18n } = useTranslation()
   const notes = useQuery({
     ...notesQuery(recordingId),
     enabled: Boolean(recordingId && noteId),
   })
 
   if (!noteId) return undefined
-  return notes.data?.items.find((note) => note.id === noteId)?.title
+  const note = notes.data?.items.find((item) => item.id === noteId)
+  if (!note) return undefined
+  return resolveNoteTitle(note, t, i18n.language)
 }
 
 function buildCrumbs(

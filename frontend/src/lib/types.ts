@@ -143,6 +143,7 @@ export type NoteSummary = {
   id: string
   recordingId: string
   title: string
+  titleIsAuto?: boolean
   type: Note["type"]
   model: string
   status: NoteStatus
@@ -155,6 +156,7 @@ export type Note = {
   id: string
   recordingId: string
   title: string
+  titleIsAuto?: boolean
   type: NoteType
   markdown: string
   model: string

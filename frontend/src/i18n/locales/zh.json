@@ -90,17 +90,15 @@
     "status": "状态"
   },
   "upload": {
-    "selectAudioFile": "选择音频文件",
     "dropOrBrowse": "将音频拖放到此处，或点击浏览",
     "supportedFormats": "WAV、MP3、M4A、WEBM、OGG、FLAC",
     "unsupportedFileType": "不支持的文件类型。",
-    "chooseFile": "选择文件",
-    "filePreview": "音频预览",
-    "nameLabel": "名称：",
-    "sizeLabel": "大小：",
-    "durationLabel": "时长：",
+    "nameLabel": "名称",
+    "sizeLabel": "大小",
+    "durationLabel": "时长",
     "dialogTitle": "上传音频",
     "dialogDescription": "将音频文件添加到库中。转录将在录音列表中手动开始。",
+    "uploadHint": "选择文件或拖放到下方区域。较长的会议和播客建议使用 MP3 或 M4A 上传。",
     "saveToLibrary": "保存到库"
   },
   "record": {
@@ -263,6 +261,7 @@
     "createDialogDescription": "使用 AI 生成笔记，或从空白页开始。",
     "loadingTemplates": "加载模板中…",
     "blankNote": "空白笔记",
+    "defaultManualTitle": "笔记",
     "blankDescription": "从空白笔记开始，自行编写 Markdown。",
     "llmRequiredBanner": "AI 笔记模板需要 LLM 提供商。请配置 <link></link>。空白笔记始终可用。",
     "generatingTitle": "正在生成 {{title}}…",

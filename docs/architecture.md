@@ -100,7 +100,7 @@ When `AUDIO_PURIFICATION_ENABLED=true`, silence is removed before diarization on
 
 On failure, the recording is kept with `status=failed` and `errorMessage` (not deleted).
 
-If diarization is enabled but unavailable (missing HF access, etc.), the worker falls back to full-file ASR and stores a `processingNote` on the recording.
+If diarization is enabled but unavailable (missing HF access, etc.), the worker falls back to full-file ASR and logs a warning in the Huey consumer.
 
 Segment tuning (`DIARIZATION_MIN_SEGMENT_SECONDS`, `DIARIZATION_MERGE_GAP_SECONDS`, `DIARIZATION_MAX_SEGMENTS`) is applied after pyannote. See [diarization.md](diarization.md).
 

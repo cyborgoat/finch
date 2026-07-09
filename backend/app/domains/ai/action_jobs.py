@@ -49,11 +49,9 @@ class AiActionJobService:
 
         transcript = self.recording_service.get_recording(recording_id)
         job = self.job_service.create_job("ai_action")
-        placeholder_title = self.ai_action_service.build_title(preset.title_prefix, transcript)
         resolved_model = model or self.ai_action_service.resolve_default_model()
         note = self.note_service.create_generating_note(
             recording_id=transcript.id,
-            title=placeholder_title,
             note_type=preset.note_type,
             generation_job_id=job.id,
             model=resolved_model,

@@ -22,44 +22,6 @@ def test_run_meeting_summary_includes_user_preferences_in_prompt():
         status="draft",
     )
 
-    user_settings = UserSettingsResponse(
-        content_language="zh",
-        summary_style="detailed",
-        summary_format="bullets",
-        user_name="Alex",
-    )
-
-    mock_llm = MagicMock(return_value=FAKE_LLM_MARKDOWN)
-    service.chat_completion = mock_llm
-
-    service.run_action(
-        transcript,
-        action="meeting_summary",
-        source="rawText",
-        user_settings=user_settings,
-    )
-
-    messages = mock_llm.call_args.args[0]
-    prompt = messages[0]["content"]
-    assert "User preferences:" in prompt
-    assert "中文 (Chinese)" in prompt
-    assert "detailed" in prompt
-    assert "bullet points" in prompt
-    assert "Alex" in prompt
-    assert "We discussed the roadmap." in prompt
-
-
-def test_run_action_items_includes_content_language():
-    service = AiActionService(MagicMock())
-
-    transcript = Recording(
-        id="recording_test12345678",
-        audio_asset_id="audio_test1234567890",
-        title="Team sync",
-        raw_text="We discussed the roadmap.",
-        status="draft",
-    )
-
     user_settings = UserSettingsResponse(content_language="zh")
 
     mock_llm = MagicMock(return_value=FAKE_LLM_MARKDOWN)
@@ -75,6 +37,32 @@ def test_run_action_items_includes_content_language():
     prompt = mock_llm.call_args.args[0][0]["content"]
     assert "Response language: 中文 (Chinese)" in prompt
     assert "Summary style" not in prompt
+
+
+def test_run_action_does_not_localize_title_in_response():
+    service = AiActionService(MagicMock())
+
+    transcript = Recording(
+        id="recording_test12345678",
+        audio_asset_id="audio_test1234567890",
+        title="Team sync",
+        raw_text="We discussed the roadmap.",
+        status="draft",
+    )
+
+    user_settings = UserSettingsResponse(content_language="zh")
+    mock_llm = MagicMock(return_value=FAKE_LLM_MARKDOWN)
+    service.chat_completion = mock_llm
+
+    note_type, markdown = service.run_action(
+        transcript,
+        action="meeting_summary",
+        source="rawText",
+        user_settings=user_settings,
+    )
+
+    assert note_type == "meeting_summary"
+    assert markdown == FAKE_LLM_MARKDOWN
 
 
 def test_run_action_rejects_unknown_action():

@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlmodel import Session
@@ -89,13 +88,6 @@ class AiActionService:
             return apply_user_context(prompt, context)
         return prompt
 
-    def build_title(self, title_prefix: str, recording: Recording) -> str:
-        return self._build_title(title_prefix, recording)
-
-    def _build_title(self, title_prefix: str, recording: Recording) -> str:
-        date_label = datetime.now(UTC).strftime("%b %d, %Y")
-        return f"{title_prefix} · {date_label}"
-
     def run_action(
         self,
         recording: Recording,
@@ -105,7 +97,7 @@ class AiActionService:
         model: str | None = None,
         session: Session | None = None,
         user_settings: UserSettingsResponse | None = None,
-    ) -> tuple[str, str, str]:
+    ) -> tuple[str, str]:
         resolved_action = action.strip()
         preset = get_preset(resolved_action)
         if preset is None:
@@ -134,8 +126,7 @@ class AiActionService:
         )
         messages = [{"role": "user", "content": prompt}]
         markdown = self.chat_completion(messages, model=model)
-        title = self._build_title(preset.title_prefix, recording)
-        return title, preset.note_type, markdown
+        return preset.note_type, markdown
 
     def run_action_from_text(
         self,
@@ -145,8 +136,7 @@ class AiActionService:
         model: str | None = None,
         runtime: LlmRuntimeSettings,
         user_settings: UserSettingsResponse,
-        recording_id: str,
-    ) -> tuple[str, str, str]:
+    ) -> tuple[str, str]:
         resolved_action = action.strip()
         preset = get_preset(resolved_action)
         if preset is None:
@@ -168,6 +158,4 @@ class AiActionService:
         )
         messages = [{"role": "user", "content": prompt}]
         markdown = self.chat_completion(messages, model=model, runtime=runtime)
-        recording = Recording(id=recording_id)
-        title = self._build_title(preset.title_prefix, recording)
-        return title, preset.note_type, markdown
+        return preset.note_type, markdown

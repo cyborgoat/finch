@@ -36,7 +36,6 @@ class _PreparedLlmCall:
 
 @dataclass(frozen=True)
 class _LlmResult:
-    title: str
     note_type: str
     markdown: str
     resolved_model: str
@@ -164,13 +163,12 @@ class AiActionPipeline:
     @staticmethod
     def _execute_llm(prepared: _PreparedLlmCall) -> _LlmResult:
         ai_action_service = AiActionService(session=None, settings=get_settings())
-        title, note_type, markdown = ai_action_service.run_action_from_text(
+        note_type, markdown = ai_action_service.run_action_from_text(
             action=prepared.action,
             transcript_text=prepared.transcript_text,
             model=prepared.model,
             runtime=prepared.runtime,
             user_settings=prepared.user_settings,
-            recording_id=prepared.recording_id,
         )
         logger.info(
             "LLM finished for job %s (%d chars, type=%s)",
@@ -182,7 +180,6 @@ class AiActionPipeline:
             prepared.runtime,
         )
         return _LlmResult(
-            title=title,
             note_type=note_type,
             markdown=markdown,
             resolved_model=resolved_model,
@@ -224,7 +221,8 @@ class AiActionPipeline:
         if document is None:
             document = self.note_service.create_note(
                 recording_id=prepared.recording_id,
-                title=llm_result.title,
+                title="",
+                title_is_auto=True,
                 note_type=llm_result.note_type,
                 markdown=llm_result.markdown,
                 model=llm_result.resolved_model,
@@ -232,7 +230,6 @@ class AiActionPipeline:
         else:
             document = self.note_service.update_note(
                 document,
-                title=llm_result.title,
                 markdown=llm_result.markdown,
                 model=llm_result.resolved_model,
                 status=NoteStatus.READY,

@@ -194,7 +194,7 @@ Full guidance: **[long-audio.md](long-audio.md)**
 | No speaker labels | Run `uv run python scripts/validate_diarization.py` |
 | Speaker names not saving | Click the speaker name on a turn — labels save immediately; enable auto-label in **Settings → Voiceprint profiles** for voiceprints |
 | Slow long audio | Expected on CPU/MPS; ASR chunks ~45s segments — see [long-audio.md](long-audio.md) |
-| Partial timeline / transcript | Segment cap may have applied — check Huey worker logs for WARNING lines; see [long-audio.md](long-audio.md) |
+| Transcript shorter than audio | Segment cap may have applied — check Huey worker logs for WARNING lines; see [long-audio.md](long-audio.md) |
 | Huey worker won't exit on Ctrl+C | **SIGINT** is graceful: Huey waits for the current task checkpoint. ASR may still block inside one inference pass. Stop at the next chunk/segment when possible, or send **SIGTERM** for immediate interrupt (interrupted transcription jobs are re-enqueued). macOS `MallocStackLogging` lines are harmless. For systemd/deploy: `KillSignal=SIGINT` with a reasonable `TimeoutStopSec`. |
 | Failed transcript visible | By design — check `errorMessage`, fix issue, re-transcribe |
 | Browser recording stops at 2 h | Hard cap matches backend max duration — upload for longer content |

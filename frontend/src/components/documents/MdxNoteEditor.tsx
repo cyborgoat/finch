@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { useUpdateNote } from "@/hooks/useNotes"
 import { useUserPreferences } from "@/hooks/useUserPreferences"
+import { noteTitleWasCustomized, resolveNoteTitle } from "@/lib/noteTitles"
 import { cn } from "@/lib/utils"
 import type { Note } from "@/lib/types"
 
@@ -30,7 +31,10 @@ type MdxNoteEditorProps = {
 }
 
 export function MdxNoteEditor(props: MdxNoteEditorProps) {
-  return <MdxNoteEditorInner key={props.note.id} {...props} />
+  const { i18n } = useTranslation()
+  const languageSuffix = props.note.titleIsAuto ? `:${i18n.language}` : ""
+  const editorKey = `${props.note.id}:${props.note.updatedAt}${languageSuffix}`
+  return <MdxNoteEditorInner key={editorKey} {...props} />
 }
 
 function MdxNoteEditorInner({
@@ -41,13 +45,15 @@ function MdxNoteEditorInner({
   onDelete,
   deletePending = false,
 }: MdxNoteEditorProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const saveTimerRef = useRef<number | null>(null)
   const updateMutation = useUpdateNote(note.id)
   const { preferences, updatePreferences } = useUserPreferences()
 
-  const [title, setTitle] = useState(note.title)
-  const [savedTitle, setSavedTitle] = useState(note.title)
+  const initialTitle = note.titleIsAuto ? resolveNoteTitle(note, t, i18n.language) : note.title
+
+  const [title, setTitle] = useState(initialTitle)
+  const [savedTitle, setSavedTitle] = useState(initialTitle)
   const [savedMarkdown, setSavedMarkdown] = useState(note.markdown)
   const [draftMarkdown, setDraftMarkdown] = useState(note.markdown)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved")
@@ -65,13 +71,19 @@ function MdxNoteEditorInner({
     async (nextTitle: string, nextMarkdown: string) => {
       setSaveStatus("saving")
       try {
-        const resolvedTitle = nextTitle.trim() || t("notes.untitledNote")
-        await updateMutation.mutateAsync({
-          title: resolvedTitle,
+        const payload: Partial<Pick<Note, "title" | "markdown">> = {
           markdown: nextMarkdown,
-        })
-        setTitle(resolvedTitle)
-        setSavedTitle(resolvedTitle)
+        }
+        const trimmed = nextTitle.trim()
+        if (noteTitleWasCustomized(note, nextTitle, t, i18n.language)) {
+          payload.title = trimmed || t("notes.untitledNote")
+        }
+        const updated = await updateMutation.mutateAsync(payload)
+        const displayTitle = updated.titleIsAuto
+          ? resolveNoteTitle(updated, t, i18n.language)
+          : updated.title
+        setTitle(displayTitle)
+        setSavedTitle(displayTitle)
         setSavedMarkdown(nextMarkdown)
         setDraftMarkdown(nextMarkdown)
         setSaveStatus("saved")
@@ -80,7 +92,7 @@ function MdxNoteEditorInner({
         toast.error(err instanceof Error ? err.message : t("toasts.failedToSaveNote"))
       }
     },
-    [t, updateMutation],
+    [i18n.language, note, t, updateMutation],
   )
 
   const scheduleAutoSave = useCallback(
@@ -118,14 +130,14 @@ function MdxNoteEditorInner({
   const handleMarkdownChange = (nextMarkdown: string) => {
     setDraftMarkdown(nextMarkdown)
     if (autoSave) {
-      scheduleAutoSave(hideTitle ? note.title : title, nextMarkdown)
+      scheduleAutoSave(hideTitle ? savedTitle : title, nextMarkdown)
     } else {
       setSaveStatus("unsaved")
     }
   }
 
   const handleManualSave = () => {
-    void persist(hideTitle ? note.title : title, draftMarkdown)
+    void persist(hideTitle ? savedTitle : title, draftMarkdown)
   }
 
   const handleAutoSaveToggle = (checked: boolean) => {
@@ -133,7 +145,7 @@ function MdxNoteEditorInner({
       toast.error(t("toasts.failedToUpdateAutoSave"))
     })
     if (checked && (saveStatus === "unsaved" || dirty)) {
-      scheduleAutoSave(hideTitle ? note.title : title, draftMarkdown)
+      scheduleAutoSave(hideTitle ? savedTitle : title, draftMarkdown)
     }
   }
 

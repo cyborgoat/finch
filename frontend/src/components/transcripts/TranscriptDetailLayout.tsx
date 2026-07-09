@@ -21,6 +21,7 @@ import {
   parseRecordingDetailTab,
   type RecordingDetailTab,
 } from "@/lib/recordingDetailTabs"
+import { resolveNoteTitle } from "@/lib/noteTitles"
 
 type RecordingDetailLayoutProps = {
   recording: Recording
@@ -63,7 +64,7 @@ export function RecordingDetailLayout({
   onRegenerateTranscription,
   isRegenerating,
 }: RecordingDetailLayoutProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate({ from: "/recordings/$id/" })
   const { tab, noteId } = useSearch({ from: "/recordings/$id/" })
   const activeTab = parseRecordingDetailTab(tab)
@@ -141,6 +142,10 @@ export function RecordingDetailLayout({
   const activeNoteLoadingState =
     !!activeNoteId && (activeNoteLoading || activeNoteFetching) && !resolvedActiveNote
 
+  const resolvedActiveNoteTitle = resolvedActiveNote
+    ? resolveNoteTitle(resolvedActiveNote, t, i18n.language)
+    : null
+
   const topbarActions = useMemo(
     () => ({
       audioAssetId: recording.audioAssetId,
@@ -148,7 +153,7 @@ export function RecordingDetailLayout({
       title,
       transcriptText: text,
       activeNoteMarkdown: resolvedActiveNote?.markdown ?? null,
-      activeNoteTitle: resolvedActiveNote?.title ?? null,
+      activeNoteTitle: resolvedActiveNoteTitle,
       onRename,
       onDelete,
       onRegenerateTranscription,
@@ -162,7 +167,7 @@ export function RecordingDetailLayout({
       title,
       text,
       resolvedActiveNote?.markdown,
-      resolvedActiveNote?.title,
+      resolvedActiveNoteTitle,
       onRename,
       onDelete,
       onRegenerateTranscription,

@@ -9,6 +9,7 @@ class Note(SQLModel, table=True):
     id: str = Field(primary_key=True)
     recording_id: str = Field(foreign_key="recording.id")
     title: str
+    title_is_auto: bool = False
     type: str
     markdown: str
     model: str

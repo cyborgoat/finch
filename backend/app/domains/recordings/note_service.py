@@ -7,6 +7,8 @@ from app.core.errors import AppError
 from app.core.ids import generate_note_id
 from app.models.note import Note
 
+AUTO_NOTE_TITLE = ""
+
 
 class NoteService:
     def __init__(self, session: Session) -> None:
@@ -23,12 +25,14 @@ class NoteService:
         prompt_version: str = "v1",
         status: str = NoteStatus.READY,
         generation_job_id: str | None = None,
+        title_is_auto: bool = False,
     ) -> Note:
         now = datetime.now(UTC)
         document = Note(
             id=generate_note_id(),
             recording_id=recording_id,
             title=title,
+            title_is_auto=title_is_auto,
             type=note_type,
             markdown=markdown,
             model=model,
@@ -47,14 +51,14 @@ class NoteService:
         self,
         *,
         recording_id: str,
-        title: str,
         note_type: str,
         generation_job_id: str,
         model: str = "pending",
     ) -> Note:
         return self.create_note(
             recording_id=recording_id,
-            title=title,
+            title=AUTO_NOTE_TITLE,
+            title_is_auto=True,
             note_type=note_type,
             markdown="",
             model=model,
@@ -70,19 +74,22 @@ class NoteService:
         markdown: str = "",
         note_type: str = "note",
     ) -> Note:
-        resolved_title = title.strip() if title and title.strip() else self._default_manual_title()
+        if title and title.strip():
+            return self.create_note(
+                recording_id=recording_id,
+                title=title.strip(),
+                note_type=note_type,
+                markdown=markdown,
+                model="manual",
+            )
         return self.create_note(
             recording_id=recording_id,
-            title=resolved_title,
+            title=AUTO_NOTE_TITLE,
+            title_is_auto=True,
             note_type=note_type,
             markdown=markdown,
             model="manual",
         )
-
-    @staticmethod
-    def _default_manual_title() -> str:
-        date_label = datetime.now(UTC).strftime("%b %d, %Y")
-        return f"Note · {date_label}"
 
     def list_notes(self, recording_id: str | None = None) -> list[Note]:
         statement = select(Note).order_by(Note.created_at.desc())
@@ -109,6 +116,7 @@ class NoteService:
     ) -> Note:
         if title is not None:
             document.title = title
+            document.title_is_auto = False
         if markdown is not None:
             document.markdown = markdown
         if model is not None:

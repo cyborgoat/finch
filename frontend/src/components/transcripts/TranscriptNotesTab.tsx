@@ -17,6 +17,7 @@ import { useDeleteNote, useUpdateNote } from "@/hooks/useNotes";
 import { useJobPolling } from "@/hooks/useJobPolling";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { createAiAction, createNote, getNote } from "@/lib/api";
+import { resolveNoteTitle } from "@/lib/noteTitles";
 import { seedNoteInCache } from "@/lib/noteCache";
 import type { AiActionTemplate, Note, NoteSummary } from "@/lib/types";
 
@@ -41,7 +42,7 @@ export function RecordingNotesTab({
   noteLoading = false,
   onNoteIdChange,
 }: RecordingNotesTabProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const { preferences } = useUserPreferences();
   const deleteMutation = useDeleteNote();
@@ -77,9 +78,13 @@ export function RecordingNotesTab({
     void queryClient.invalidateQueries({ queryKey: ["recordings"] });
     setEditorDirty(false);
     toast.success(
-      t("toasts.noteReady", { title: activeNote?.title ?? t("common.note") }),
+      t("toasts.noteReady", {
+        title: activeNote
+          ? resolveNoteTitle(activeNote, t, i18n.language)
+          : t("common.note"),
+      }),
     );
-  }, [activeNote?.title, activeNoteId, queryClient, recordingId, t]);
+  }, [activeNote, activeNoteId, i18n.language, queryClient, recordingId, t]);
 
   const handleGenerationFailed = useCallback(
     (failedJob: { error?: string | null }) => {
@@ -118,9 +123,10 @@ export function RecordingNotesTab({
   const getNoteTitle = useCallback(
     (noteId: string) => {
       const summary = notes.find((note) => note.id === noteId);
-      return summary?.title ?? t("notes.untitledNote");
+      if (!summary) return t("notes.untitledNote");
+      return resolveNoteTitle(summary, t, i18n.language);
     },
-    [notes, t],
+    [i18n.language, notes, t],
   );
 
 
@@ -316,7 +322,11 @@ export function RecordingNotesTab({
           {showGeneratingPlaceholder ? (
             <div className="surface-card overflow-hidden border-0 p-0">
               <NoteGeneratingPlaceholder
-                templateTitle={activeNote?.title ?? t("common.note")}
+                templateTitle={
+                  activeNote
+                    ? resolveNoteTitle(activeNote, t, i18n.language)
+                    : t("common.note")
+                }
                 job={generationJob}
                 error={generationError}
               />

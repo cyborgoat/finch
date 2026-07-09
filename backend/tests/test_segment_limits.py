@@ -1,7 +1,6 @@
 
 from app.config import Settings
 from app.domains.transcription.segment_limits import (
-    append_processing_note,
     build_segment_cap_note,
     resolve_effective_max_segments,
 )
@@ -9,13 +8,12 @@ from app.domains.transcription.segment_limits import (
 
 def test_resolve_effective_max_segments_respects_configured_cap():
     settings = Settings(diarization_max_segments=25)
-    assert resolve_effective_max_segments(settings, 7200) == 25
+    assert resolve_effective_max_segments(settings) == 25
 
 
 def test_resolve_effective_max_segments_unlimited_when_zero():
     settings = Settings(diarization_max_segments=0)
-    assert resolve_effective_max_segments(settings, 7200) == 0
-    assert resolve_effective_max_segments(settings, 4000) == 0
+    assert resolve_effective_max_segments(settings) == 0
 
 
 def test_build_segment_cap_note_includes_duration_summary():
@@ -29,8 +27,3 @@ def test_build_segment_cap_note_includes_duration_summary():
     assert "42.0 min" in note
     assert "120.0 min" in note
     assert "180 segment(s)" in note
-
-
-def test_append_processing_note_joins_messages():
-    assert append_processing_note(None, "Second") == "Second"
-    assert append_processing_note("First", "Second") == "First\n\nSecond"

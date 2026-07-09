@@ -112,7 +112,7 @@ uv run python scripts/validate_diarization.py --audio path/to/sample.wav
 
 Optional local voiceprint storage for persistent speaker names. Requires diarization. Enable in **Settings → Transcription** or set `VOICEPRINT_PROFILES_ENABLED=true` in `.env` as a fallback. See [../docs/voiceprint-profiles.md](../docs/voiceprint-profiles.md).
 
-If diarization or speaker matching is unavailable, the worker falls back gracefully and stores a `processingNote` when relevant.
+If diarization or speaker matching is unavailable, the worker falls back gracefully and logs a warning in the Huey consumer.
 
 ## Package layout
 
@@ -135,4 +135,4 @@ Domain logic lives under `app/domains/`. See [../docs/modules.md](../docs/module
 - `GET/PATCH /api/user-settings` — user name, ui/content language, summarization prefs, linked voiceprint profile
 - `GET/PATCH /api/llm-settings` — LLM provider credentials (stored locally in SQLite; API keys never returned)
 
-Transcripts may include `speakerSegments`, `processingNote`, or `errorMessage` when diarization is skipped or a job fails.
+Transcripts may include `speakerSegments` or `errorMessage` when diarization is skipped or a job fails.

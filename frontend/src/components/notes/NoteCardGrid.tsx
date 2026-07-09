@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { NoteSummary } from "@/lib/types"
+import { resolveNoteDisplayTitle } from "@/lib/noteTitles"
 import { cn } from "@/lib/utils"
 
 type NoteCardGridProps = {
@@ -19,19 +20,6 @@ type NoteCardGridProps = {
   onRename: (noteId: string) => void
   onDelete: (noteId: string) => void
   actionsDisabled?: boolean
-}
-
-function noteDisplayTitle(
-  note: NoteSummary,
-  t: (key: string, options?: Record<string, string>) => string,
-) {
-  if (note.status === "generating") {
-    return t("notes.generatingLabel", { title: note.title })
-  }
-  if (note.status === "failed") {
-    return t("notes.failedLabel", { title: note.title })
-  }
-  return note.title
 }
 
 function NoteCard({
@@ -47,8 +35,8 @@ function NoteCard({
   onRename: (noteId: string) => void
   onDelete: (noteId: string) => void
 }) {
-  const { t } = useTranslation()
-  const title = noteDisplayTitle(note, t)
+  const { t, i18n } = useTranslation()
+  const title = resolveNoteDisplayTitle(note, t, i18n.language)
   const updatedAt = new Date(note.updatedAt).toLocaleString()
 
   return (

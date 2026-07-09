@@ -100,7 +100,6 @@ def test_recover_orphaned_jobs_marks_ai_action_failed(db_session):
     recording_id = "recording_test1234567890"
     note = NoteService(db_session).create_generating_note(
         recording_id=recording_id,
-        title="Summary",
         note_type="meeting_summary",
         generation_job_id="job_placeholder",
     )

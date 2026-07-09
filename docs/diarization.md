@@ -71,7 +71,7 @@ Upload → normalize WAV
   → labeled transcript + speakerSegments JSON
 ```
 
-If diarization fails (missing token, model access, pyannote error), the worker **falls back** to full-file ASR and saves a `processingNote` on the transcript. Re-transcribe after fixing config.
+If diarization fails (missing token, model access, pyannote error), the worker **falls back** to full-file ASR. Check Huey worker logs for details. Re-transcribe after fixing config.
 
 ## Audio purification
 
@@ -91,7 +91,7 @@ AUDIO_PURIFICATION_ENABLED=true
 4. **Diarize** the shorter file with pyannote.
 5. **Remap** speaker-turn timestamps back to the original normalized timeline before ASR slicing and playback.
 
-Purified audio is **not** stored permanently and does **not** change the audio player source. A `processingNote` on the recording summarizes compression (e.g. `62.0 min → 41.0 min speech`).
+Purified audio is **not** stored permanently and does **not** change the audio player source. Compression details are logged in the Huey worker.
 
 If purification fails or finds no speech, the pipeline falls back to the original audio for diarization.
 
@@ -147,7 +147,7 @@ uv run python scripts/validate_diarization.py --audio path/to/file.wav
 | Issue | Fix |
 |-------|-----|
 | `403` / `gated repo` | Accept model terms on Hugging Face; token must be same account |
-| No speaker labels, `processingNote` on transcript | Run `validate_diarization.py`; check startup logs |
+| No speaker labels | Run `validate_diarization.py`; check startup and worker logs |
 | `pyannote-audio is required` | `cd backend && uv add pyannote-audio` |
 | Poor speaker separation | Try `DIARIZATION_USE_ORIGINAL_AUDIO=true` |
 | Too many segments / slow | Increase merge gap or set `DIARIZATION_MAX_SEGMENTS` |

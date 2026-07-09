@@ -1,8 +1,7 @@
-
 import { useCallback, useRef, useState } from "react"
+import { Upload } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
 const ACCEPTED = ".wav,.mp3,.m4a,.webm,.ogg,.flac"
 
@@ -37,58 +36,54 @@ export function AudioUploader({
     [onFileSelected, t],
   )
 
+  const displayError = error || localError
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t("upload.selectAudioFile")}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div
-          role="button"
-          tabIndex={0}
-          onDragOver={(e) => {
-            e.preventDefault()
-            setDragOver(true)
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault()
-            setDragOver(false)
-            handleFile(e.dataTransfer.files[0])
-          }}
-          onClick={() => inputRef.current?.click()}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") inputRef.current?.click()
-          }}
-          className={`flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center transition-colors ${
-            dragOver ? "border-primary bg-muted/50" : "border-border"
-          } ${disabled ? "pointer-events-none opacity-50" : ""}`}
-        >
-          <p className="text-sm font-medium">{t("upload.dropOrBrowse")}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t("upload.supportedFormats")}
-          </p>
-          <input
-            ref={inputRef}
-            type="file"
-            accept={ACCEPTED}
-            className="hidden"
-            disabled={disabled}
-            onChange={(e) => handleFile(e.target.files?.[0])}
-          />
-        </div>
-        {(error || localError) && (
-          <p className="text-sm text-destructive">{error || localError}</p>
+    <div className="space-y-3">
+      <div
+        role="button"
+        tabIndex={0}
+        onDragOver={(event) => {
+          event.preventDefault()
+          setDragOver(true)
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(event) => {
+          event.preventDefault()
+          setDragOver(false)
+          handleFile(event.dataTransfer.files[0])
+        }}
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault()
+            inputRef.current?.click()
+          }
+        }}
+        className={cn(
+          "flex min-h-52 cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-8 text-center transition-colors",
+          dragOver ? "border-primary bg-muted/50" : "border-border bg-muted/10",
+          disabled && "pointer-events-none opacity-50",
         )}
-        <Button
-          type="button"
-          variant="outline"
+      >
+        <div className="flex size-12 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+          <Upload className="size-5" aria-hidden />
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium">{t("upload.dropOrBrowse")}</p>
+          <p className="text-xs text-muted-foreground">{t("upload.supportedFormats")}</p>
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept={ACCEPTED}
+          className="hidden"
           disabled={disabled}
-          onClick={() => inputRef.current?.click()}
-        >
-          {t("upload.chooseFile")}
-        </Button>
-      </CardContent>
-    </Card>
+          onChange={(event) => handleFile(event.target.files?.[0])}
+        />
+      </div>
+
+      {displayError ? <p className="text-sm text-destructive">{displayError}</p> : null}
+    </div>
   )
 }

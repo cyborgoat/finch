@@ -163,6 +163,6 @@ Settings enrollment (`POST /api/voiceprint-profiles/enroll-sample`) accepts opti
 1. Set `DEBUG_MODE=true` in `.env` or run `DEBUG_MODE=true uv run uvicorn app.main:app --reload` from `backend/`.
 2. Transcribe a recording and watch backend logs for per-cluster scores and the auto-label gate flags (`Voiceprint matching: …` at INFO).
 3. Check the recording API response for `matchConfidence` and `matchStatus` on each speaker segment.
-4. Match diagnostics are **not shown in the transcript UI**; `processingNote` on recordings (if present) covers diarization fallback or audio purification only.
+4. Match diagnostics are **not shown in the transcript UI**; diarization fallback and audio purification details are logged in the Huey worker only.
 
 See also [diarization.md](diarization.md).

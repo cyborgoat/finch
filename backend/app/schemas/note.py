@@ -7,6 +7,7 @@ class NoteSummary(CamelModel):
     id: str
     recording_id: str
     title: str
+    title_is_auto: bool = False
     type: str
     model: str
     status: str
@@ -23,6 +24,7 @@ class NoteResponse(CamelModel):
     id: str
     recording_id: str
     title: str
+    title_is_auto: bool = False
     type: str
     markdown: str
     model: str

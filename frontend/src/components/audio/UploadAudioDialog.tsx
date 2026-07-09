@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
+import { AudioDialogFooter } from "@/components/audio/AudioDialogControls"
 import { AudioUploader } from "@/components/audio/AudioUploader"
 import { formatBytes, formatDuration } from "@/lib/format"
 import { Button } from "@/components/ui/button"
@@ -8,7 +9,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -67,54 +67,72 @@ export function UploadAudioDialog({ open, onOpenChange }: UploadAudioDialogProps
     }
   }
 
+  const handleReset = () => {
+    reset()
+    setAsset(null)
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{t("upload.dialogTitle")}</DialogTitle>
-          <DialogDescription>{t("upload.dialogDescription")}</DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto sm:max-w-2xl">
+        {open ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>{t("upload.dialogTitle")}</DialogTitle>
+              <DialogDescription>{t("upload.dialogDescription")}</DialogDescription>
+            </DialogHeader>
 
-        <AudioUploader
-          onFileSelected={(file) => void handleFileSelected(file)}
-          disabled={busy}
-          error={error}
-        />
+            <div className="space-y-5">
+              <p className="text-sm text-muted-foreground">{t("upload.uploadHint")}</p>
 
-        {asset ? (
-          <div className="surface-inset space-y-1 p-3 text-sm">
-            <p>
-              <span className="text-muted-foreground">{t("upload.nameLabel")}</span>{" "}
-              {asset.filename}
-            </p>
-            <p>
-              <span className="text-muted-foreground">{t("upload.sizeLabel")}</span>{" "}
-              {formatBytes(asset.sizeBytes)}
-            </p>
-            <p>
-              <span className="text-muted-foreground">{t("upload.durationLabel")}</span>{" "}
-              {formatDuration(asset.durationSeconds, t("common.notAvailable"))}
-            </p>
-          </div>
+              <AudioUploader
+                onFileSelected={(file) => void handleFileSelected(file)}
+                disabled={busy}
+                error={error}
+              />
+
+              {asset ? (
+                <div className="surface-inset grid gap-2 p-4 text-sm sm:grid-cols-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t("upload.nameLabel")}</p>
+                    <p className="truncate font-medium">{asset.filename}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t("upload.sizeLabel")}</p>
+                    <p className="font-medium">{formatBytes(asset.sizeBytes)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t("upload.durationLabel")}</p>
+                    <p className="font-medium">
+                      {formatDuration(asset.durationSeconds, t("common.notAvailable"))}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              <AudioDialogFooter className="justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleOpenChange(false)}
+                  disabled={busy}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <div className="flex flex-wrap gap-2">
+                  {asset ? (
+                    <Button type="button" variant="ghost" onClick={handleReset} disabled={busy}>
+                      {t("common.reset")}
+                    </Button>
+                  ) : null}
+                  <Button type="button" onClick={() => void handleSave()} disabled={!asset || busy}>
+                    {busy ? t("common.saving") : t("upload.saveToLibrary")}
+                  </Button>
+                </div>
+              </AudioDialogFooter>
+            </div>
+          </>
         ) : null}
-
-        <DialogFooter className="gap-2 sm:justify-start">
-          <Button onClick={() => void handleSave()} disabled={!asset || busy}>
-            {busy ? t("common.saving") : t("upload.saveToLibrary")}
-          </Button>
-          {asset ? (
-            <Button
-              variant="outline"
-              onClick={() => {
-                reset()
-                setAsset(null)
-              }}
-              disabled={busy}
-            >
-              {t("common.reset")}
-            </Button>
-          ) : null}
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
