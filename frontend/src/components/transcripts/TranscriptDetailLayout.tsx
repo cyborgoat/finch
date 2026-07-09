@@ -12,6 +12,7 @@ import { FullTranscriptPanel } from "@/components/transcripts/FullTranscriptPane
 import { RecordingTranscriptSplit } from "@/components/transcripts/RecordingTranscriptSplit"
 import { useAudioAsset } from "@/hooks/useAudioAsset"
 import { useNote } from "@/hooks/useNotes"
+import { useRecordingDetailKeyboardShortcuts } from "@/hooks/useRecordingDetailKeyboardShortcuts"
 import { useRecordingPlayback } from "@/hooks/useRecordingPlayback"
 import { getCurrentSegmentIndex } from "@/lib/audio"
 import type { NoteSummary, VoiceprintProfilesStatus, VoiceprintProfileSummary, Recording } from "@/lib/types"
@@ -76,6 +77,7 @@ export function RecordingDetailLayout({
 
   const [pendingNoteId, setPendingNoteId] = useState<string | null>(null)
   const [selectedSegmentIndex, setSelectedSegmentIndex] = useState<number | null>(null)
+  const [selectionScrollToken, setSelectionScrollToken] = useState(0)
   const pendingSelectionRef = useRef<string | null>(null)
 
   const notes = useMemo(
@@ -189,10 +191,18 @@ export function RecordingDetailLayout({
       const segment = segments[segmentIndex]
       if (!segment) return
       setSelectedSegmentIndex(segmentIndex)
+      setSelectionScrollToken((token) => token + 1)
       playback.seekAndPlay(segment.startSec)
     },
     [playback, segments],
   )
+
+  useRecordingDetailKeyboardShortcuts({
+    enabled: activeTab === "source",
+    onTogglePlay: playback.togglePlay,
+    onSkipBackward: playback.skipBackward,
+    onSkipForward: playback.skipForward,
+  })
 
   const noteCount = notes.length
   const editSourceDisabled =
@@ -243,6 +253,7 @@ export function RecordingDetailLayout({
                   text={text}
                   currentSegmentIndex={currentSegmentIndex}
                   selectedSegmentIndex={selectedSegmentIndex}
+                  selectionScrollToken={selectionScrollToken}
                   currentPlaybackTime={playback.currentTime}
                   playbackDuration={playback.duration}
                   assetDuration={audioAsset?.durationSeconds}

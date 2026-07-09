@@ -21,6 +21,7 @@ type RecordingTranscriptSplitProps = {
   text: string
   currentSegmentIndex: number
   selectedSegmentIndex: number | null
+  selectionScrollToken?: number
   currentPlaybackTime: number
   playbackDuration: number
   assetDuration?: number | null
@@ -42,6 +43,7 @@ export function RecordingTranscriptSplit({
   text,
   currentSegmentIndex,
   selectedSegmentIndex,
+  selectionScrollToken,
   currentPlaybackTime,
   playbackDuration,
   assetDuration,
@@ -110,6 +112,7 @@ export function RecordingTranscriptSplit({
           voiceprintProfilesStatus={voiceprintProfilesStatus}
           currentPlaybackTime={currentPlaybackTime}
           selectedSegmentIndex={selectedSegmentIndex}
+          selectionScrollToken={selectionScrollToken}
           onSeekToTime={onSeekToTime}
           onSegmentSpeakerSave={onSegmentSpeakerSave}
           speakerSavePending={speakerSavePending}

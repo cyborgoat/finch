@@ -18,6 +18,7 @@ type FullTranscriptPanelProps = {
   voiceprintProfilesStatus?: VoiceprintProfilesStatus
   currentPlaybackTime?: number
   selectedSegmentIndex?: number | null
+  selectionScrollToken?: number
   onSeekToTime?: (seconds: number) => void
   onSegmentSpeakerSave?: (
     clusterId: string,
@@ -126,6 +127,7 @@ export function FullTranscriptPanel({
   voiceprintProfilesStatus,
   currentPlaybackTime = 0,
   selectedSegmentIndex = null,
+  selectionScrollToken = 0,
   onSeekToTime,
   onSegmentSpeakerSave,
   speakerSavePending,
@@ -163,15 +165,26 @@ export function FullTranscriptPanel({
     ? editingSegment.clusterId || editingSegment.speaker
     : ""
 
-  useEffect(() => {
-    if (highlightedSegmentIndex < 0) return
+  const scrollSegmentIntoView = (index: number) => {
+    if (index < 0) return
     if (useVirtualList) {
-      virtualizer.scrollToIndex(highlightedSegmentIndex, { align: "center" })
+      virtualizer.scrollToIndex(index, { align: "center" })
       return
     }
-    const turn = turnRefs.current[highlightedSegmentIndex]
+    const turn = turnRefs.current[index]
     turn?.scrollIntoView({ block: "center", behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    if (highlightedSegmentIndex < 0) return
+    scrollSegmentIntoView(highlightedSegmentIndex)
   }, [highlightedSegmentIndex, useVirtualList, virtualizer])
+
+  useEffect(() => {
+    if (selectionScrollToken <= 0) return
+    if (selectedSegmentIndex === null || selectedSegmentIndex < 0) return
+    scrollSegmentIntoView(selectedSegmentIndex)
+  }, [selectionScrollToken, selectedSegmentIndex, useVirtualList, virtualizer])
 
   const renderSegment = (segment: SpeakerSegment, index: number, turnRef?: (element: HTMLDivElement | null) => void) => {
     const clusterId = segment.clusterId || segment.speaker
