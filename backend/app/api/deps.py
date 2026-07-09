@@ -8,6 +8,7 @@ from app.domains.jobs.transcription_jobs import TranscriptionJobService
 from app.domains.media.audio_service import AudioService
 from app.domains.recordings.note_service import NoteService
 from app.domains.recordings.recording_service import RecordingService
+from app.domains.recordings.recording_source_edit_service import RecordingSourceEditService
 from app.domains.recordings.speaker_service import RecordingSpeakerService
 from app.domains.settings.app_preference_service import AppPreferenceService
 from app.domains.settings.llm_settings_service import LlmSettingsService
@@ -19,6 +20,12 @@ from app.storage.database import get_session
 
 def get_recording_service(session: Session = Depends(get_session)) -> RecordingService:
     return RecordingService(session)
+
+
+def get_recording_source_edit_service(
+    session: Session = Depends(get_session),
+) -> RecordingSourceEditService:
+    return RecordingSourceEditService(session)
 
 
 def get_audio_service(session: Session = Depends(get_session)) -> AudioService:

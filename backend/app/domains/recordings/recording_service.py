@@ -119,3 +119,28 @@ class RecordingService:
     def delete_recording(self, recording: Recording) -> None:
         self.session.delete(recording)
         self.session.commit()
+
+    def reset_source(self, recording: Recording) -> Recording:
+        return self.update_recording(
+            recording,
+            raw_text="",
+            edited_text="",
+            speaker_segments="",
+            language=None,
+            status=RecordingStatus.PENDING,
+            error_message=None,
+            processing_note=None,
+        )
+
+    def create_from_edited_source(
+        self,
+        audio_asset_id: str,
+        *,
+        title: str,
+    ) -> Recording:
+        return self.create_recording(
+            audio_asset_id=audio_asset_id,
+            title=title,
+            raw_text="",
+            status=RecordingStatus.PENDING,
+        )

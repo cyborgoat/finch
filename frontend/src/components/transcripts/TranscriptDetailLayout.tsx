@@ -190,6 +190,11 @@ export function RecordingDetailLayout({
   )
 
   const noteCount = notes.length
+  const editSourceDisabled =
+    recording.status === "transcribing" ||
+    speakerSavePending ||
+    renamePending ||
+    deletePending
 
   return (
     <div className="section-stack">
@@ -216,10 +221,12 @@ export function RecordingDetailLayout({
                 audioClassName="p-3 sm:p-4"
                 audio={
                   <RecordingPageAudio
+                    recordingId={recording.id}
                     audioAssetId={recording.audioAssetId}
                     title={title}
                     variant="embedded"
                     playback={playback}
+                    editDisabled={editSourceDisabled}
                   />
                 }
               />

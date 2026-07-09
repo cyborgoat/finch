@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from app.domains.transcription.types import SpeakerSegment
 from app.schemas import CamelModel
@@ -73,3 +74,17 @@ class UpdateRecordingResponse(CamelModel):
     edited_text: str | None = None
     status: str
     updated_at: datetime
+
+
+class EditRecordingSourceRequest(CamelModel):
+    trim_start_sec: float = 0.0
+    trim_end_sec: float | None = None
+    remove_silence: bool = False
+    mode: Literal["replace", "save_as_new"]
+
+
+class EditRecordingSourceResponse(CamelModel):
+    recording_id: str
+    audio_asset_id: str
+    status: str
+    duration_seconds: float | None = None

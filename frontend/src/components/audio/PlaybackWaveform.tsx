@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useWaveformPeaks } from "@/components/audio/useWaveformPeaks"
 import { WaveformSkeleton } from "@/components/audio/WaveformSkeleton"
 import {
   barCountForWidth,
   drawBarLevelsWithProgress,
   getMutedForegroundColor,
   getPrimaryColor,
-  peaksFromAudioBuffer,
 } from "@/components/audio/waveform-utils"
 import { waveformContainerClass } from "@/lib/surfaces"
 import { cn } from "@/lib/utils"
@@ -22,13 +22,6 @@ type PlaybackWaveformProps = {
   className?: string
   "aria-label"?: string
 }
-
-type LoadedWaveform = {
-  src: string
-  peaks: number[]
-}
-
-const EMPTY_PEAKS: number[] = []
 
 function clampTime(value: number, max: number) {
   if (!Number.isFinite(value) || value < 0) return 0
@@ -52,10 +45,26 @@ export function PlaybackWaveform({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const isDraggingRef = useRef(false)
   const rafRef = useRef(0)
-  const [loadedWaveform, setLoadedWaveform] = useState<LoadedWaveform | null>(null)
+  const [pointCount, setPointCount] = useState(() => barCountForWidth(320))
 
-  const peaks = loadedWaveform?.src === src ? loadedWaveform.peaks : EMPTY_PEAKS
-  const isLoading = Boolean(src) && loadedWaveform?.src !== src
+  const { peaks, isLoading } = useWaveformPeaks(src, pointCount)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container || isLoading) return
+
+    const updatePointCount = () => {
+      setPointCount(barCountForWidth(container.clientWidth))
+    }
+
+    updatePointCount()
+    const resizeObserver = new ResizeObserver(updatePointCount)
+    resizeObserver.observe(container)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [isLoading])
 
   const renderWaveformAt = useCallback(
     (time: number) => {
@@ -90,48 +99,6 @@ export function PlaybackWaveform({
   const renderWaveform = useCallback(() => {
     renderWaveformAt(currentTime)
   }, [currentTime, renderWaveformAt])
-
-  useEffect(() => {
-    let cancelled = false
-
-    if (!src) {
-      return () => {
-        cancelled = true
-      }
-    }
-
-    const loadWaveform = async () => {
-      try {
-        const response = await fetch(src)
-        if (!response.ok) throw new Error("Failed to load audio")
-
-        const arrayBuffer = await response.arrayBuffer()
-        if (cancelled) return
-
-        const decodeContext = new AudioContext()
-        const audioBuffer = await decodeContext.decodeAudioData(arrayBuffer.slice(0))
-        await decodeContext.close()
-        if (cancelled) return
-
-        const container = containerRef.current
-        const pointCount = barCountForWidth(container?.clientWidth ?? 320)
-        setLoadedWaveform({
-          src,
-          peaks: peaksFromAudioBuffer(audioBuffer, pointCount),
-        })
-      } catch {
-        if (!cancelled) {
-          setLoadedWaveform({ src, peaks: [] })
-        }
-      }
-    }
-
-    void loadWaveform()
-
-    return () => {
-      cancelled = true
-    }
-  }, [src])
 
   useEffect(() => {
     if (isLoading) return
@@ -236,7 +203,13 @@ export function PlaybackWaveform({
   }
 
   if (isLoading) {
-    return <WaveformSkeleton ref={containerRef} embedded={embedded} className={className} />
+    return (
+      <WaveformSkeleton
+        ref={containerRef}
+        embedded={embedded}
+        className={cn("h-full w-full", className)}
+      />
+    )
   }
 
   return (
@@ -255,8 +228,7 @@ export function PlaybackWaveform({
       onPointerCancel={handlePointerUp}
       onKeyDown={handleKeyDown}
       className={cn(
-        "relative w-full overflow-hidden rounded-lg",
-        embedded ? "h-14" : "h-20",
+        "relative h-full min-h-0 w-full overflow-hidden rounded-lg",
         embedded ? waveformContainerClass("embedded") : waveformContainerClass("card"),
         disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer touch-none",
         className,

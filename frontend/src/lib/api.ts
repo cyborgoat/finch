@@ -130,6 +130,27 @@ export async function deleteRecording(id: string): Promise<{ ok: boolean }> {
   return request(`/api/recordings/${id}`, { method: "DELETE" })
 }
 
+export async function editRecordingSource(
+  recordingId: string,
+  input: {
+    trimStartSec?: number
+    trimEndSec?: number | null
+    removeSilence?: boolean
+    mode: "replace" | "save_as_new"
+  },
+): Promise<{
+  recordingId: string
+  audioAssetId: string
+  status: string
+  durationSeconds: number | null
+}> {
+  return request(`/api/recordings/${recordingId}/edit-source`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  })
+}
+
 export async function createAiAction(input: {
   recordingId: string
   action: string

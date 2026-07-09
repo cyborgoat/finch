@@ -205,6 +205,24 @@
       "failed": "Transcription failed"
     }
   },
+  "audioEdit": {
+    "editButton": "Edit source audio",
+    "cancelEdit": "Cancel editing",
+    "waveformAriaLabel": "Trim selection waveform",
+    "startHandleAriaLabel": "Trim start",
+    "endHandleAriaLabel": "Trim end",
+    "selectedDuration": "Selected: {{duration}}",
+    "saveButtonAriaLabel": "Save trimmed audio",
+    "saveAsNew": "Save as new",
+    "replaceCurrent": "Replace current",
+    "replaceConfirmTitle": "Replace current audio?",
+    "replaceConfirmDescription": "This replaces the source file and clears the transcript and speaker labels. You will need to transcribe again.",
+    "processing": "Processing…",
+    "replaceSuccess": "Source audio updated",
+    "saveAsNewSuccess": "Saved as a new recording",
+    "retranscribeHint": "Transcript cleared — transcribe again when ready.",
+    "errorGeneric": "Could not edit source audio."
+  },
   "recording": {
     "sectionTitle": "Transcript",
     "pendingTitle": "Audio saved",

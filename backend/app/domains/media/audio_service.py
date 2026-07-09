@@ -1,4 +1,5 @@
 import mimetypes
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -216,3 +217,67 @@ class AudioService:
             Path(audio_asset.normalized_path).unlink(missing_ok=True)
         self.session.delete(audio_asset)
         self.session.commit()
+
+    def replace_from_processed_file(
+        self,
+        audio_asset: AudioAsset,
+        processed_path: Path,
+    ) -> AudioAsset:
+        original = Path(audio_asset.original_path)
+        if original.is_file():
+            original.unlink()
+
+        normalized = (
+            Path(audio_asset.normalized_path) if audio_asset.normalized_path else None
+        )
+        if normalized and normalized.is_file():
+            normalized.unlink()
+
+        new_original = safe_join(
+            self.settings.original_audio_dir,
+            f"{audio_asset.id}.wav",
+        )
+        shutil.copy2(processed_path, new_original)
+        size_bytes = new_original.stat().st_size
+
+        audio_asset.original_path = str(new_original)
+        audio_asset.filename = f"{audio_asset.id}.wav"
+        audio_asset.mime_type = "audio/wav"
+        audio_asset.size_bytes = size_bytes
+        audio_asset.normalized_path = None
+        audio_asset.duration_seconds = None
+        self.session.add(audio_asset)
+        self.session.commit()
+        self.session.refresh(audio_asset)
+        return self.normalize_audio(audio_asset)
+
+    def create_from_processed_file(
+        self,
+        processed_path: Path,
+        *,
+        source: str,
+        filename: str,
+    ) -> AudioAsset:
+        if source not in {"upload", "recording"}:
+            raise AppError("AUDIO_UNSUPPORTED_TYPE", "Invalid audio source.", 400)
+
+        audio_id = generate_audio_id()
+        original_path = safe_join(
+            self.settings.original_audio_dir,
+            f"{audio_id}.wav",
+        )
+        shutil.copy2(processed_path, original_path)
+        size_bytes = original_path.stat().st_size
+
+        audio_asset = AudioAsset(
+            id=audio_id,
+            source=source,
+            filename=filename,
+            mime_type="audio/wav",
+            size_bytes=size_bytes,
+            original_path=str(original_path),
+        )
+        self.session.add(audio_asset)
+        self.session.commit()
+        self.session.refresh(audio_asset)
+        return self.normalize_audio(audio_asset)

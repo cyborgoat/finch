@@ -205,6 +205,24 @@
       "failed": "转录失败"
     }
   },
+  "audioEdit": {
+    "editButton": "编辑源音频",
+    "cancelEdit": "取消编辑",
+    "waveformAriaLabel": "裁剪选区波形",
+    "startHandleAriaLabel": "裁剪起点",
+    "endHandleAriaLabel": "裁剪终点",
+    "selectedDuration": "已选：{{duration}}",
+    "saveButtonAriaLabel": "保存裁剪后的音频",
+    "saveAsNew": "另存为新录音",
+    "replaceCurrent": "替换当前文件",
+    "replaceConfirmTitle": "替换当前音频？",
+    "replaceConfirmDescription": "这将替换源文件并清除转录和说话人标签。您需要重新转录。",
+    "processing": "处理中…",
+    "replaceSuccess": "源音频已更新",
+    "saveAsNewSuccess": "已另存为新录音",
+    "retranscribeHint": "转录已清除 — 准备好后请重新转录。",
+    "errorGeneric": "无法编辑源音频。"
+  },
   "recording": {
     "sectionTitle": "转录",
     "pendingTitle": "音频已保存",

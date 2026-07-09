@@ -4,6 +4,7 @@ from app.api.deps import (
     get_job_service,
     get_note_service,
     get_recording_service,
+    get_recording_source_edit_service,
     get_recording_speaker_service,
     get_transcription_job_service,
 )
@@ -16,11 +17,14 @@ from app.domains.recordings.presenter import (
     to_recording_summary,
 )
 from app.domains.recordings.recording_service import RecordingService
+from app.domains.recordings.recording_source_edit_service import RecordingSourceEditService
 from app.domains.recordings.speaker_service import RecordingSpeakerService
 from app.schemas.audio import OkResponse
 from app.schemas.recording import (
     CreateRecordingRequest,
     CreateRecordingResponse,
+    EditRecordingSourceRequest,
+    EditRecordingSourceResponse,
     RecordingListResponse,
     RecordingResponse,
     SpeakerSegmentSchema,
@@ -136,6 +140,27 @@ def update_recording(
         edited_text=updated.edited_text,
         status=updated.status,
         updated_at=updated.updated_at,
+    )
+
+
+@router.post("/{recording_id}/edit-source", response_model=EditRecordingSourceResponse)
+def edit_recording_source(
+    recording_id: str,
+    payload: EditRecordingSourceRequest,
+    service: RecordingSourceEditService = Depends(get_recording_source_edit_service),
+) -> EditRecordingSourceResponse:
+    result = service.edit_source(
+        recording_id,
+        trim_start_sec=payload.trim_start_sec,
+        trim_end_sec=payload.trim_end_sec,
+        remove_silence=payload.remove_silence,
+        mode=payload.mode,
+    )
+    return EditRecordingSourceResponse(
+        recording_id=result.recording_id,
+        audio_asset_id=result.audio_asset_id,
+        status=result.status,
+        duration_seconds=result.duration_seconds,
     )
 
 
