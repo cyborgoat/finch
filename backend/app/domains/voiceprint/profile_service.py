@@ -5,10 +5,6 @@ from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
-from app.domains.voiceprint.guards import (
-    require_voiceprint_profiles_consent,
-    require_voiceprint_profiles_enabled,
-)
 from app.core.ids import generate_voiceprint_embedding_id, generate_voiceprint_profile_id
 from app.domains.media.audio_service import AudioService
 from app.domains.settings.app_preference_service import AppPreferenceService
@@ -20,6 +16,10 @@ from app.domains.voiceprint.embedding_service import (
     VoiceprintEmbeddingService,
     embedding_from_json,
     embedding_to_json,
+)
+from app.domains.voiceprint.guards import (
+    require_voiceprint_profiles_consent,
+    require_voiceprint_profiles_enabled,
 )
 from app.models.voiceprint_profile import VoiceprintEmbedding, VoiceprintProfile
 

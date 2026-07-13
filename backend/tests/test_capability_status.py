@@ -1,8 +1,8 @@
 from app.capabilities.status import get_capability_status
 from app.config import Settings
 from app.domains.settings.app_preference_service import (
-    AppPreferenceService,
     VOICEPRINT_AUTO_LABEL_KEY,
+    AppPreferenceService,
 )
 from app.domains.settings.transcription_settings_service import TranscriptionSettingsService
 from app.schemas.transcription_settings import UpdateTranscriptionSettingsRequest

@@ -1,8 +1,5 @@
-from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
-
-import pytest
 
 from tests.support.api_helpers import create_pending_recording, upload_audio
 from tests.support.fakes import fake_ffmpeg_run

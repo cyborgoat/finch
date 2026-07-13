@@ -4,12 +4,6 @@ from unittest.mock import patch
 
 import pytest
 
-from tests.support.api_helpers import (
-    create_pending_recording,
-    start_recording_transcription,
-    upload_audio,
-)
-from tests.support.fakes import fake_ffmpeg_run
 from app.workers.cancellation import (
     JobCancelledError,
     check_cancelled,
@@ -17,6 +11,12 @@ from app.workers.cancellation import (
     is_shutdown_requested,
     reset_cancellation_state,
 )
+from tests.support.api_helpers import (
+    create_pending_recording,
+    start_recording_transcription,
+    upload_audio,
+)
+from tests.support.fakes import fake_ffmpeg_run
 
 
 def test_check_cancelled_raises_when_shutdown_requested():

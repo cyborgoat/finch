@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import sys
 from pathlib import Path
 
@@ -12,10 +11,10 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from app.config import get_settings
-from app.capabilities.checker import check_dependencies
-from app.capabilities.status import get_capability_status
-from app.domains.transcription.diarization_service import (
+from app.capabilities.checker import check_dependencies  # noqa: E402
+from app.capabilities.status import get_capability_status  # noqa: E402
+from app.config import get_settings  # noqa: E402
+from app.domains.transcription.diarization_service import (  # noqa: E402
     DiarizationService,
     merge_adjacent_turns,
     resolve_hf_token,
@@ -59,7 +58,9 @@ def validate_dependencies() -> list[str]:
     for dep in check_dependencies():
         print(f"  [{_status(dep.installed)}] {dep.name} — {dep.required_for}")
         if dep.name == "ffmpeg" and not dep.installed:
-            issues.append("ffmpeg is missing (required for audio normalization and segment slicing).")
+            issues.append(
+                "ffmpeg is missing (required for audio normalization and segment slicing)."
+            )
         if dep.name == "pyannote-audio" and not dep.installed:
             issues.append("pyannote-audio is missing — run: cd backend && uv add pyannote-audio")
 

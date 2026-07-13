@@ -273,7 +273,8 @@ class AudioPurificationService:
             )
             if not raw_regions:
                 logger.warning(
-                    "Audio purification found no speech in %s — using original audio for diarization",
+                    "Audio purification found no speech in %s — "
+                    "using original audio for diarization",
                     source_path,
                 )
                 cleanup_purified(

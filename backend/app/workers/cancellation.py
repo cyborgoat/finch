@@ -3,7 +3,6 @@ import threading
 
 from app.core.errors import AppError
 
-
 _shutdown_requested = False
 _handlers_installed = False
 

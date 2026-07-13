@@ -8,8 +8,8 @@ from app.capabilities.status import (
 )
 from app.config import Settings, get_settings
 from app.domains.settings.app_preference_service import (
-    AppPreferenceService,
     VOICEPRINT_AUTO_LABEL_KEY,
+    AppPreferenceService,
 )
 from app.domains.settings.settings_utils import JsonSettingsRepository
 from app.domains.transcription.diarization_service import resolve_hf_token
