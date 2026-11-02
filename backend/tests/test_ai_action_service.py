@@ -8,7 +8,7 @@ from app.domains.recordings import transcript_text_service
 from app.domains.transcription.diarization_service import SpeakerSegment, speaker_segments_to_json
 from app.models.recording import Recording
 from app.schemas.user_settings import UserSettingsResponse
-from tests.support.fakes import FAKE_LLM_MARKDOWN
+from tests.support.fakes import FAKE_LLM_MARKDOWN, FAKE_LLM_MARKDOWN_BODY, FAKE_LLM_TITLE
 
 
 def test_run_meeting_summary_includes_user_preferences_in_prompt():
@@ -39,7 +39,7 @@ def test_run_meeting_summary_includes_user_preferences_in_prompt():
     assert "Summary style" not in prompt
 
 
-def test_run_action_does_not_localize_title_in_response():
+def test_run_action_parses_content_title_from_completion():
     service = AiActionService(MagicMock())
 
     transcript = Recording(
@@ -54,7 +54,7 @@ def test_run_action_does_not_localize_title_in_response():
     mock_llm = MagicMock(return_value=FAKE_LLM_MARKDOWN)
     service.chat_completion = mock_llm
 
-    note_type, markdown = service.run_action(
+    note_type, title, markdown = service.run_action(
         transcript,
         action="meeting_summary",
         source="rawText",
@@ -62,7 +62,9 @@ def test_run_action_does_not_localize_title_in_response():
     )
 
     assert note_type == "meeting_summary"
-    assert markdown == FAKE_LLM_MARKDOWN
+    assert title == FAKE_LLM_TITLE
+    assert markdown == FAKE_LLM_MARKDOWN_BODY
+    assert "TITLE:" not in markdown
 
 
 def test_run_action_rejects_unknown_action():

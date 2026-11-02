@@ -37,6 +37,7 @@ class _PreparedLlmCall:
 @dataclass(frozen=True)
 class _LlmResult:
     note_type: str
+    title: str | None
     markdown: str
     resolved_model: str
 
@@ -163,7 +164,7 @@ class AiActionPipeline:
     @staticmethod
     def _execute_llm(prepared: _PreparedLlmCall) -> _LlmResult:
         ai_action_service = AiActionService(session=None, settings=get_settings())
-        note_type, markdown = ai_action_service.run_action_from_text(
+        note_type, title, markdown = ai_action_service.run_action_from_text(
             action=prepared.action,
             transcript_text=prepared.transcript_text,
             model=prepared.model,
@@ -171,16 +172,18 @@ class AiActionPipeline:
             user_settings=prepared.user_settings,
         )
         logger.info(
-            "LLM finished for job %s (%d chars, type=%s)",
+            "LLM finished for job %s (%d chars, type=%s, title=%s)",
             prepared.job_id,
             len(markdown),
             note_type,
+            title or "(auto)",
         )
         resolved_model = prepared.model or ai_action_service.resolve_default_model(
             prepared.runtime,
         )
         return _LlmResult(
             note_type=note_type,
+            title=title,
             markdown=markdown,
             resolved_model=resolved_model,
         )
@@ -218,23 +221,26 @@ class AiActionPipeline:
         )
 
         self.job_service.update_job(job, progress=0.8, stage="saving_note")
+        note_title = (llm_result.title or "").strip()
         if document is None:
             document = self.note_service.create_note(
                 recording_id=prepared.recording_id,
-                title="",
-                title_is_auto=True,
+                title=note_title,
+                title_is_auto=not bool(note_title),
                 note_type=llm_result.note_type,
                 markdown=llm_result.markdown,
                 model=llm_result.resolved_model,
             )
         else:
-            document = self.note_service.update_note(
-                document,
-                markdown=llm_result.markdown,
-                model=llm_result.resolved_model,
-                status=NoteStatus.READY,
-                clear_generation_job_id=True,
-            )
+            update_kwargs: dict = {
+                "markdown": llm_result.markdown,
+                "model": llm_result.resolved_model,
+                "status": NoteStatus.READY,
+                "clear_generation_job_id": True,
+            }
+            if note_title:
+                update_kwargs["title"] = note_title
+            document = self.note_service.update_note(document, **update_kwargs)
 
         self.job_service.update_job(
             job,

@@ -5,6 +5,7 @@ from sqlmodel import Session
 from app.config import Settings, get_settings
 from app.core.errors import AppError
 from app.domains.ai.action_presets import get_preset
+from app.domains.ai.generated_note import parse_generated_note
 from app.domains.ai.llm import build_llm_client, require_llm_config
 from app.domains.ai.llm.runtime import LlmRuntimeSettings
 from app.domains.ai.prompt_context import (
@@ -97,7 +98,7 @@ class AiActionService:
         model: str | None = None,
         session: Session | None = None,
         user_settings: UserSettingsResponse | None = None,
-    ) -> tuple[str, str]:
+    ) -> tuple[str, str | None, str]:
         resolved_action = action.strip()
         preset = get_preset(resolved_action)
         if preset is None:
@@ -125,8 +126,9 @@ class AiActionService:
             uses_user_summary_prefs=preset.uses_user_summary_prefs,
         )
         messages = [{"role": "user", "content": prompt}]
-        markdown = self.chat_completion(messages, model=model)
-        return preset.note_type, markdown
+        completion = self.chat_completion(messages, model=model)
+        title, markdown = parse_generated_note(completion)
+        return preset.note_type, title, markdown
 
     def run_action_from_text(
         self,
@@ -136,7 +138,7 @@ class AiActionService:
         model: str | None = None,
         runtime: LlmRuntimeSettings,
         user_settings: UserSettingsResponse,
-    ) -> tuple[str, str]:
+    ) -> tuple[str, str | None, str]:
         resolved_action = action.strip()
         preset = get_preset(resolved_action)
         if preset is None:
@@ -157,5 +159,6 @@ class AiActionService:
             uses_user_summary_prefs=preset.uses_user_summary_prefs,
         )
         messages = [{"role": "user", "content": prompt}]
-        markdown = self.chat_completion(messages, model=model, runtime=runtime)
-        return preset.note_type, markdown
+        completion = self.chat_completion(messages, model=model, runtime=runtime)
+        title, markdown = parse_generated_note(completion)
+        return preset.note_type, title, markdown

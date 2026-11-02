@@ -8,7 +8,9 @@ from app.domains.transcription.asr_service import AsrResult
 from app.domains.transcription.diarization_service import DiarizationTurn
 
 FAKE_TRANSCRIPT_TEXT = "Transcribed text for tests."
-FAKE_LLM_MARKDOWN = "# Summary\n\nTest LLM output."
+FAKE_LLM_TITLE = "Roadmap sync highlights"
+FAKE_LLM_MARKDOWN = f"TITLE: {FAKE_LLM_TITLE}\n\n# Summary\n\nTest LLM output."
+FAKE_LLM_MARKDOWN_BODY = "# Summary\n\nTest LLM output."
 
 
 def fake_asr_result(
