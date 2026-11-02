@@ -51,6 +51,7 @@ def apply_voiceprint_labels(
         return merged_turns, cluster_resolutions
 
     job_service.update_job(job, progress=0.27, stage="running_voiceprint_matching")
+    embedding_service: VoiceprintEmbeddingService | None = None
     try:
         embedding_service = VoiceprintEmbeddingService(
             settings,
@@ -75,11 +76,19 @@ def apply_voiceprint_labels(
         )
         if match_log:
             logger.info("Voiceprint matching: %s", match_log)
-        embedding_service.unload_model()
     except AppError as exc:
         logger.warning(
             "Speaker matching unavailable (%s) — using generic speaker labels",
             exc.message,
         )
+    except Exception as exc:
+        # Keep diarized speaker turns even if embedding/torchcodec setup fails.
+        logger.warning(
+            "Speaker matching unavailable (%s) — using generic speaker labels",
+            exc,
+        )
+    finally:
+        if embedding_service is not None:
+            embedding_service.unload_model()
 
     return merged_turns, cluster_resolutions

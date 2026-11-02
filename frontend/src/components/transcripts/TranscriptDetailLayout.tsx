@@ -245,6 +245,11 @@ export function RecordingDetailLayout({
                   />
                 }
               />
+              {recording.processingNote ? (
+                <p className="px-1 text-xs leading-relaxed text-muted-foreground">
+                  {recording.processingNote}
+                </p>
+              ) : null}
               {hasTimedSegments ? (
                 <RecordingTranscriptSplit
                   segments={segments}

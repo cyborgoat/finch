@@ -94,6 +94,7 @@ class TranscriptionPipeline:
             raw_text: str
             detected_language: str | None
             segments: list[SpeakerSegment]
+            processing_note: str | None = None
 
             if self.transcription_settings.is_diarization_enabled():
                 try:
@@ -111,7 +112,8 @@ class TranscriptionPipeline:
                             "full-file ASR without speaker labels",
                             exc.message,
                         )
-                        logger.warning("%s", build_diarization_fallback_note(exc))
+                        processing_note = build_diarization_fallback_note(exc)
+                        logger.warning("%s", processing_note)
                         log_error_guidance(exc.code, exc.message)
                         raw_text, detected_language, segments = self._transcribe_single_pass(
                             job=job,
@@ -143,7 +145,7 @@ class TranscriptionPipeline:
                 speaker_segments=speaker_json,
                 status=RecordingStatus.DRAFT,
                 error_message=None,
-                processing_note=None,
+                processing_note=processing_note,
             )
 
             if segments:
@@ -161,7 +163,7 @@ class TranscriptionPipeline:
                     "Transcription job %s completed: single-pass transcript, language=%s%s",
                     job_id,
                     detected_language or "unknown",
-                    " (no speaker labels — see worker logs)"
+                    " (no speaker labels — see processing note / worker logs)"
                     if self.transcription_settings.is_diarization_enabled()
                     else "",
                 )

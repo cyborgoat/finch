@@ -71,7 +71,9 @@ Upload → normalize WAV
   → labeled transcript + speakerSegments JSON
 ```
 
-If diarization fails (missing token, model access, pyannote error), the worker **falls back** to full-file ASR. Check Huey worker logs for details. Re-transcribe after fixing config.
+If diarization fails (missing token, model access, pyannote error), the worker **falls back** to full-file ASR and stores a `processingNote` on the recording. Check Huey worker logs for details. Re-transcribe after fixing config.
+
+Finch preloads audio as an in-memory waveform before calling pyannote so diarization does not depend on torchcodec matching your system FFmpeg (Homebrew FFmpeg 9 is a common mismatch).
 
 ## Audio purification
 

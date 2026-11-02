@@ -9,6 +9,7 @@ from app.core.errors import AppError
 from app.domains.transcription.diarization_service import (
     DiarizationTurn,
     extract_audio_slice,
+    load_audio_for_diarization,
     resolve_hf_token,
 )
 
@@ -118,7 +119,10 @@ class VoiceprintEmbeddingService:
                 str(temp_dir),
                 "embed",
             )
-            embedding = np.array(self._inference(slice_path), dtype=np.float32).reshape(-1)
+            # Preload waveform so Inference does not depend on torchcodec/FFmpeg
+            # shared-library compatibility for path-based decoding.
+            audio_input = load_audio_for_diarization(slice_path)
+            embedding = np.array(self._inference(audio_input), dtype=np.float32).reshape(-1)
             vector = _normalize_vector(embedding)
             logger.debug(
                 "Extracted embedding from %s [%.2f-%.2f]s norm=%.3f",
@@ -128,6 +132,14 @@ class VoiceprintEmbeddingService:
                 float(np.linalg.norm(vector)),
             )
             return vector
+        except AppError:
+            raise
+        except Exception as exc:
+            raise AppError(
+                "SPEAKER_EMBEDDING_FAILED",
+                f"Speaker embedding extraction failed: {exc}",
+                500,
+            ) from exc
         finally:
             for path in temp_dir.glob("*.wav"):
                 path.unlink(missing_ok=True)

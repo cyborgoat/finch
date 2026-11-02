@@ -1,10 +1,16 @@
 
+from pathlib import Path
+
+import numpy as np
+import soundfile as sf
+
 from app.config import Settings
 from app.domains.transcription.diarization_service import (
     DiarizationTurn,
     SpeakerSegment,
     build_labeled_transcript,
     format_diarization_load_error,
+    load_audio_for_diarization,
     merge_adjacent_turns,
 )
 
@@ -89,3 +95,17 @@ def test_format_diarization_load_error_generic():
         "pyannote/speaker-diarization-community-1",
     )
     assert "network timeout" in message
+
+
+def test_load_audio_for_diarization_returns_channel_first_waveform(tmp_path: Path):
+    audio_path = tmp_path / "probe.wav"
+    sample_rate = 16000
+    samples = np.zeros((sample_rate, 1), dtype=np.float32)
+    samples[100:200, 0] = 0.25
+    sf.write(audio_path, samples, sample_rate)
+
+    payload = load_audio_for_diarization(str(audio_path))
+
+    assert payload["sample_rate"] == sample_rate
+    assert tuple(payload["waveform"].shape) == (1, sample_rate)
+    assert float(payload["waveform"][0, 150]) == 0.25

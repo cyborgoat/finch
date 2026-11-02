@@ -234,6 +234,9 @@ def test_diarization_fallback_when_hf_token_missing(
     transcript = client.get(f"/api/recordings/{job['resultId']}").json()
     assert transcript["status"] == "draft"
     assert transcript["rawText"]
+    assert transcript["speakerSegments"] is None
+    assert transcript["processingNote"]
+    assert "Speaker labels unavailable" in transcript["processingNote"]
 
 
 @patch("app.domains.transcription.pipeline.DiarizationService.load_pipeline")

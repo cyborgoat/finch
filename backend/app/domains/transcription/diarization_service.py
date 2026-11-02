@@ -32,6 +32,7 @@ __all__ = [
     "merge_adjacent_turns",
     "extract_audio_slice",
     "cleanup_temp_dir",
+    "load_audio_for_diarization",
     "resolve_hf_token",
     "format_diarization_load_error",
     "verify_huggingface_pipeline_access",
@@ -105,6 +106,41 @@ def resolve_hf_token(
         return get_token()
     except ImportError:
         return None
+
+
+def load_audio_for_diarization(audio_path: str) -> dict:
+    """Load audio as an in-memory waveform for pyannote.
+
+    pyannote.audio 4.x decodes file paths via torchcodec. That fails when the
+    system FFmpeg shared libs do not match torchcodec's expected versions
+    (common with Homebrew FFmpeg 9). Passing a preloaded waveform bypasses
+    torchcodec entirely.
+    """
+    try:
+        import soundfile as sf
+        import torch
+    except ImportError as exc:
+        raise AppError(
+            "DIARIZATION_FAILED",
+            (
+                "soundfile and torch are required to load audio for speaker "
+                "diarization."
+            ),
+            500,
+        ) from exc
+
+    try:
+        data, sample_rate = sf.read(audio_path, dtype="float32", always_2d=True)
+    except Exception as exc:
+        raise AppError(
+            "DIARIZATION_FAILED",
+            f"Could not load audio for speaker diarization: {exc}",
+            500,
+        ) from exc
+
+    # soundfile returns (time, channel); pyannote expects (channel, time).
+    waveform = torch.from_numpy(data.T.copy())
+    return {"waveform": waveform, "sample_rate": int(sample_rate)}
 
 
 class DiarizationService:
@@ -195,7 +231,10 @@ class DiarizationService:
 
         try:
             logger.info("Running speaker diarization on %s", audio_path)
-            output = self._pipeline(audio_path)
+            # Preload waveform so pyannote does not depend on torchcodec/FFmpeg
+            # shared-library compatibility for path-based decoding.
+            audio_input = load_audio_for_diarization(audio_path)
+            output = self._pipeline(audio_input)
             annotation = (
                 output.exclusive_speaker_diarization
                 if self.settings.diarization_use_exclusive
@@ -228,9 +267,19 @@ class DiarizationService:
             raise
         except Exception as exc:
             logger.exception("Speaker diarization failed for %s", audio_path)
+            message = str(exc)
+            if "AudioDecoder" in message or "torchcodec" in message.lower():
+                message = (
+                    "Speaker diarization failed to decode audio "
+                    f"({exc}). Finch normally preloads waveforms to avoid "
+                    "torchcodec/FFmpeg mismatches; re-check soundfile and "
+                    "the normalized WAV path."
+                )
+            else:
+                message = f"Speaker diarization failed: {exc}"
             raise AppError(
                 "DIARIZATION_FAILED",
-                f"Speaker diarization failed: {exc}",
+                message,
                 500,
             ) from exc
 
