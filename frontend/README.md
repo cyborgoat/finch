@@ -1,112 +1,46 @@
 # Finch Frontend
 
-TanStack Start app for Finch: upload, record, transcripts, speaker labels, voiceprint profiles, AI notes, and settings.
+The Finch web app (TanStack Start): upload, record, transcripts, notes, and settings.
 
-**Project docs:** [../docs/README.md](../docs/README.md)
-
-## Prerequisites
-
-- [Node.js](https://nodejs.org/) 20+
-- Finch backend running on `http://localhost:8000`
-
-## Setup
-
-```bash
-cd frontend
-cp .env.local.example .env.local
-npm install
-```
+Setup and running: see the [Quickstart](../docs/quickstart.md).
 
 ## Run
 
 ```bash
-npm run dev
+cp .env.local.example .env.local
+npm install
+npm run dev     # http://localhost:3000
 ```
 
-App: http://localhost:3000
+The backend API **and worker** must be running, or transcription jobs will stay on "Preparing". See [Quickstart](../docs/quickstart.md#2-run).
 
-Run the backend in a separate terminal (`cd backend && uv run uvicorn app.main:app --reload`).
-
-## Environment
+## Configuration
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `VITE_API_BASE_URL` | `http://localhost:8000` | Finch API base URL (browser) |
-| `API_BASE_URL` | `http://localhost:8000` | Finch API base URL (SSR loaders) |
+| `VITE_API_BASE_URL` | `http://localhost:8000` | API URL used by the browser |
+| `API_BASE_URL` | `http://localhost:8000` | API URL used by server-side rendering |
 
-Transcription toggles and LLM credentials are configured in **Settings** (auto-save) and stored locally in SQLite. Set `HF_TOKEN` in backend `.env` for pyannote models.
+Everything else (transcription options, LLM provider) is set in the app's **Settings** page.
 
 ## Scripts
 
 | Command | Purpose |
 |---------|---------|
-| `npm run dev` | Development server (Vite + TanStack Start) |
+| `npm run dev` | Development server |
 | `npm run build` | Production build |
-| `npm run start` | Run production server |
+| `npm run start` | Run the production build |
 | `npm run lint` | ESLint |
 
-## Key routes
+## Routes
 
 | Route | Purpose |
 |-------|---------|
-| `/` | Recent voice recordings, sorted by last updated |
-| `/recordings` | Voice recordings library |
-| `/recordings/$id` | Recording detail (Source, Notes tabs) |
-| `/upload` | Upload audio and transcribe |
-| `/record` | Browser recording with live waveform |
-| `/settings` | User profile, language (UI + AI content), AI note prefs, transcription, voiceprint profiles, LLM provider |
-
-## Layout and navigation
-
-- **Sidebar:** **New** dropdown (Record voice / Upload audio); Home, Recordings, Settings
-- **Topbar:** breadcrumb trail (route-aware); on recording detail, download and actions buttons on the right
-- **Pages:** wide `max-w-6xl` content; upload/record use a centered column; settings uses `max-w-3xl`
-
-## Key UI behavior
-
-### Recordings and home
-
-- **Home:** recent voice recordings, sorted by last updated
-- **Recordings browser:** voice recordings only; notes live under each recording’s **Notes** tab
-- **Search:** filters recordings by title (client-side)
-- **List actions:** ellipsis menu — rename and delete
-- **Transcribing / failed:** list and detail pages poll while `status=transcribing`; failed jobs stay visible with `errorMessage`
-
-### Recording detail (`/recordings/recording_*`)
-
-- **Topbar download menu:** audio file, transcript `.txt`, active note `.md`
-- **Topbar actions menu:** rename recording, delete session
-- **Source tab:** audio player, then compact scrollable transcript
-  - Each turn: speaker name, timestamp range, text
-  - Active turn highlighted; list auto-scrolls during playback
-  - Click timestamp to seek; click speaker name to assign/rename (when diarization data exists)
-  - Transcript text is read-only
-- **Notes tab:** multiple markdown notes per recording
-  - Dropdown to switch notes; **+** to create; **⋯** menu for rename/delete
-  - AI templates: meeting summary, action items, key decisions, follow-up email; or blank note
-  - MDXEditor with auto-save toggle (default on) or manual Save
-  - Meeting summary prompts use content language and summarization prefs from Settings; all AI templates use content language
-
-### Internationalization
-
-- UI strings use `react-i18next` with locale files under `src/i18n/locales/`
-- **Settings → Language & region:** `uiLanguage` (interface) and `contentLanguage` (AI output) are stored separately via `GET/PATCH /api/user-settings`
-
-### Settings
-
-All settings auto-save — no Save buttons.
-
-- **About you:** display name; record voiceprint via enrollment dialog (warning badge when not recorded)
-- **Language & region:** interface language and AI note content language (English or 中文)
-- **AI notes:** summary style/format and note auto-save toggle
-- **Transcription:** diarization and voiceprint profile toggles (`GET/PATCH /api/transcription-settings`)
-- **LLM provider:** provider, API key, base URL, model — text fields save on blur (`GET/PATCH /api/llm-settings`)
-- **Voiceprint profiles:** auto-label toggle (consent on first enable), saved profile list (rename/delete)
-- **Backend capabilities** (ASR): startup logs and `/api/health`
-
-## IDs
-
-Recording IDs use the `recording_` prefix in URLs. Notes use `note_` IDs in the API and are opened on a recording’s **Notes** tab (`?tab=notes&noteId=…`). Other resources use their own prefixes (`audio_`, `job_`, `voiceprint_`, etc.).
+| `/` | Recent recordings |
+| `/recordings` | Recordings library with title search |
+| `/recordings/$id` | Recording detail: **Source** (audio and transcript) and **Notes** tabs |
+| `/upload`, `/record` | Create a recording |
+| `/settings` | Profile, language, LLM provider, transcription, voiceprints |
 
 ## Stack
 

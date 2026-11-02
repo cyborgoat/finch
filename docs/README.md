@@ -1,49 +1,29 @@
 # Finch Documentation
 
-Finch is a local-first voice transcription app. Audio is transcribed on your machine; optional LLM note generation runs on transcript text only via a provider you configure in Settings.
+Finch is a local-first voice transcription app. New here? Start with the [Quickstart](quickstart.md).
 
-## Guides
+| Doc | Read it when you want to… |
+|-----|---------------------------|
+| [Quickstart](quickstart.md) | Install and run Finch, fix common problems |
+| [Diarization](diarization.md) | Add speaker labels |
+| [Voiceprint profiles](voiceprint-profiles.md) | Remember speaker names across recordings |
+| [Long audio](long-audio.md) | Transcribe 1–2 hour files |
+| [Architecture](architecture.md) | Understand how the pieces fit together |
+| [Backend modules](modules.md) | Find your way around `backend/app/` |
+| [Features & roadmap](features.md) | See what's built and planned |
 
-| Doc | Description |
-|-----|-------------|
-| [Quickstart](quickstart.md) | Install, configure, run, and transcribe |
-| [Diarization](diarization.md) | Speaker labels: setup, validation, tuning |
-| [Voiceprint profiles](voiceprint-profiles.md) | Persistent speaker names and local voiceprints |
-| [Architecture](architecture.md) | System design, data model, request flows |
-| [Features & roadmap](features.md) | What's built and what's planned |
-| [Backend modules](modules.md) | `backend/app/` package reference |
+Package READMEs: [backend](../backend/README.md) · [frontend](../frontend/README.md)
 
-## Package READMEs
-
-- [backend/README.md](../backend/README.md) — API, env vars, tests
-- [frontend/README.md](../frontend/README.md) — TanStack Start dev setup
-
-## Core model
+## Core idea
 
 ```txt
-AudioAsset → Recording → Note(s) (optional)
+Audio file → Recording (transcript) → Notes (optional)
 ```
 
-The transcript on a recording is the durable artifact. LLM-generated and manual Markdown notes are optional derivatives linked to the source recording.
+The transcript is the permanent record. Notes, whether AI-generated or hand-written, are optional extras attached to a recording.
 
-**Local dev requires two backend processes:** the FastAPI server and the Huey job consumer (see [quickstart.md](quickstart.md)).
+## Things to know
 
-## Frontend routes
-
-| Route | Purpose |
-|-------|---------|
-| `/` | Recent voice recordings |
-| `/recordings` | Full recordings library (title search) |
-| `/recordings/{id}` | Recording detail (**Source** / **Notes** tabs) |
-| `/upload`, `/record` | Create new recordings |
-| `/settings` | User profile, language, AI note prefs, LLM provider, transcription, voiceprint profiles |
-
-Recording detail uses a **topbar** with breadcrumbs, a download menu (audio, transcript `.txt`, active note `.md`), and actions (rename, delete). The **Source** tab shows the audio player and a compact auto-scrolling transcript. The **Notes** tab supports multiple markdown notes per recording (AI templates or blank), with a dropdown to switch notes, rename/delete actions, and MDXEditor.
-
-LLM and transcription toggles are configured in the frontend and stored locally in SQLite. `HF_TOKEN` is backend `.env` only. All settings auto-save.
-
-Recording IDs use the `recording_` prefix in URLs (e.g. `/recordings/recording_a1b2c3d4e5f67890`). Notes use `note_` IDs in the API but are opened on a recording’s **Notes** tab (`?tab=notes&noteId=…`), not as standalone routes. Other resources use their own prefixes (`audio_`, `job_`, etc.).
-
-## Privacy
-
-Audio stays on your machine for ASR and diarization. Note generation sends **transcript text** to your configured provider only when you explicitly create or generate a note — never audio.
+- **Three processes run locally:** API, worker, and web app. The worker does the heavy lifting; see [Quickstart](quickstart.md#2-run).
+- **Settings live in the app** (Settings page, auto-saved to a local SQLite database). The one exception is `HF_TOKEN`, which goes in `.env`.
+- **Privacy:** audio stays on your machine. Only transcript text is sent to an LLM, and only when you generate a note.

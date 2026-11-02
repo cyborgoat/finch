@@ -1,60 +1,42 @@
 # Finch Backend
 
-Local ASR transcription API for Finch — optional speaker diarization, voiceprint profiles, and configurable LLM AI actions.
+FastAPI service for transcription, optional speaker diarization and voiceprints, and LLM note generation.
 
-**Project docs:** [../docs/README.md](../docs/README.md) · **Diarization:** [../docs/diarization.md](../docs/diarization.md) · **Voiceprint profiles:** [../docs/voiceprint-profiles.md](../docs/voiceprint-profiles.md)
-
-## Prerequisites
-
-- [uv](https://docs.astral.sh/uv/)
-- [ffmpeg](https://ffmpeg.org/) on your PATH (required for audio normalization)
-
-## Setup
-
-Configuration is loaded from **`backend/.env`** and/or **repo root `.env`** (root file is convenient when running uvicorn from `backend/`).
-
-```bash
-cd backend
-cp .env.example .env   # or: cp ../.env.example ../.env
-uv sync
-```
+For setup and running, see the [Quickstart](../docs/quickstart.md). This page covers backend-specific details.
 
 ## Run
 
-Start the API and job worker in **separate terminals**:
+Two processes are required (the frontend is a third):
 
 ```bash
-# Terminal 1 — API server
+uv sync
+
+# Terminal 1: API (http://localhost:8000, docs at /docs)
 uv run uvicorn app.main:app --reload
 
-# Terminal 2 — background jobs (transcription + AI actions)
+# Terminal 2: worker. Without it, jobs stay "Queued"
 uv run huey_consumer app.domains.jobs.queue.huey -w 1
 ```
 
-The Huey consumer reads from a SQLite queue (`data/huey.db` by default). Jobs are enqueued by the API and processed by the worker — transcription and AI note generation will not run without terminal 2.
+On startup the API prints a configuration summary: which `.env` files loaded, which features are on, and hints for anything missing. Set `DEBUG_MODE=true` for verbose logs.
 
-Debug voiceprint matching with verbose logs:
+## Configuration
 
-```bash
-DEBUG_MODE=true uv run uvicorn app.main:app --reload
-```
+Copy `.env.example` to `backend/.env` or the repo root `.env` (both are read). The defaults work as-is. Variables you're most likely to change:
 
-On startup, the terminal prints a **configuration summary**: loaded env files, ASR/diarization/voiceprint/LLM mode, dependency checks, and fix hints (`app/capabilities/startup.py`).
+| Variable | Purpose |
+|----------|---------|
+| `HF_TOKEN` | Hugging Face token, needed for diarization and voiceprints |
+| `MAX_UPLOAD_MB` | Upload size limit (default 500) |
+| `ASR_DEVICE` | `auto`, `cpu`, `cuda`, or `mps` |
+| `HF_HOME` | Where models are cached |
+| `HUEY_DB_PATH` | Job queue file (default `data/huey.db`) |
 
-API docs: http://localhost:8000/docs
+Diarization and voiceprint toggles live in the app's **Settings → Transcription**; `.env` values are only fallbacks. LLM credentials are set in **Settings → LLM provider**, not `.env`. See `.env.example` for every option.
 
-## Database migrations
+## Database
 
-Schema is managed by Alembic. On API startup, `alembic upgrade head` runs automatically.
-
-Manual commands:
-
-```bash
-uv run alembic upgrade head    # apply pending migrations
-uv run alembic stamp head      # mark an existing DB as current (no DDL)
-```
-
-If migration fails on a corrupted local DB, delete `finch.db` and restart — Alembic recreates the schema.
+SQLite, managed by Alembic. Migrations run automatically on API startup. If the database is corrupted, delete `finch.db` and restart.
 
 ## Tests
 
@@ -62,77 +44,25 @@ If migration fails on a corrupted local DB, delete `finch.db` and restart — Al
 uv run pytest
 ```
 
-87 tests; patch `ffmpeg`, ASR, diarization, and LLM services at test time — no model downloads required.
-
-## Environment
-
-| Variable | Description |
-|----------|-------------|
-| `DEBUG_MODE` | Verbose voiceprint/diarization logs at DEBUG level (default `false`) |
-| `HF_TOKEN` | Hugging Face token for pyannote gated models — set in `.env` only |
-| `DIARIZATION_ENABLED` | Fallback for speaker diarization toggle (prefer **Settings → Transcription**) |
-| `VOICEPRINT_PROFILES_ENABLED` | Fallback for voiceprint profiles toggle (prefer **Settings → Transcription**) |
-| `SPEAKER_EMBEDDING_MODEL_ID` | Embedding model (default `pyannote/embedding`) |
-| `SPEAKER_MATCH_THRESHOLD` | Cosine similarity threshold for auto-match (default `0.65`) |
-| `SPEAKER_MIN_ENROLL_SECONDS` | Min speech duration for enrollment samples (default `2.0`) |
-| `DATABASE_URL` | SQLite connection string |
-| `HUEY_DB_PATH` | Huey job queue database (default `{DATA_DIR}/huey.db`) |
-| `MAX_UPLOAD_MB` | Maximum upload size in megabytes |
-
-See [`.env.example`](.env.example) and [../.env.example](../.env.example) for the full list.
-
-## ASR
-
-Local transcription uses Qwen3-ASR-1.7B:
-
-```bash
-uv add torch qwen-asr
-```
-
-Optional in `.env`:
-
-```env
-HF_HOME=./data/hf_cache
-```
-
-The model is loaded lazily on the first transcription request.
-
-## Speaker diarization
-
-Requires pyannote-audio and Hugging Face access to [pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1). Set `HF_TOKEN` in `.env` and enable in **Settings → Transcription** (or `DIARIZATION_ENABLED=true` as fallback). See [../docs/diarization.md](../docs/diarization.md).
-
-Validate setup:
-
-```bash
-uv run python scripts/validate_diarization.py
-uv run python scripts/validate_diarization.py --audio path/to/sample.wav
-```
-
-## Voiceprint profiles
-
-Optional local voiceprint storage for persistent speaker names. Requires diarization. Enable in **Settings → Transcription** or set `VOICEPRINT_PROFILES_ENABLED=true` in `.env` as a fallback. See [../docs/voiceprint-profiles.md](../docs/voiceprint-profiles.md).
-
-If diarization or speaker matching is unavailable, the worker falls back gracefully and logs a warning in the Huey consumer.
-
-## Package layout
-
-Domain logic lives under `app/domains/`. See [../docs/modules.md](../docs/modules.md) for the full map.
+External services are mocked, so no model downloads are needed.
 
 ## API
 
-- `GET /api/health` — liveness + capability flags
-- `POST /api/audio/upload` · `GET /api/audio/{id}/stream` · `GET/DELETE /api/audio/{id}`
-- `POST /api/recordings` — start transcription job
-- `GET/PATCH/DELETE /api/recordings/{id}`
-- `PATCH /api/recordings/{id}/speakers` — rename/link speakers on a transcript
-- `GET /api/jobs/{id}`
-- `POST /api/ai-actions` — generate AI note (`action`: `meeting_summary`, `action_items`, `key_decisions`, `follow_up_email`)
-- `GET /api/ai-actions/templates` — list AI note templates
-- `GET/POST/PATCH/DELETE /api/notes` — note CRUD (POST creates blank manual notes)
-- `GET/PATCH /api/transcription-settings` — diarization and voiceprint profile toggles (SQLite)
-- `GET/POST/PATCH/DELETE /api/voiceprint-profiles` · `GET /api/voiceprint-profiles/{id}`
-- `GET/PATCH/DELETE /api/voiceprint-profiles/status` · `POST /api/voiceprint-profiles/consent` · `DELETE /api/voiceprint-profiles/data`
-- `GET/PATCH /api/user-settings` — user name, ui/content language, summarization prefs, linked voiceprint profile
-- `GET/PATCH /api/llm-settings` — LLM provider credentials (stored locally in SQLite; API keys never returned)
+Full interactive reference: http://localhost:8000/docs. Main endpoints:
 
-Transcripts may include `speakerSegments` or `errorMessage` when diarization is skipped or a job fails.
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/audio/upload` | Upload an audio file |
+| `POST /api/recordings` | Start a transcription job |
+| `GET /api/jobs/{id}` | Job status and progress |
+| `GET/PATCH/DELETE /api/recordings/{id}` | Read, rename, delete a recording |
+| `POST /api/ai-actions` | Generate an AI note |
+| `/api/notes` | Note CRUD |
+| `/api/transcription-settings`, `/api/user-settings`, `/api/llm-settings` | Settings |
+| `/api/voiceprint-profiles` | Voiceprint profiles |
+| `GET /api/health` | Liveness and feature flags |
+
+## More
+
+- [Backend module map](../docs/modules.md)
+- [Diarization](../docs/diarization.md) · [Voiceprints](../docs/voiceprint-profiles.md)
